@@ -1,4 +1,5 @@
 """maps_bridge MCP server — no tools registered yet."""
+
 import time
 
 from fastmcp import FastMCP
