@@ -1,6 +1,6 @@
 export PATH := $(HOME)/.n/bin:$(PATH)
 
-.PHONY: bootstrap install dev dev-api dev-frontend lint format typecheck test clean
+.PHONY: bootstrap install dev dev-api dev-frontend lint format typecheck test up-build down clean
 
 bootstrap: install
 	@[ -f .env ] || cp .env.example .env
@@ -31,6 +31,12 @@ typecheck:
 
 test:
 	uv run pytest
+
+up-build:
+	docker compose up --build -d
+
+down:
+	docker compose down
 
 clean:
 	@echo "not implemented yet"

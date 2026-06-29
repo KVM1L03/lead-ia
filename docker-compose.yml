@@ -1,3 +1,51 @@
 version: "3.9"
-# TODO: add Temporal, PostgreSQL, and Langfuse service definitions
-services: {}
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: temporal
+      POSTGRES_PASSWORD: temporal
+      POSTGRES_DB: temporal
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - lead-forge
+
+  api-gateway:
+    build:
+      context: .
+      dockerfile: api_gateway/Dockerfile
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+    networks:
+      - lead-forge
+
+  ai-worker:
+    build:
+      context: .
+      dockerfile: ai_worker/Dockerfile
+    networks:
+      - lead-forge
+
+  maps-bridge:
+    build:
+      context: .
+      dockerfile: maps_bridge/Dockerfile
+    networks:
+      - lead-forge
+
+networks:
+  lead-forge:
+    driver: bridge
+
+volumes:
+  postgres_data:
