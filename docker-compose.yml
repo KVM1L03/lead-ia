@@ -1,0 +1,3 @@
+version: "3.9"
+# TODO: add Temporal, PostgreSQL, and Langfuse service definitions
+services: {}
