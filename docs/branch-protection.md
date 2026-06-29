@@ -1,5 +1,7 @@
 # Branch Protection Settings
 
+Agent workflow: feature branch → PR → CI → human review → merge. See `CLAUDE.md` §5.
+
 These settings must be applied manually in **GitHub → Settings → Branches →
 Branch protection rules** for the `main` branch. They cannot be committed to
 the repo.

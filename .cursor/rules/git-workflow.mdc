@@ -1,0 +1,36 @@
+---
+description: Branch + PR workflow for feature work; ties into CI and code review
+alwaysApply: true
+---
+
+# Git workflow — branch, PR, review
+
+## When to branch (before any code changes)
+
+Create a new branch when the task adds or changes **behavior** — features, fixes, refactors, infra/CI.
+
+Skip branching for: questions, read-only exploration, trivial doc typos (unless user asks to PR it).
+
+## Naming
+
+`feat/`, `fix/`, `refactor/`, `chore/`, `ci/` + short kebab-case description.
+
+```bash
+git checkout main && git pull
+git checkout -b feat/short-description
+```
+
+## Before marking done
+
+1. `make lint && make test`
+2. Commit + `git push -u origin HEAD`
+3. `gh pr create` → `main` (PR template auto-fills)
+4. Return PR URL; **do not merge** without user approval
+
+## Hard rules
+
+- Never push to `main`
+- Never merge without green CI (`python`, `frontend`) + human review
+- Keep PRs ~200 LOC; split large work
+
+Details: `CLAUDE.md` §5, branch protection: `docs/branch-protection.md`
