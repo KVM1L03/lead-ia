@@ -158,9 +158,7 @@ class SerpAPIMapsProvider:
         lat: float | None = None,
         lng: float | None = None,
     ) -> PlaceDetails:
-        params = _details_request_params(
-            place_id, self._api_key, lat=lat, lng=lng
-        )
+        params = _details_request_params(place_id, self._api_key, lat=lat, lng=lng)
         raw = await self._get(params)
         data = _DetailsResponse.model_validate_json(raw)
         p = data.place_results

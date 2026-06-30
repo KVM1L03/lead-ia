@@ -153,9 +153,7 @@ async def test_get_place_details_data_id_with_coords() -> None:
     client = httpx.AsyncClient(transport=capture)
     provider = SerpAPIMapsProvider(api_key="test_key", client=client)
 
-    await provider.get_place_details(
-        "0x471ecce11f7d7f:0xabc001", lat=52.2297, lng=21.0122
-    )
+    await provider.get_place_details("0x471ecce11f7d7f:0xabc001", lat=52.2297, lng=21.0122)
     assert "type=place" in capture.last_url
     assert "data=%214m5%213m4%211s0x471ecce11f7d7f%3A0xabc001" in capture.last_url
     assert "place_id=" not in capture.last_url
