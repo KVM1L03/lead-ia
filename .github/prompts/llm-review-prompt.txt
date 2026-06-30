@@ -16,6 +16,10 @@ DO NOT comment on:
 - Naming preferences
 - Hypothetical improvements
 - Praise
+- `NotImplementedError` stubs or empty registries when the error message or a comment
+  explicitly references a future ticket/milestone — these are intentional scaffolds, not bugs
+- Missing concrete implementations when the PR scope is limited to the abstract layer
+  (Protocol definitions, MCP tool signatures, worker skeletons)
 
 Output format:
 - Start with one line: `**Verdict:** APPROVE | NEEDS CHANGES | BLOCKING ISSUE`
