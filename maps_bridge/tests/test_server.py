@@ -1,6 +1,6 @@
 import pytest
 
-from maps_bridge.server import get_place_details, mcp, search_places
+from maps_bridge.server import _get_provider, get_place_details, mcp, search_places
 
 
 def test_server_imports() -> None:
@@ -14,11 +14,22 @@ async def test_tools_registered() -> None:
     assert "get_place_details" in names
 
 
-async def test_search_places_raises_without_provider() -> None:
-    with pytest.raises(NotImplementedError, match="not yet implemented"):
-        await search_places(query="coffee shops in NYC", limit=5)
+async def test_search_places_returns_mock_results() -> None:
+    results = await search_places(query="dental", limit=3)
+    assert 0 < len(results) <= 3
+    assert all("dental" in r.category.lower() or "dental" in r.name.lower() for r in results)
 
 
-async def test_get_place_details_raises_without_provider() -> None:
-    with pytest.raises(NotImplementedError, match="not yet implemented"):
-        await get_place_details(place_id="ChIJabc123")
+async def test_get_place_details_returns_known_fixture() -> None:
+    details = await get_place_details(place_id="dental-warsaw-001")
+    assert details.name == "Klinika Stomatologiczna Centrum"
+
+
+def test_unknown_provider_raises(monkeypatch: pytest.MonkeyPatch) -> None:
+    _get_provider.cache_clear()
+    monkeypatch.setattr("maps_bridge.config.settings.MAPS_PROVIDER", "serpapi")
+    try:
+        with pytest.raises(NotImplementedError, match="not yet implemented"):
+            _get_provider()
+    finally:
+        _get_provider.cache_clear()

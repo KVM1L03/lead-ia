@@ -1,5 +1,7 @@
 """maps_bridge MCP server — exposes search_places and get_place_details tools."""
 
+from functools import lru_cache
+
 from fastmcp import FastMCP
 
 from maps_bridge.config import settings
@@ -9,10 +11,14 @@ from shared.schemas import PlaceDetails, PlaceSearchResult
 mcp = FastMCP("maps-bridge")
 
 
+@lru_cache(maxsize=1)
 def _get_provider() -> MapsProvider:
+    if settings.MAPS_PROVIDER == "mock":
+        from maps_bridge.providers.mock import MockMapsProvider
+
+        return MockMapsProvider()
     raise NotImplementedError(
-        f"Provider '{settings.MAPS_PROVIDER}' not yet implemented. "
-        "Add maps_bridge/providers/mock.py (T1.2) or providers/serpapi.py (T1.3)."
+        f"Provider '{settings.MAPS_PROVIDER}' not yet implemented. SerpAPI provider comes in T1.3."
     )
 
 
