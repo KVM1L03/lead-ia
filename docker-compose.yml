@@ -242,6 +242,7 @@ services:
     build:
       context: .
       dockerfile: ai_worker/Dockerfile
+    restart: on-failure
     depends_on:
       - temporal
     environment:
