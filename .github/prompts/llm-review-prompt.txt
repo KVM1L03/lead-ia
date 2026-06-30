@@ -20,6 +20,22 @@ DO NOT comment on:
   explicitly references a future ticket/milestone — these are intentional scaffolds, not bugs
 - Missing concrete implementations when the PR scope is limited to the abstract layer
   (Protocol definitions, MCP tool signatures, worker skeletons)
+- Findings you immediately self-correct in the same bullet ("Actually, looking closer…"
+  or similar) — if you catch yourself retracting a finding, drop it entirely, do not report it
+- `time.time()`, `datetime.now()`, random, or network I/O outside the `workflows/` directory —
+  the determinism rule applies only inside Temporal workflow code, never to infrastructure
+  or service layers (cache, provider, server, tests)
+- Settings or config attributes referenced in the diff whose definitions are NOT shown in the
+  diff — they may exist in files you cannot see; only flag as missing if the diff both adds
+  new usage AND explicitly removes or never defines the attribute
+- Hardcoded empty defaults (`photos=[]`, `hours=[]`, `None`) for fields the parsed API
+  response does not include — absence of data is not a bug
+- Test doubles, mock transports, or fake clients that skip request validation — intentional
+  isolation is the point of a mock
+- SQLite context-manager auto-commit (`with sqlite3.connect(...) as conn:` commits on
+  clean exit — no explicit commit call is needed)
+- Pydantic `model_validate(dict)` — this is the correct Pydantic v2 API for converting
+  a plain dict to a model instance
 
 Output format:
 - Start with one line: `**Verdict:** APPROVE | NEEDS CHANGES | BLOCKING ISSUE`

@@ -1393,11 +1393,13 @@ dependencies = [
     { name = "dspy-ai" },
     { name = "fastapi" },
     { name = "fastmcp" },
+    { name = "httpx" },
     { name = "langfuse" },
     { name = "langgraph" },
     { name = "pydantic" },
     { name = "pydantic-settings" },
     { name = "temporalio" },
+    { name = "tenacity" },
     { name = "uvicorn" },
 ]
 
@@ -1415,11 +1417,13 @@ requires-dist = [
     { name = "dspy-ai" },
     { name = "fastapi" },
     { name = "fastmcp" },
+    { name = "httpx", specifier = ">=0.27" },
     { name = "langfuse" },
     { name = "langgraph" },
     { name = "pydantic", specifier = ">=2.6" },
     { name = "pydantic-settings" },
     { name = "temporalio" },
+    { name = "tenacity", specifier = ">=8.2" },
     { name = "uvicorn" },
 ]
 

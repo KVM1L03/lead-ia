@@ -1,0 +1,6 @@
+{
+  "status_code": 429,
+  "body": {
+    "error": "Your account has exceeded its plan limit."
+  }
+}

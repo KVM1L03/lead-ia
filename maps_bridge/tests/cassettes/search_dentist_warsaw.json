@@ -1,0 +1,47 @@
+{
+  "status_code": 200,
+  "body": {
+    "search_metadata": {"status": "Success"},
+    "local_results": [
+      {
+        "position": 1,
+        "data_id": "0x471ecce11f7d7f:0xabc001",
+        "place_id": "ChIJtest001",
+        "title": "Medident Dental Clinic",
+        "address": "ul. Nowy Świat 10, 00-400 Warszawa",
+        "type": "Dentist",
+        "rating": 4.8,
+        "reviews": 245,
+        "phone": "+48 22 826 1234",
+        "website": "https://medident.pl",
+        "gps_coordinates": {"latitude": 52.2297, "longitude": 21.0122}
+      },
+      {
+        "position": 2,
+        "data_id": "0x471ecce11f7d7f:0xabc002",
+        "place_id": "ChIJtest002",
+        "title": "DentaMax Centrum",
+        "address": "ul. Marszałkowska 84, 00-514 Warszawa",
+        "type": "Dentist",
+        "rating": 4.6,
+        "reviews": 132,
+        "phone": "+48 22 629 4411",
+        "website": null,
+        "gps_coordinates": {"latitude": 52.2290, "longitude": 21.0070}
+      },
+      {
+        "position": 3,
+        "data_id": "0x471ecce11f7d7f:0xabc003",
+        "place_id": "ChIJtest003",
+        "title": "Białe Uśmiechy Stomatologia",
+        "address": "ul. Puławska 145, 02-515 Warszawa",
+        "type": "Dentist",
+        "rating": 4.5,
+        "reviews": 89,
+        "phone": null,
+        "website": "https://bialeusmiechy.pl",
+        "gps_coordinates": {"latitude": 52.2100, "longitude": 21.0050}
+      }
+    ]
+  }
+}

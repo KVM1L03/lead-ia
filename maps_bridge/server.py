@@ -17,9 +17,16 @@ def _get_provider() -> MapsProvider:
         from maps_bridge.providers.mock import MockMapsProvider
 
         return MockMapsProvider()
-    raise NotImplementedError(
-        f"Provider '{settings.MAPS_PROVIDER}' not yet implemented. SerpAPI provider comes in T1.3."
-    )
+    if settings.MAPS_PROVIDER == "serpapi":
+        if not settings.SERPAPI_API_KEY:
+            raise ValueError("SERPAPI_API_KEY must be set when MAPS_PROVIDER=serpapi")
+        from maps_bridge.cache import CachingMapsProvider, SQLiteCache
+        from maps_bridge.providers.serpapi import SerpAPIMapsProvider
+
+        inner = SerpAPIMapsProvider(api_key=settings.SERPAPI_API_KEY)
+        cache = SQLiteCache(db_path=settings.CACHE_DB_PATH)
+        return CachingMapsProvider(inner, cache)
+    raise NotImplementedError(f"Unknown provider: '{settings.MAPS_PROVIDER}'")
 
 
 @mcp.tool()
