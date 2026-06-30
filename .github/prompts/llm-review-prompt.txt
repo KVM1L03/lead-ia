@@ -36,6 +36,14 @@ DO NOT comment on:
   clean exit — no explicit commit call is needed)
 - Pydantic `model_validate(dict)` — this is the correct Pydantic v2 API for converting
   a plain dict to a model instance
+- Pydantic strict-mode false alarms — do NOT flag `model_validate({..., "field": native_obj})`
+  when `native_obj` matches the field type (e.g. `datetime` for `datetime`, `UUID` for `UUID`).
+  Strict mode forbids loose coercion (str→int, str→datetime), not native Python types in dict
+  input. Only flag Pydantic validation issues if you can point to a concrete runtime failure;
+  never suggest NEEDS CHANGES based on strict-mode theory alone
+- Inconsistent wire-format vs native types across tests (e.g. `.isoformat()` in one
+  `model_validate` call, native `datetime` in another) — both are valid unless a test
+  proves otherwise; do not request standardization for style
 
 Output format:
 - Start with one line: `**Verdict:** APPROVE | NEEDS CHANGES | BLOCKING ISSUE`

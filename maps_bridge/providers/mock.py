@@ -23,8 +23,9 @@ _PLACES: dict[str, PlaceDetails] = _load_fixtures()
 class MockMapsProvider:
     async def search_places(self, query: str, limit: int) -> list[PlaceSearchResult]:
         q = query.lower()
+        search_fields = set(PlaceSearchResult.model_fields)
         matches = [
-            PlaceSearchResult.model_validate(p.model_dump())
+            PlaceSearchResult.model_validate(p.model_dump(include=search_fields))
             for p in _PLACES.values()
             if q in p.name.lower() or q in p.category.lower()
         ]
