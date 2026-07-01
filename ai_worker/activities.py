@@ -19,13 +19,14 @@ from temporalio.common import RetryPolicy
 from ai_worker.dspy_engine import generate_email, qualify_lead
 from ai_worker.llm_router import get_lm
 from ai_worker.observability import activity_span
-from shared.schemas import GeneratedEmail, PlaceDetails, PlaceSearchResult, QualifierVerdict
+from shared.schemas import GeneratedEmail, Lead, PlaceDetails, PlaceSearchResult, QualifierVerdict
 
 # ── Timeout defaults — referenced by workflows when scheduling ─────────────────
 SEARCH_TIMEOUT = timedelta(seconds=60)
 GET_DETAILS_TIMEOUT = timedelta(seconds=30)
 QUALIFY_TIMEOUT = timedelta(seconds=30)
 EMAIL_TIMEOUT = timedelta(seconds=60)
+PERSIST_TIMEOUT = timedelta(seconds=30)
 
 # ── Retry policies ─────────────────────────────────────────────────────────────
 # ValidationError means bad data — retrying the same call won't help.
@@ -50,6 +51,7 @@ EMAIL_RETRY = RetryPolicy(
     maximum_attempts=3,
     non_retryable_error_types=_NON_RETRYABLE,
 )
+PERSIST_RETRY = RetryPolicy(maximum_attempts=5, non_retryable_error_types=[])
 
 # ── MCP server parameters ──────────────────────────────────────────────────────
 _MAPS_SERVER = StdioServerParameters(
@@ -132,3 +134,33 @@ async def generate_email_activity(
             sender_context=sender_context,
             lm=get_lm("email"),
         )
+
+
+@activity.defn
+async def persist_phase_result_activity(
+    run_id: str,
+    status: str,
+    scraped: int,
+    qualified: int,
+    emails_generated: int,
+    leads: list[Lead],
+) -> None:
+    """Write phase results to the DB so the status endpoint can serve partial data.
+
+    Called by the workflow at two points:
+      1. After the qualify phase (status='generating', leads=qualify_leads)
+      2. After the email phase   (status='completed',  leads=all_leads)
+    """
+    from ai_worker.db import RunRow, session_factory
+
+    leads_json = json.dumps([json.loads(lead.model_dump_json()) for lead in leads])
+    async with session_factory()() as db:
+        row: RunRow | None = await db.get(RunRow, run_id)
+        if row is None:
+            return
+        row.status = status
+        row.scraped = scraped
+        row.qualified = qualified
+        row.emails_generated = emails_generated
+        row.leads_json = leads_json
+        await db.commit()

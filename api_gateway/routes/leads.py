@@ -6,13 +6,11 @@ Flow:
   3. Start LeadGenerationWorkflow on Temporal (fire-and-forget).
   4. Return {workflow_id, run_id}.
 
-The caller polls a separate endpoint for progress; this endpoint returns
-immediately — it does NOT wait for workflow completion.
+The caller polls /api/leads/status/{id}; this endpoint returns immediately.
 """
 
 from __future__ import annotations
 
-import os
 import uuid
 from typing import Annotated
 
@@ -21,9 +19,9 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 from temporalio.client import Client
-from temporalio.contrib.pydantic import pydantic_data_converter
 
 from api_gateway.db import RunRow, get_session
+from api_gateway.temporal import get_temporal_client
 
 router = APIRouter(prefix="/api/leads")
 
@@ -63,20 +61,6 @@ def translate_prompt(prompt: str) -> str:
     with dspy.context(lm=_get_lm()):
         result = _prompt_to_query(prompt=prompt)
     return str(result.target_query).strip()
-
-
-# ── Temporal client (lazy, one per process) ───────────────────────────────────
-
-_temporal_client: Client | None = None
-
-
-async def get_temporal_client() -> Client:
-    """FastAPI dependency — returns a shared Temporal client (lazy init)."""
-    global _temporal_client
-    if _temporal_client is None:
-        address = os.environ.get("TEMPORAL_ADDRESS", "localhost:7233")
-        _temporal_client = await Client.connect(address, data_converter=pydantic_data_converter)
-    return _temporal_client
 
 
 # ── Request / Response schemas ────────────────────────────────────────────────

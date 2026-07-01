@@ -15,7 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from api_gateway.db import get_session
 from api_gateway.main import app
-from api_gateway.routes.leads import get_temporal_client
+from api_gateway.temporal import get_temporal_client
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 

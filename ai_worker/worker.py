@@ -11,6 +11,7 @@ from temporalio.worker import Worker
 from ai_worker.activities import (
     generate_email_activity,
     get_place_details_activity,
+    persist_phase_result_activity,
     qualify_lead_activity,
     search_places_activity,
 )
@@ -37,6 +38,7 @@ async def main() -> None:
             get_place_details_activity,
             qualify_lead_activity,
             generate_email_activity,
+            persist_phase_result_activity,
         ],
     ):
         await asyncio.Event().wait()

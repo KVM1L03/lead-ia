@@ -33,12 +33,15 @@ with workflow.unsafe.imports_passed_through():
         EMAIL_TIMEOUT,
         GET_DETAILS_RETRY,
         GET_DETAILS_TIMEOUT,
+        PERSIST_RETRY,
+        PERSIST_TIMEOUT,
         QUALIFY_RETRY,
         QUALIFY_TIMEOUT,
         SEARCH_RETRY,
         SEARCH_TIMEOUT,
         generate_email_activity,
         get_place_details_activity,
+        persist_phase_result_activity,
         qualify_lead_activity,
         search_places_activity,
     )
@@ -139,6 +142,20 @@ class LeadGenerationWorkflow:
             for lead in qualify_leads
             if lead.verdict is not None and lead.verdict.is_qualified
         ]
+        # Persist partial results so status endpoint can serve them immediately
+        await workflow.execute_activity(
+            persist_phase_result_activity,
+            args=[
+                workflow.info().workflow_id,
+                "generating",
+                len(places),
+                len(qualified_pairs),
+                0,
+                qualify_leads,
+            ],
+            start_to_close_timeout=PERSIST_TIMEOUT,
+            retry_policy=PERSIST_RETRY,
+        )
         self._progress = WorkflowProgress(
             stage="generating",
             total=len(places),
@@ -170,6 +187,20 @@ class LeadGenerationWorkflow:
         ]
         all_leads: list[Lead] = unqualified + email_leads
 
+        # Persist final results before completing
+        await workflow.execute_activity(
+            persist_phase_result_activity,
+            args=[
+                workflow.info().workflow_id,
+                "completed",
+                len(places),
+                len(qualified_pairs),
+                emailed,
+                all_leads,
+            ],
+            start_to_close_timeout=PERSIST_TIMEOUT,
+            retry_policy=PERSIST_RETRY,
+        )
         self._progress = WorkflowProgress(
             stage="completed",
             total=len(places),

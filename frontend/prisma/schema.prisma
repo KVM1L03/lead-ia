@@ -12,16 +12,20 @@ datasource db {
   schemas  = ["app"]
 }
 
-// Mirrors api_gateway/db.py RunRow — SQLAlchemy owns the DDL.
+// Mirrors shared/db.py RunRow — SQLAlchemy owns the DDL.
 // Keep columns in sync manually when the SQLAlchemy model changes.
 model Run {
-  id             String   @id @db.VarChar(36)
-  prompt         String
-  target_query   String
-  limit          Int
-  sender_context String   @default("")
-  status         String   @db.VarChar(32)
-  created_at     DateTime
+  id               String   @id @db.VarChar(36)
+  prompt           String
+  target_query     String
+  limit            Int
+  sender_context   String   @default("")
+  status           String   @db.VarChar(32)
+  created_at       DateTime
+  scraped          Int      @default(0)
+  qualified        Int      @default(0)
+  emails_generated Int      @default(0)
+  leads_json       String?
 
   @@map("runs")
   @@schema("app")

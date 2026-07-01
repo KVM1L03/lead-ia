@@ -28,6 +28,7 @@ from ai_worker.workflows import (
 )
 from shared.schemas import (
     GeneratedEmail,
+    Lead,
     PlaceDetails,
     PlaceSearchResult,
     QualifierVerdict,
@@ -141,7 +142,18 @@ def _make_mocks(
             email_called_tracker.append(1)
         return _EMAIL
 
-    return [mock_search, mock_details, mock_qualify, mock_email]
+    @activity.defn(name="persist_phase_result_activity")
+    async def mock_persist(
+        run_id: str,
+        status: str,
+        scraped: int,
+        qualified: int,
+        emails_generated: int,
+        leads: list[Lead],
+    ) -> None:
+        pass  # no-op in tests — DB not available
+
+    return [mock_search, mock_details, mock_qualify, mock_email, mock_persist]
 
 
 # ── Tests ──────────────────────────────────────────────────────────────────────
@@ -305,6 +317,17 @@ async def test_max_concurrency_respected(env: WorkflowEnvironment) -> None:
     ) -> GeneratedEmail:
         return _EMAIL
 
+    @activity.defn(name="persist_phase_result_activity")
+    async def _persist(
+        run_id: str,
+        status: str,
+        scraped: int,
+        qualified: int,
+        emails_generated: int,
+        leads: list[Lead],
+    ) -> None:
+        pass
+
     low_concurrency = LeadGenInput(
         prompt="test",
         target_query="test",
@@ -317,7 +340,7 @@ async def test_max_concurrency_respected(env: WorkflowEnvironment) -> None:
         task_queue="test-leads",
         workflows=[LeadGenerationWorkflow],
         workflow_runner=SANDBOXED_RUNNER,
-        activities=[_search, _details, _qualify, _email],
+        activities=[_search, _details, _qualify, _email, _persist],
     ):
         await env.client.execute_workflow(
             LeadGenerationWorkflow.run,
