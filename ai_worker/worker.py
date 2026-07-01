@@ -14,6 +14,7 @@ from ai_worker.activities import (
     qualify_lead_activity,
     search_places_activity,
 )
+from ai_worker.observability import setup_telemetry
 from ai_worker.workflows import SANDBOXED_RUNNER, LeadGenerationWorkflow
 
 TASK_QUEUE = "leads"
@@ -22,6 +23,7 @@ logger = logging.getLogger(__name__)
 
 
 async def main() -> None:
+    setup_telemetry()
     address = os.getenv("TEMPORAL_ADDRESS", "localhost:7233")
     client = await Client.connect(address, data_converter=pydantic_data_converter)
     logger.info("connected to temporal")

@@ -18,6 +18,7 @@ from temporalio.common import RetryPolicy
 
 from ai_worker.dspy_engine import generate_email, qualify_lead
 from ai_worker.llm_router import get_lm
+from ai_worker.observability import activity_span
 from shared.schemas import GeneratedEmail, PlaceDetails, PlaceSearchResult, QualifierVerdict
 
 # ── Timeout defaults — referenced by workflows when scheduling ─────────────────
@@ -92,19 +93,25 @@ async def _call_get_place_details(place_id: str) -> PlaceDetails:
 @activity.defn
 async def search_places_activity(query: str, limit: int) -> list[PlaceSearchResult]:
     """Call maps_bridge MCP server to search Google Places."""
-    return await _call_search_places(query, limit)
+    info = activity.info()
+    with activity_span("search_places", workflow_id=info.workflow_id or ""):
+        return await _call_search_places(query, limit)
 
 
 @activity.defn
 async def get_place_details_activity(place_id: str) -> PlaceDetails:
     """Fetch full place details from maps_bridge MCP server."""
-    return await _call_get_place_details(place_id)
+    info = activity.info()
+    with activity_span("get_place_details", workflow_id=info.workflow_id or "", lead_id=place_id):
+        return await _call_get_place_details(place_id)
 
 
 @activity.defn
 async def qualify_lead_activity(outreach_goal: str, place: PlaceDetails) -> QualifierVerdict:
     """Run the DSPy qualifier for one place; raises on validation or LLM error."""
-    return await asyncio.to_thread(qualify_lead, outreach_goal, place, lm=get_lm("qualifier"))
+    info = activity.info()
+    with activity_span("qualify_lead", workflow_id=info.workflow_id or "", lead_id=place.id):
+        return await asyncio.to_thread(qualify_lead, outreach_goal, place, lm=get_lm("qualifier"))
 
 
 @activity.defn
@@ -115,11 +122,13 @@ async def generate_email_activity(
     sender_context: str,
 ) -> GeneratedEmail:
     """Draft a personalised cold-outreach email for a qualified lead."""
-    return await asyncio.to_thread(
-        generate_email,
-        outreach_goal,
-        place,
-        qualifier_reasoning=verdict.reasoning,
-        sender_context=sender_context,
-        lm=get_lm("email"),
-    )
+    info = activity.info()
+    with activity_span("generate_email", workflow_id=info.workflow_id or "", lead_id=place.id):
+        return await asyncio.to_thread(
+            generate_email,
+            outreach_goal,
+            place,
+            qualifier_reasoning=verdict.reasoning,
+            sender_context=sender_context,
+            lm=get_lm("email"),
+        )
