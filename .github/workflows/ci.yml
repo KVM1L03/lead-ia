@@ -80,6 +80,8 @@ jobs:
 
       - name: Prisma generate (validates schema)
         run: npx prisma generate
+        env:
+          APP_DATABASE_URL: postgresql://dummy:dummy@localhost:5432/dummy
 
   # ──────────────────────────────────────────────────────────────
   # Eval suite — runs only when explicitly labeled (cost control)

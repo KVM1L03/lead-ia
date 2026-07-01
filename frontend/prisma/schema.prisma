@@ -1,8 +1,6 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client"
   output   = "../app/generated/prisma"
@@ -10,4 +8,21 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+  url      = env("APP_DATABASE_URL")
+  schemas  = ["app"]
+}
+
+// Mirrors api_gateway/db.py RunRow — SQLAlchemy owns the DDL.
+// Keep columns in sync manually when the SQLAlchemy model changes.
+model Run {
+  id             String   @id @db.VarChar(36)
+  prompt         String
+  target_query   String
+  limit          Int
+  sender_context String   @default("")
+  status         String   @db.VarChar(32)
+  created_at     DateTime
+
+  @@map("runs")
+  @@schema("app")
 }
