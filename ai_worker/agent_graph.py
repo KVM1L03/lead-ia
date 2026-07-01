@@ -10,14 +10,14 @@ via get_lm() at invocation time so importing this module makes no API calls.
 from typing import Any
 
 from langgraph.graph import END, START, StateGraph
-
-# END is Any (langgraph has no stubs); alias to str so _route stays typed.
-_END: str = END
 from typing_extensions import TypedDict
 
 from ai_worker.dspy_engine import generate_email, qualify_lead
 from ai_worker.llm_router import get_lm
 from shared.schemas import GeneratedEmail, Lead, PlaceDetails, QualifierVerdict
+
+# END is Any (langgraph has no stubs); alias to str so _route stays typed.
+_END: str = END
 
 
 class LeadProcessingState(TypedDict):
