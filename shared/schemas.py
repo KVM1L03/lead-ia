@@ -54,6 +54,7 @@ class Lead(BaseModel):
     verdict: QualifierVerdict | None = None
     email: GeneratedEmail | None = None
     decision: Literal["pending", "approved", "rejected"] = "pending"
+    decided_at: datetime | None = None
     error: str | None = None
 
 

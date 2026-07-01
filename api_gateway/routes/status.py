@@ -17,17 +17,18 @@ Response shape:
 
 from __future__ import annotations
 
-import json
 from typing import Annotated, Literal, cast
 
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, TypeAdapter
 from sqlalchemy.ext.asyncio import AsyncSession
 from temporalio.client import Client
 
 from api_gateway.db import RunRow, get_session
 from api_gateway.temporal import get_temporal_client
 from shared.schemas import Lead
+
+_leads_ta: TypeAdapter[list[Lead]] = TypeAdapter(list[Lead])
 
 router = APIRouter(prefix="/api/leads")
 
@@ -96,7 +97,7 @@ async def get_status(
     # 3. Leads from DB (populated by persist_phase_result_activity) ─────────────
     leads: list[Lead] = []
     if row.leads_json:
-        leads = [Lead.model_validate(item) for item in json.loads(row.leads_json)]
+        leads = _leads_ta.validate_json(row.leads_json)
 
     return StatusResponse(
         status=cast(Literal["scraping", "qualifying", "generating", "completed", "failed"], stage),
