@@ -17,7 +17,7 @@ import uuid
 from typing import Annotated
 
 import dspy
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 from temporalio.client import Client
@@ -121,16 +121,21 @@ async def search_leads(
     session.add(row)
     await session.commit()
 
-    await temporal.start_workflow(
-        LeadGenerationWorkflow.run,
-        LeadGenInput(
-            prompt=body.prompt,
-            target_query=target_query,
-            limit=body.limit,
-            sender_context=body.sender_context,
-        ),
-        id=run_id,
-        task_queue=_TASK_QUEUE,
-    )
+    try:
+        await temporal.start_workflow(
+            LeadGenerationWorkflow.run,
+            LeadGenInput(
+                prompt=body.prompt,
+                target_query=target_query,
+                limit=body.limit,
+                sender_context=body.sender_context,
+            ),
+            id=run_id,
+            task_queue=_TASK_QUEUE,
+        )
+    except Exception as exc:
+        row.status = "failed"
+        await session.commit()
+        raise HTTPException(status_code=503, detail="Workflow service unavailable") from exc
 
     return SearchResponse(workflow_id=run_id, run_id=run_id)

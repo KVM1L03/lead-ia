@@ -139,3 +139,30 @@ async def test_temporal_receives_correct_input(
     lead_gen_input = call_kwargs.args[1]  # second positional arg is LeadGenInput
     assert lead_gen_input.target_query == "dental clinic Warsaw"
     assert lead_gen_input.limit == 50
+
+
+@pytest.mark.asyncio
+async def test_temporal_failure_marks_run_failed_and_returns_503(
+    http: AsyncClient,
+    mock_temporal: AsyncMock,
+    mock_session: AsyncMock,
+) -> None:
+    """If start_workflow raises, the Run row is marked 'failed' and the
+    caller receives 503 — not a stale 'scraping' row that blocks polling."""
+    mock_temporal.start_workflow.side_effect = RuntimeError("Temporal unavailable")
+
+    with patch(
+        "api_gateway.routes.leads.translate_prompt",
+        return_value="dental clinic Warsaw",
+    ):
+        resp = await http.post(
+            "/api/leads/search",
+            json={"prompt": "dental clinics warsaw", "limit": 20, "sender_context": ""},
+        )
+
+    assert resp.status_code == 503
+    # DB row was added, then its status was updated to 'failed'
+    mock_session.add.assert_called_once()
+    assert mock_session.commit.await_count == 2  # first commit (insert) + second (update)
+    added_row = mock_session.add.call_args.args[0]
+    assert added_row.status == "failed"
