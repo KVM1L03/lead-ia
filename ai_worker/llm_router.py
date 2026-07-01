@@ -60,7 +60,11 @@ def _log_fallback(from_model: str, to_model: str, exc: Exception) -> None:
 
 
 class _FallbackLM:
-    """Wraps a chain of dspy.LM instances; tries each on retryable failure."""
+    """Wraps a chain of dspy.LM instances; tries each on retryable failure.
+
+    ``Any`` in history / __call__ mirrors the untyped dspy.LM interface — dspy
+    has no stubs, so strict typing stops at the boundary (# type: ignore[attr-defined]).
+    """
 
     def __init__(
         self,
