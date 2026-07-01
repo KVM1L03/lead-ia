@@ -114,7 +114,7 @@ Use `mock` providers locally when you don't need real API spend. Switch to live 
 
 - **Backend unit/integration:** `tests/` — run with `uv run pytest` or `make test`. CI sets `MAPS_PROVIDER=mock` and `LLM_PROVIDER=mock` — no real API calls.
 - **Frontend unit:** `frontend/` — vitest, run via `make test` or `cd frontend && npm test -- --run`.
-- **New logic needs tests.** If you add a function with branching, side effects, or parsing, add a pytest or vitest case. LLM review will flag missing coverage.
+- **New logic needs tests.** If you add a function with branching, side effects, or parsing, add a pytest or vitest case. CI pytest covers this; LLM review does not check test coverage.
 - **Evals (optional, costs money):** `make eval` locally, or add label `run-evals` on a PR to trigger the `evals` CI job. Only run when changing DSPy signatures or prompt behavior — not on every PR.
 - **Manual smoke:** describe what you clicked/ran in the PR template. Required for UI or end-to-end flow changes.
 
@@ -151,7 +151,7 @@ Use `mock` providers locally when you don't need real API spend. Switch to live 
 ### General
 
 - **Plan before writing code** for any change touching >1 file. Use plan mode (`Shift+Tab` twice in Claude Code).
-- **PR size:** aim for ≤200–400 LOC per PR. Hard limit: automated LLM review skips diffs >800 lines — split before you hit that ceiling.
+- **PR size:** aim for ≤200–400 LOC per PR. Hard limit: automated LLM review skips backend diffs >400 lines — split before you hit that ceiling.
 - **Run `make lint` and `make test` before saying "done".** "Done" = lint clean + tests green + the new behavior demonstrated.
 - **Fill the PR template** (`.github/pull_request_template.md`): one-sentence summary, invariants checked, verification checklist.
 - **Never commit secrets.** `.env` is git-ignored; use `.env.example` for shape.
@@ -184,7 +184,7 @@ gh pr create --base main   # or via GitHub UI
 | **LLM diff review** | same | Claude Haiku reviews the diff, posts a comment on the PR |
 | **CI `evals`** | same, only if PR has label `run-evals` | promptfoo evals (~$0.10, real Anthropic API) |
 
-New commits on the PR re-trigger CI and LLM review (previous runs are cancelled).
+New commits on the PR re-trigger CI (previous runs are cancelled). LLM review runs only on PR open/reopen, not on every push.
 
 ### Merge requirements
 
@@ -198,11 +198,12 @@ Configured in GitHub branch protection — see `docs/branch-protection.md`:
 
 ### LLM review behavior
 
+- Runs on PR **open/reopen** only (not every push). Backend paths only (`ai_worker/`, `api_gateway/`, `maps_bridge/`, `shared/`); test files excluded from diff.
 - Reviews **diff only** (not full files), using `.github/prompts/llm-review-prompt.txt`.
 - Skips lockfiles, migrations, snapshots, generated code.
 - Posts a comment with verdict: `APPROVE | NEEDS CHANGES | BLOCKING ISSUE`.
 - If verdict is `BLOCKING ISSUE` or findings look real: fix before merge, don't ignore.
-- If diff >800 lines: review is skipped with a comment — split the PR.
+- If backend diff >400 lines: review is skipped with a comment — split the PR.
 
 ### Optional: run evals on a PR
 

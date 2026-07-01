@@ -2,7 +2,12 @@ name: LLM Diff Review
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened]
+    types: [opened, reopened]
+    paths:
+      - 'ai_worker/**'
+      - 'api_gateway/**'
+      - 'maps_bridge/**'
+      - 'shared/**'
 
 # Only one review per PR at a time
 concurrency:
@@ -24,26 +29,31 @@ jobs:
       - name: Compute diff
         id: diff
         run: |
-          # Diff only — never send full files (token control)
-          # Skip lockfiles, generated code, snapshots
+          # Diff only backend production paths — never send full files or tests (token control)
           git diff origin/${{ github.base_ref }}...HEAD \
-            -- . \
+            -- ai_worker/ api_gateway/ maps_bridge/ shared/ \
             ':!*.lock' ':!uv.lock' ':!package-lock.json' \
             ':!*.snap' ':!**/migrations/**' ':!**/__generated__/**' \
+            ':!**/tests/**' ':!**/test_*.py' \
             > /tmp/diff.patch || true
 
           LINES=$(wc -l < /tmp/diff.patch)
           echo "diff_lines=$LINES" >> $GITHUB_OUTPUT
 
-          # Hard ceiling: 800 lines of diff. Bigger = skip with a note.
-          if [ "$LINES" -gt 800 ]; then
+          # Skip empty diff (e.g. backend PR with only test file changes)
+          if [ "$LINES" -eq 0 ]; then
             echo "skip=true" >> $GITHUB_OUTPUT
+            echo "skip_reason=empty" >> $GITHUB_OUTPUT
+          # Hard ceiling: 400 lines of diff. Bigger = skip with a note.
+          elif [ "$LINES" -gt 400 ]; then
+            echo "skip=true" >> $GITHUB_OUTPUT
+            echo "skip_reason=large" >> $GITHUB_OUTPUT
           else
             echo "skip=false" >> $GITHUB_OUTPUT
           fi
 
       - name: Skip large diff
-        if: steps.diff.outputs.skip == 'true'
+        if: steps.diff.outputs.skip == 'true' && steps.diff.outputs.skip_reason == 'large'
         uses: actions/github-script@v7
         with:
           script: |
@@ -51,7 +61,7 @@ jobs:
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: '🤖 **LLM review skipped** — diff is ${{ steps.diff.outputs.diff_lines }} lines (>800). Split this PR into smaller chunks per CLAUDE.md §5.'
+              body: '🤖 **LLM review skipped** — backend diff is ${{ steps.diff.outputs.diff_lines }} lines (>400). Split this PR into smaller chunks per CLAUDE.md §5.'
             })
 
       - name: Call Claude (Haiku) for review
@@ -69,7 +79,7 @@ jobs:
             --arg diff "$DIFF" \
             '{
               model: $model,
-              max_tokens: 1500,
+              max_tokens: 400,
               messages: [
                 { role: "user", content: ($prompt + $diff + "\n```") }
               ]
@@ -98,5 +108,5 @@ jobs:
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: `🤖 **Claude Haiku review** _(diff-only, ~${{ steps.diff.outputs.diff_lines }} lines)_\n\n${body}\n\n---\n_Not a replacement for human review. Just a fast first pass._`
+              body: `🤖 **Claude Haiku review** _(backend diff-only, ~${{ steps.diff.outputs.diff_lines }} lines)_\n\n${body}\n\n---\n_Advisory only — not a merge gate. Re-runs on PR open/reopen, not on every push._`
             });
