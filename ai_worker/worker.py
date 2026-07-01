@@ -5,13 +5,16 @@ import logging
 import os
 
 from temporalio.client import Client
+from temporalio.contrib.pydantic import pydantic_data_converter
 from temporalio.worker import Worker
 
 from ai_worker.activities import (
     generate_email_activity,
+    get_place_details_activity,
     qualify_lead_activity,
     search_places_activity,
 )
+from ai_worker.workflows import SANDBOXED_RUNNER, LeadGenerationWorkflow
 
 TASK_QUEUE = "leads"
 
@@ -20,14 +23,16 @@ logger = logging.getLogger(__name__)
 
 async def main() -> None:
     address = os.getenv("TEMPORAL_ADDRESS", "localhost:7233")
-    client = await Client.connect(address)
+    client = await Client.connect(address, data_converter=pydantic_data_converter)
     logger.info("connected to temporal")
     async with Worker(
         client,
         task_queue=TASK_QUEUE,
-        workflows=[],
+        workflows=[LeadGenerationWorkflow],
+        workflow_runner=SANDBOXED_RUNNER,
         activities=[
             search_places_activity,
+            get_place_details_activity,
             qualify_lead_activity,
             generate_email_activity,
         ],

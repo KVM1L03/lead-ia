@@ -22,6 +22,7 @@ from shared.schemas import GeneratedEmail, PlaceDetails, PlaceSearchResult, Qual
 
 # ── Timeout defaults — referenced by workflows when scheduling ─────────────────
 SEARCH_TIMEOUT = timedelta(seconds=60)
+GET_DETAILS_TIMEOUT = timedelta(seconds=30)
 QUALIFY_TIMEOUT = timedelta(seconds=30)
 EMAIL_TIMEOUT = timedelta(seconds=60)
 
@@ -34,6 +35,10 @@ SEARCH_RETRY = RetryPolicy(
     maximum_attempts=3,
     initial_interval=timedelta(seconds=1),
     backoff_coefficient=2.0,
+    non_retryable_error_types=_NON_RETRYABLE,
+)
+GET_DETAILS_RETRY = RetryPolicy(
+    maximum_attempts=3,
     non_retryable_error_types=_NON_RETRYABLE,
 )
 QUALIFY_RETRY = RetryPolicy(
@@ -67,6 +72,20 @@ async def _call_search_places(query: str, limit: int) -> list[PlaceSearchResult]
     return [PlaceSearchResult.model_validate(item) for item in raw]
 
 
+async def _call_get_place_details(place_id: str) -> PlaceDetails:
+    """Spawn maps_bridge via stdio and call the get_place_details MCP tool."""
+    async with stdio_client(_MAPS_SERVER) as (read, write):
+        async with ClientSession(read, write) as session:
+            await session.initialize()
+            result = await session.call_tool("get_place_details", {"place_id": place_id})
+    if result.isError:
+        raise RuntimeError(f"MCP tool returned an error: {result.content}")
+    text_block = next((c for c in result.content if isinstance(c, TextContent)), None)
+    if text_block is None:
+        raise RuntimeError("MCP get_place_details returned no text content")
+    return PlaceDetails.model_validate_json(text_block.text)
+
+
 # ── Activities ─────────────────────────────────────────────────────────────────
 
 
@@ -74,6 +93,12 @@ async def _call_search_places(query: str, limit: int) -> list[PlaceSearchResult]
 async def search_places_activity(query: str, limit: int) -> list[PlaceSearchResult]:
     """Call maps_bridge MCP server to search Google Places."""
     return await _call_search_places(query, limit)
+
+
+@activity.defn
+async def get_place_details_activity(place_id: str) -> PlaceDetails:
+    """Fetch full place details from maps_bridge MCP server."""
+    return await _call_get_place_details(place_id)
 
 
 @activity.defn
