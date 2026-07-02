@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import { Source_Serif_4, Inter, IBM_Plex_Mono } from "next/font/google";
+import { Toast } from "@base-ui/react/toast";
 import "./globals.css";
 import { Sidebar } from "@/components/Sidebar";
 import { Topbar } from "@/components/Topbar";
+import { ToastRegion } from "@/components/ToastRegion";
 
 const sourceSerif = Source_Serif_4({
   subsets: ["latin"],
@@ -38,11 +40,14 @@ export default function RootLayout({
       className={`${sourceSerif.variable} ${inter.variable} ${ibmPlexMono.variable} h-full`}
     >
       <body className="h-full bg-background text-foreground font-sans antialiased">
-        <Sidebar />
-        <div className="ml-[220px] flex flex-col min-h-screen">
-          <Topbar />
-          <main className="flex-1">{children}</main>
-        </div>
+        <Toast.Provider>
+          <Sidebar />
+          <div className="ml-[220px] flex flex-col min-h-screen">
+            <Topbar />
+            <main className="flex-1">{children}</main>
+          </div>
+          <ToastRegion />
+        </Toast.Provider>
       </body>
     </html>
   );

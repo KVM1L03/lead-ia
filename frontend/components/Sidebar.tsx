@@ -2,43 +2,16 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useSyncExternalStore } from "react";
-
-type Provider = "serpapi" | "mock";
-
-const STORAGE_KEY = "lf_provider";
+import { useProvider, setProvider } from "@/lib/useProvider";
 
 const NAV_LINKS = [
   { href: "/search", label: "New search" },
   { href: "/history", label: "History" },
 ] as const;
 
-function subscribeToProvider(callback: () => void): () => void {
-  window.addEventListener("storage", callback);
-  return () => window.removeEventListener("storage", callback);
-}
-
-function getProviderSnapshot(): Provider {
-  return localStorage.getItem(STORAGE_KEY) === "serpapi" ? "serpapi" : "mock";
-}
-
-function getProviderServerSnapshot(): Provider {
-  return "mock";
-}
-
-function setStoredProvider(next: Provider) {
-  localStorage.setItem(STORAGE_KEY, next);
-  // Notify useSyncExternalStore in this tab (storage events only fire cross-tab natively)
-  window.dispatchEvent(new Event("storage"));
-}
-
 export function Sidebar() {
   const pathname = usePathname();
-  const provider = useSyncExternalStore(
-    subscribeToProvider,
-    getProviderSnapshot,
-    getProviderServerSnapshot,
-  );
+  const provider = useProvider();
 
   function isActive(href: string) {
     return pathname === href || pathname.startsWith(href + "/");
@@ -96,7 +69,7 @@ export function Sidebar() {
             <button
               key={p}
               type="button"
-              onClick={() => setStoredProvider(p)}
+              onClick={() => setProvider(p)}
               className={[
                 "flex-1 py-1.5 transition-colors",
                 provider === p
