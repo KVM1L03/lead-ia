@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { getStatus } from "@/lib/api";
 import type { StatusResponse } from "@/lib/api";
 import {
@@ -148,6 +149,7 @@ function StageRow({
 // ── Main component ─────────────────────────────────────────────────────────────
 
 export function RunProgressView({ runId, initialRun }: Props) {
+  const router = useRouter();
   const [snapshot, setSnapshot] = useState<ProgressSnapshot>(() =>
     toSnapshot(initialRun, true),
   );
@@ -181,6 +183,7 @@ export function RunProgressView({ runId, initialRun }: Props) {
         setSnapshot(next);
         setPollError(false);
         pushEvents(evs);
+        if (next.status === "completed") router.refresh();
       } catch {
         if (!controller.signal.aborted) setPollError(true);
       }
@@ -195,7 +198,7 @@ export function RunProgressView({ runId, initialRun }: Props) {
       controller.abort();
       clearTimeout(timerId);
     };
-  }, [runId, snapshot.status, pushEvents]);
+  }, [runId, snapshot.status, pushEvents, router]);
 
   const stages = computeStages(snapshot.status, snapshot, limit);
   const isComplete = snapshot.status === "completed";
