@@ -179,9 +179,7 @@ def test_qualifier_model_env_var_overrides_primary(monkeypatch: pytest.MonkeyPat
 
     assert built[0] == "openai/gpt-4o"
     assert chain.model == "openai/gpt-4o"
-    # Fallbacks remain unchanged
-    assert built[1] == router._DEFAULTS["qualifier"][1]
-    assert built[2] == router._DEFAULTS["qualifier"][2]
+    assert len(built) == 1
 
 
 def test_email_model_env_var_overrides_primary(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -197,6 +195,25 @@ def test_email_model_env_var_overrides_primary(monkeypatch: pytest.MonkeyPatch) 
 
     assert built[0] == "anthropic/claude-opus-4-8"
     assert chain.model == "anthropic/claude-opus-4-8"
+
+
+def test_build_chain_uses_only_providers_with_configured_keys(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-test")
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
+    monkeypatch.delenv("GOOGLE_API_KEY", raising=False)
+    built: list[str] = []
+
+    def _fake_build(model: str) -> _MockLM:
+        built.append(model)
+        return _MockLM(model)
+
+    monkeypatch.setattr(router, "_get_or_build_lm", _fake_build)
+    _build_chain("qualifier")
+
+    assert built == [router._DEFAULTS["qualifier"][0]]
 
 
 def test_env_var_not_set_uses_default_primary(monkeypatch: pytest.MonkeyPatch) -> None:

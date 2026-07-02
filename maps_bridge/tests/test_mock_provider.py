@@ -32,6 +32,12 @@ async def test_search_is_case_insensitive(provider: MockMapsProvider) -> None:
     assert len(lower) == len(upper) == 10
 
 
+async def test_search_multi_word_query_matches_by_token(provider: MockMapsProvider) -> None:
+    results = await provider.search_places("dental warsaw", 10)
+    warsaw = [r for r in results if "warsaw" in r.id]
+    assert len(warsaw) == 3
+
+
 async def test_get_place_details_valid(provider: MockMapsProvider) -> None:
     results = await provider.search_places("dental", 1)
     assert results

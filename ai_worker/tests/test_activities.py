@@ -238,8 +238,8 @@ def test_activities_importable_without_side_effects() -> None:
 
 def test_timeout_constants_are_set() -> None:
     assert act.SEARCH_TIMEOUT.total_seconds() == 60
-    assert act.QUALIFY_TIMEOUT.total_seconds() == 30
-    assert act.EMAIL_TIMEOUT.total_seconds() == 60
+    assert act.QUALIFY_TIMEOUT.total_seconds() == 90
+    assert act.EMAIL_TIMEOUT.total_seconds() == 120
 
 
 def test_retry_policies_have_non_retryable_validation_error() -> None:

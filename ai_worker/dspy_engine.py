@@ -62,7 +62,7 @@ def qualify_lead(
     outreach_goal: str,
     place: PlaceDetails,
     *,
-    lm: dspy.LM,
+    lm: dspy.BaseLM,
 ) -> QualifierVerdict:
     """Qualify a lead against an outreach goal using DSPy.
 
@@ -88,7 +88,7 @@ def generate_email(
     qualifier_reasoning: str,
     sender_context: str,
     *,
-    lm: dspy.LM,
+    lm: dspy.BaseLM,
 ) -> GeneratedEmail:
     """Generate a personalized cold outreach email for a qualified lead.
 

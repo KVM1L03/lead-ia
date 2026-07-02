@@ -42,4 +42,4 @@ async def get_place_details(place_id: str) -> PlaceDetails:
 
 
 if __name__ == "__main__":
-    mcp.run()
+    mcp.run(show_banner=False)

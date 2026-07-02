@@ -6,13 +6,14 @@ avoid circular imports (activities → workflow would create a cycle).
 
 import asyncio
 import json
+import os
 import sys
 from datetime import timedelta
 from typing import Any
 
 from mcp import ClientSession
 from mcp.client.stdio import StdioServerParameters, stdio_client
-from mcp.types import TextContent
+from mcp.types import CallToolResult, TextContent
 from temporalio import activity
 from temporalio.common import RetryPolicy
 
@@ -24,8 +25,8 @@ from shared.schemas import GeneratedEmail, Lead, PlaceDetails, PlaceSearchResult
 # ── Timeout defaults — referenced by workflows when scheduling ─────────────────
 SEARCH_TIMEOUT = timedelta(seconds=60)
 GET_DETAILS_TIMEOUT = timedelta(seconds=30)
-QUALIFY_TIMEOUT = timedelta(seconds=30)
-EMAIL_TIMEOUT = timedelta(seconds=60)
+QUALIFY_TIMEOUT = timedelta(seconds=90)
+EMAIL_TIMEOUT = timedelta(seconds=120)
 PERSIST_TIMEOUT = timedelta(seconds=30)
 
 # ── Retry policies ─────────────────────────────────────────────────────────────
@@ -54,10 +55,30 @@ EMAIL_RETRY = RetryPolicy(
 PERSIST_RETRY = RetryPolicy(maximum_attempts=5, non_retryable_error_types=[])
 
 # ── MCP server parameters ──────────────────────────────────────────────────────
+_APP_ROOT = os.environ.get("PYTHONPATH", "/app").split(os.pathsep)[0] or "/app"
 _MAPS_SERVER = StdioServerParameters(
     command=sys.executable,
-    args=["maps_bridge/server.py"],
+    args=["-m", "maps_bridge.server"],
+    env={**os.environ, "PYTHONPATH": _APP_ROOT},
+    cwd=_APP_ROOT,
 )
+
+
+def _extract_tool_payload(result: CallToolResult) -> Any:
+    """Parse MCP tool output from TextContent and/or FastMCP structuredContent."""
+    if result.isError:
+        raise RuntimeError(f"MCP tool returned an error: {result.content}")
+
+    text_block = next((c for c in result.content if isinstance(c, TextContent)), None)
+    if text_block is not None:
+        return json.loads(text_block.text)
+
+    structured = result.structuredContent
+    if structured is None:
+        raise RuntimeError("MCP tool returned no content")
+    if isinstance(structured, dict) and "result" in structured:
+        return structured["result"]
+    return structured
 
 
 async def _call_search_places(query: str, limit: int) -> list[PlaceSearchResult]:
@@ -66,12 +87,9 @@ async def _call_search_places(query: str, limit: int) -> list[PlaceSearchResult]
         async with ClientSession(read, write) as session:
             await session.initialize()
             result = await session.call_tool("search_places", {"query": query, "limit": limit})
-    if result.isError:
-        raise RuntimeError(f"MCP tool returned an error: {result.content}")
-    text_block = next((c for c in result.content if isinstance(c, TextContent)), None)
-    if text_block is None:
-        raise RuntimeError("MCP search_places returned no text content")
-    raw: list[Any] = json.loads(text_block.text)
+    raw = _extract_tool_payload(result)
+    if not isinstance(raw, list):
+        raise RuntimeError(f"MCP search_places returned unexpected payload: {type(raw).__name__}")
     return [PlaceSearchResult.model_validate(item) for item in raw]
 
 
@@ -81,12 +99,12 @@ async def _call_get_place_details(place_id: str) -> PlaceDetails:
         async with ClientSession(read, write) as session:
             await session.initialize()
             result = await session.call_tool("get_place_details", {"place_id": place_id})
-    if result.isError:
-        raise RuntimeError(f"MCP tool returned an error: {result.content}")
-    text_block = next((c for c in result.content if isinstance(c, TextContent)), None)
-    if text_block is None:
-        raise RuntimeError("MCP get_place_details returned no text content")
-    return PlaceDetails.model_validate_json(text_block.text)
+    raw = _extract_tool_payload(result)
+    if not isinstance(raw, dict):
+        raise RuntimeError(
+            f"MCP get_place_details returned unexpected payload: {type(raw).__name__}"
+        )
+    return PlaceDetails.model_validate(raw)
 
 
 # ── Activities ─────────────────────────────────────────────────────────────────

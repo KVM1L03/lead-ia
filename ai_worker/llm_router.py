@@ -41,7 +41,8 @@ _DEFAULTS: dict[str, list[str]] = {
     ],
 }
 
-_lock = threading.Lock()
+_lm_cache_lock = threading.Lock()   # guards _lm_cache
+_singleton_lock = threading.Lock()  # guards _singletons (never held while calling _get_or_build_lm)
 _lm_cache: dict[str, dspy.LM] = {}  # model string → dspy.LM singleton
 _singletons: dict[str, "_FallbackLM"] = {}  # role → _FallbackLM singleton
 
@@ -57,10 +58,11 @@ def _log_fallback(from_model: str, to_model: str, exc: Exception) -> None:
     print(json.dumps(record), file=sys.stderr, flush=True)
 
 
-class _FallbackLM:
+class _FallbackLM(dspy.BaseLM):
     """Wraps a chain of dspy.LM instances; tries each on retryable failure.
 
-    ``Any`` in history / __call__ mirrors the untyped dspy.LM interface — dspy
+    Extends dspy.BaseLM so dspy.Predict accepts it via isinstance check.
+    ``Any`` in __call__ mirrors the untyped dspy.LM interface — dspy
     has no stubs, so strict typing stops at the boundary.
     """
 
@@ -71,20 +73,13 @@ class _FallbackLM:
     ) -> None:
         if not chain:
             raise ValueError("chain must contain at least one LM")
+        super().__init__(model=chain[0].model)
         self._chain = chain
         self._retryable = retryable or _DEFAULT_RETRYABLE
 
-    @property
-    def model(self) -> str:
-        return str(self._chain[0].model)
-
-    @property
-    def history(self) -> list[Any]:
-        for lm in self._chain:
-            h: list[Any] = lm.history
-            if h:
-                return h
-        return []
+    def forward(self, prompt: Any = None, messages: Any = None, **kwargs: Any) -> Any:
+        # Required by BaseLM interface; not called — __call__ handles dispatch.
+        raise NotImplementedError  # pragma: no cover
 
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
         for attempt in Retrying(
@@ -112,18 +107,43 @@ def _get_or_build_lm(model: str) -> dspy.LM:
     """Return a dspy.LM for model, building it lazily and caching by model string."""
     if model in _lm_cache:
         return _lm_cache[model]
-    with _lock:
+    with _lm_cache_lock:
         if model not in _lm_cache:
             _lm_cache[model] = dspy.LM(model=model)
         return _lm_cache[model]
 
 
-def _build_chain(role: str) -> "_FallbackLM":
+def _model_provider(model: str) -> str:
+    return model.split("/", 1)[0]
+
+
+def _provider_key_env_names(provider: str) -> tuple[str, ...]:
+    return {
+        "anthropic": ("ANTHROPIC_API_KEY",),
+        "openai": ("OPENAI_API_KEY",),
+        "gemini": ("GEMINI_API_KEY", "GOOGLE_API_KEY"),
+    }.get(provider, ())
+
+
+def _is_model_available(model: str) -> bool:
+    env_names = _provider_key_env_names(_model_provider(model))
+    if not env_names:
+        return True
+    return any(os.environ.get(name) for name in env_names)
+
+
+def _resolve_models(role: str) -> list[str]:
+    """Return the fallback chain, skipping providers with no configured API key."""
     models = _DEFAULTS[role].copy()
     env_override = os.environ.get(f"{role.upper()}_MODEL")
     if env_override:
         models[0] = env_override
-    return _FallbackLM([_get_or_build_lm(m) for m in models])
+    available = [model for model in models if _is_model_available(model)]
+    return available or [models[0]]
+
+
+def _build_chain(role: str) -> "_FallbackLM":
+    return _FallbackLM([_get_or_build_lm(model) for model in _resolve_models(role)])
 
 
 def get_lm(role: _Role) -> "_FallbackLM":
@@ -136,7 +156,10 @@ def get_lm(role: _Role) -> "_FallbackLM":
     """
     if role in _singletons:
         return _singletons[role]
-    with _lock:
+    # Build outside the lock so _build_chain → _get_or_build_lm can acquire
+    # _lm_cache_lock without deadlocking on _singleton_lock.
+    chain = _build_chain(role)
+    with _singleton_lock:
         if role not in _singletons:
-            _singletons[role] = _build_chain(role)
+            _singletons[role] = chain
         return _singletons[role]
