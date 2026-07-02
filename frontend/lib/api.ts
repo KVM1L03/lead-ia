@@ -105,7 +105,14 @@ export async function searchLeads(
 }
 
 export async function getStatus(workflowId: string): Promise<StatusResponse> {
-  return apiFetch<StatusResponse>(`/api/leads/status/${encodeURIComponent(workflowId)}`);
+  const res = await fetch(`/api/leads/status/${encodeURIComponent(workflowId)}`, {
+    cache: "no-store",
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => res.statusText);
+    throw new Error(`${res.status} /api/leads/status: ${text}`);
+  }
+  return res.json() as Promise<StatusResponse>;
 }
 
 export async function approveLeads(
