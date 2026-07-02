@@ -41,7 +41,7 @@ _DEFAULTS: dict[str, list[str]] = {
     ],
 }
 
-_lm_cache_lock = threading.Lock()   # guards _lm_cache
+_lm_cache_lock = threading.Lock()  # guards _lm_cache
 _singleton_lock = threading.Lock()  # guards _singletons (never held while calling _get_or_build_lm)
 _lm_cache: dict[str, dspy.LM] = {}  # model string → dspy.LM singleton
 _singletons: dict[str, "_FallbackLM"] = {}  # role → _FallbackLM singleton
