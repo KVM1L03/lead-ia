@@ -49,6 +49,7 @@ x-backend-env: &backend-env
   LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY:-}
   LANGFUSE_DISABLED: ${LANGFUSE_DISABLED:-}
   MAPS_PROVIDER: ${MAPS_PROVIDER:-mock}
+  MAPS_TRANSPORT: ${MAPS_TRANSPORT:-stdio}
   SERPAPI_API_KEY: ${SERPAPI_API_KEY:-}
 
 services:
@@ -246,9 +247,9 @@ services:
     environment:
       <<: *backend-env
     ports:
-      - "8000:8000"
+      - "${PORT:-8000}:${PORT:-8000}"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:${PORT:-8000}/health"]
       interval: 5s
       timeout: 3s
       retries: 10
