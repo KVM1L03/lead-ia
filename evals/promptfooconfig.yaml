@@ -1,0 +1,89 @@
+description: "Lead qualifier evaluation — 100 hand-labeled examples across 5 outreach goals"
+
+# Wall-clock latency is measured by promptfoo per-request (includes network + model time).
+# The latency assertion below enforces p95 < 5000ms across all providers.
+
+providers:
+  - id: anthropic:messages:claude-haiku-4-5-20251001
+    label: haiku-4-5
+    config:
+      temperature: 0
+      max_tokens: 512
+
+  - id: google:gemini-2.5-flash
+    label: gemini-2.5-flash
+    config:
+      temperature: 0
+      generationConfig:
+        maxOutputTokens: 512
+        # 2.5 Flash counts reasoning tokens against maxOutputTokens; disable for JSON eval.
+        thinkingConfig:
+          thinkingBudget: 0
+
+  - id: openai:gpt-4.1-nano
+    label: gpt-4.1-nano
+    config:
+      temperature: 0
+      max_tokens: 512
+
+prompts:
+  - file://prompts/qualify.txt
+
+tests: file://datasets/qualifier_gold.jsonl
+
+# Applied to every test × every provider
+defaultTest:
+  options:
+    # Haiku often wraps JSON in ```json fences despite the prompt — strip before assertions.
+    transform: |
+      return output.replace(/^```(?:json)?\s*\n?/i, '').replace(/\n?```\s*$/i, '').trim();
+
+  assert:
+    # 1. Output must be parseable JSON
+    - type: is-json
+      label: valid JSON
+
+    # 2. JSON must match QualifierVerdict shape (mirrors shared/schemas.py)
+    - type: javascript
+      label: QualifierVerdict schema
+      value: |
+        try {
+          const r = JSON.parse(output);
+          if (typeof r.is_qualified !== 'boolean') return { pass: false, score: 0, reason: 'is_qualified must be boolean' };
+          if (typeof r.score !== 'number' || r.score < 0 || r.score > 1) return { pass: false, score: 0, reason: 'score must be number 0-1' };
+          if (typeof r.reasoning !== 'string' || r.reasoning.length < 5) return { pass: false, score: 0, reason: 'reasoning must be non-empty string' };
+          if (typeof r.icp_fit !== 'object' || r.icp_fit === null) return { pass: false, score: 0, reason: 'icp_fit must be object' };
+          return { pass: true, score: 1, reason: 'schema valid' };
+        } catch (e) {
+          return { pass: false, score: 0, reason: `JSON parse error: ${e.message}` };
+        }
+
+    # 3. is_qualified must match the hand-labeled expected value
+    - type: javascript
+      label: is_qualified matches label
+      value: |
+        try {
+          const r = JSON.parse(output);
+          const expected = context.vars.expected === 'true';
+          const actual = r.is_qualified;
+          if (actual === expected) {
+            return { pass: true, score: 1, reason: `Correct: is_qualified=${actual}` };
+          }
+          return {
+            pass: false,
+            score: 0,
+            reason: `Expected is_qualified=${expected}, got ${actual} (score=${r.score}). Reasoning: ${r.reasoning}`
+          };
+        } catch (e) {
+          return { pass: false, score: 0, reason: `Could not parse output: ${e.message}` };
+        }
+
+    # 4. Wall-clock latency < 5s per request
+    - type: latency
+      threshold: 5000
+
+# Write JSON results for post-processing by evals/scripts/metrics.py
+outputPath: evals/results/latest.json
+
+# Disable cloud sharing — gold set must not leave local environment
+sharing: false

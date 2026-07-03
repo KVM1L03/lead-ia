@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>LeadForge Qualifier Eval — 2026-07-03T09:53:33Z</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 960px; margin: 40px auto; color: #1a1a1a; }
+  h1 { font-size: 1.4rem; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.9rem; }
+  th, td { border: 1px solid #ddd; padding: 8px 12px; text-align: right; }
+  th { background: #f4f4f4; text-align: center; }
+  td:first-child { text-align: left; }
+  .winner { background: #e8f5e9; }
+</style>
+</head>
+<body>
+<h1>LeadForge Qualifier Eval Results</h1>
+<p>Run: 2026-07-03T09:53:33Z UTC &nbsp;|&nbsp; Dataset: <code>evals/datasets/qualifier_gold.jsonl</code> (100 hand-labeled examples)</p>
+<table>
+  <tr>
+    <th>Provider</th>
+    <th>Accuracy</th>
+    <th>Precision</th>
+    <th>Recall</th>
+    <th>F1</th>
+    <th>Avg Latency</th>
+    <th>p95 Latency</th>
+    <th>Est. Cost</th>
+    <th>Parse Errors</th>
+    <th>N</th>
+  </tr>
+  
+        <tr>
+          <td><strong>gemini-2.5-flash</strong></td>
+          <td>82.0%</td>
+          <td>93.6%</td>
+          <td>74.6%</td>
+          <td>83.0%</td>
+          <td>909 ms</td>
+          <td>1212 ms</td>
+          <td>$0.0000</td>
+          <td>0</td>
+          <td>100</td>
+        </tr>
+        <tr>
+          <td><strong>haiku-4-5</strong></td>
+          <td>77.0%</td>
+          <td>89.1%</td>
+          <td>69.5%</td>
+          <td>78.1%</td>
+          <td>1670 ms</td>
+          <td>2492 ms</td>
+          <td>$0.0946</td>
+          <td>0</td>
+          <td>100</td>
+        </tr>
+        <tr>
+          <td><strong>gpt-4.1-nano</strong></td>
+          <td>42.0%</td>
+          <td>100.0%</td>
+          <td>1.7%</td>
+          <td>3.3%</td>
+          <td>1121 ms</td>
+          <td>1726 ms</td>
+          <td>$0.0070</td>
+          <td>0</td>
+          <td>100</td>
+        </tr>
+</table>
+<p style="font-size:0.8rem;color:#666">
+  Latency = wall-clock per-request (network + model time).<br>
+  Positive class = is_qualified true. Precision/recall computed on the positive class.<br>
+  50 clear positives, 30 hard negatives, 20 ambiguous (labeled) in gold set.
+</p>
+</body>
+</html>

@@ -1,6 +1,6 @@
 export PATH := $(HOME)/.n/bin:$(PATH)
 
-.PHONY: bootstrap install dev dev-api dev-frontend lint format typecheck test db-push frontend up-build up down logs logs-temporal logs-langfuse clean
+.PHONY: bootstrap install dev dev-api dev-frontend lint format typecheck test eval db-push frontend up-build up down logs logs-temporal logs-langfuse clean
 
 bootstrap: install
 	@[ -f .env ] || cp .env.example .env
@@ -35,6 +35,14 @@ typecheck:
 test:
 	uv run pytest
 	cd frontend && node node_modules/.bin/vitest --run
+
+eval:
+	@mkdir -p evals/results
+	@test -f .env || (echo "Missing .env — copy from .env.example" && exit 1)
+	npx promptfoo@0.120.19 eval -c evals/promptfooconfig.yaml --env-file .env --output evals/results/latest.json; \
+	pf_exit=$$?; \
+	uv run python evals/scripts/metrics.py evals/results/latest.json; \
+	exit $$pf_exit
 
 db-push:
 	cd frontend && npx prisma db push --accept-data-loss

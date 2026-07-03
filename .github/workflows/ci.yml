@@ -92,12 +92,31 @@ jobs:
     needs: [python, frontend]
     steps:
       - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
       - uses: astral-sh/setup-uv@v3
-      - run: uv sync --frozen
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Install Python dependencies
+        run: uv sync --frozen
+
       - name: Run Promptfoo evals
-        run: uv run promptfoo eval -c evals/promptfooconfig.yaml
+        run: npx promptfoo@0.120.19 eval -c evals/promptfooconfig.yaml --output evals/results/latest.json
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+
+      - name: Compute metrics (precision/recall/F1 + HTML report)
+        run: uv run python evals/scripts/metrics.py evals/results/latest.json
+
       - name: Upload eval results
         uses: actions/upload-artifact@v4
         with:
