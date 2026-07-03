@@ -20,6 +20,10 @@ from typing import Any
 
 RESULTS_DIR = Path(__file__).parent.parent / "results"
 
+# Google list pricing for gemini-2.5-flash (promptfoo reports $0 for google: provider).
+_GEMINI_FLASH_INPUT_PER_TOKEN = 0.30 / 1_000_000
+_GEMINI_FLASH_OUTPUT_PER_TOKEN = 2.50 / 1_000_000
+
 
 def _extract_results(data: dict[str, Any]) -> list[dict[str, Any]]:
     """Handle both promptfoo v1 and v2 output shapes."""
@@ -41,6 +45,34 @@ def _strip_markdown_fences(output: str) -> str:
         if text.endswith("```"):
             text = text[: text.rfind("```")].strip()
     return text
+
+
+def _is_gemini_provider(provider_info: dict[str, Any]) -> bool:
+    provider_id = str(provider_info.get("id") or "").lower()
+    label = str(provider_info.get("label") or "").lower()
+    return "gemini" in provider_id or "gemini" in label or provider_id.startswith("google:")
+
+
+def _cost_from_tokens(token_usage: dict[str, Any]) -> float:
+    prompt = int(token_usage.get("prompt") or token_usage.get("input") or 0)
+    completion = int(token_usage.get("completion") or token_usage.get("output") or 0)
+    return prompt * _GEMINI_FLASH_INPUT_PER_TOKEN + completion * _GEMINI_FLASH_OUTPUT_PER_TOKEN
+
+
+def _response_cost(provider_info: dict[str, Any], response: dict[str, Any]) -> tuple[float, bool]:
+    """Return (cost_usd, estimated_from_tokens). Promptfoo omits Google provider cost."""
+    reported_raw = response.get("cost")
+    if reported_raw is not None:
+        reported = float(reported_raw)
+        if reported > 0:
+            return reported, False
+    if _is_gemini_provider(provider_info):
+        token_usage = response.get("tokenUsage")
+        if isinstance(token_usage, dict):
+            estimated = _cost_from_tokens(token_usage)
+            if estimated > 0:
+                return estimated, True
+    return float(reported_raw or 0), False
 
 
 def _get_is_qualified(output: str) -> bool | None:
@@ -71,10 +103,21 @@ class ProviderMetrics:
         self.tp = self.fp = self.tn = self.fn = self.parse_failures = 0
         self.latencies: list[float] = []
         self.total_cost: float = 0.0
+        self.cost_estimated: bool = False
 
-    def add(self, expected: bool, actual: bool | None, latency_ms: float, cost: float) -> None:
+    def add(
+        self,
+        expected: bool,
+        actual: bool | None,
+        latency_ms: float,
+        cost: float,
+        *,
+        cost_estimated: bool = False,
+    ) -> None:
         self.latencies.append(latency_ms)
         self.total_cost += cost
+        if cost_estimated:
+            self.cost_estimated = True
         if actual is None:
             self.parse_failures += 1
             if expected:
@@ -138,17 +181,25 @@ def compute_metrics(results: list[dict[str, Any]]) -> dict[str, ProviderMetrics]
         response = row.get("response", {})
         output: str = response.get("output", "") or ""
         latency_ms: float = float(row.get("latencyMs") or response.get("latencyMs") or 0)
-        cost: float = float(response.get("cost") or 0)
+        cost, cost_estimated = _response_cost(provider_info, response)
 
         actual = _get_is_qualified(output)
-        providers[label].add(expected, actual, latency_ms, cost)
+        providers[label].add(expected, actual, latency_ms, cost, cost_estimated=cost_estimated)
 
     return providers
 
 
+def _format_cost(m: ProviderMetrics) -> str:
+    suffix = "‡" if m.cost_estimated else ""
+    return f"${m.total_cost:.4f}{suffix}"
+
+
 def render_html(providers: dict[str, ProviderMetrics], run_ts: str) -> str:
     rows_html = ""
+    any_estimated = False
     for m in sorted(providers.values(), key=lambda x: -x.f1):
+        if m.cost_estimated:
+            any_estimated = True
         rows_html += f"""
         <tr>
           <td><strong>{m.label}</strong></td>
@@ -158,10 +209,17 @@ def render_html(providers: dict[str, ProviderMetrics], run_ts: str) -> str:
           <td>{m.f1:.1%}</td>
           <td>{m.latency_avg:.0f} ms</td>
           <td>{m.latency_p95:.0f} ms</td>
-          <td>${m.total_cost:.4f}</td>
+          <td>{_format_cost(m)}</td>
           <td>{m.parse_failures}</td>
           <td>{m.total}</td>
         </tr>"""
+
+    cost_footnote = ""
+    if any_estimated:
+        cost_footnote = (
+            "<br>‡ Gemini cost estimated from tokenUsage "
+            "($0.30/M input, $2.50/M output) — promptfoo reports $0 for Google."
+        )
 
     return f"""<!DOCTYPE html>
 <html lang="en">
@@ -199,7 +257,7 @@ def render_html(providers: dict[str, ProviderMetrics], run_ts: str) -> str:
 <p style="font-size:0.8rem;color:#666">
   Latency = wall-clock per-request (network + model time).<br>
   Positive class = is_qualified true. Precision/recall computed on the positive class.<br>
-  50 clear positives, 30 hard negatives, 20 ambiguous (labeled) in gold set.
+  50 clear positives, 30 hard negatives, 20 ambiguous (labeled) in gold set.{cost_footnote}
 </p>
 </body>
 </html>"""
@@ -254,7 +312,7 @@ def print_table(providers: dict[str, ProviderMetrics]) -> None:
         print(
             f"{m.label:<30} {m.accuracy:>6.1%} {m.precision:>6.1%} {m.recall:>6.1%} "
             f"{m.f1:>6.1%} {m.latency_avg:>7.0f} {m.latency_p95:>7.0f} "
-            f"${m.total_cost:>7.4f} {m.parse_failures:>5}"
+            f"${m.total_cost:>7.4f}{'‡' if m.cost_estimated else ''} {m.parse_failures:>5}"
         )
     print()
 
