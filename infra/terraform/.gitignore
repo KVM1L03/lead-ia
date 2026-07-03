@@ -1,0 +1,14 @@
+# Terraform state — never commit these
+*.tfstate
+*.tfstate.backup
+
+# Terraform working directory — downloaded providers + modules
+.terraform/
+.terraform.lock.hcl
+
+# Real variable values (contains your GCP project ID)
+terraform.tfvars
+
+# Crash logs
+crash.log
+crash.*.log

@@ -1,0 +1,11 @@
+# Copy this file to terraform.tfvars and fill in your real values.
+# terraform.tfvars is git-ignored — never commit it (it contains your project ID).
+#
+# Usage:
+#   cp terraform.tfvars.example terraform.tfvars
+#   # edit terraform.tfvars
+#   terraform plan
+
+project_id  = "YOUR_GCP_PROJECT_ID"   # e.g. "lead-forge-123456"
+region      = "europe-central2"        # Warsaw; change if you prefer another region
+environment = "demo"                   # used as a label on all GCP resources
