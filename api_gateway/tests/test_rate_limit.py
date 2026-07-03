@@ -95,9 +95,7 @@ async def test_run_limiter_ttl_set_to_end_of_day(fake_redis: Redis[str]) -> None
     ttl = await fake_redis.ttl(f"demo:runs:{today}")
 
     now = datetime.now(UTC)
-    end_of_day = (now + timedelta(days=1)).replace(
-        hour=0, minute=0, second=0, microsecond=0
-    )
+    end_of_day = (now + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
     expected_max = int((end_of_day - now).total_seconds()) + 2
     assert 1 <= ttl <= expected_max
 
@@ -218,9 +216,7 @@ async def test_run_limit_429_json_body(
     http_with_exhausted_run_limit: AsyncClient,
 ) -> None:
     with patch("api_gateway.routes.leads.translate_prompt", return_value="dental"):
-        resp = await http_with_exhausted_run_limit.post(
-            "/api/leads/search", json=_SEARCH_BODY
-        )
+        resp = await http_with_exhausted_run_limit.post("/api/leads/search", json=_SEARCH_BODY)
     assert resp.status_code == 429
     body = resp.json()
     assert body["detail"]["error"] == "demo_run_limit"

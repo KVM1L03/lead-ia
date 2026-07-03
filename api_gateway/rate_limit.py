@@ -71,9 +71,7 @@ class RunLimiter:
         key = f"demo:runs:{today}"
 
         now = datetime.now(UTC)
-        end_of_day = (now + timedelta(days=1)).replace(
-            hour=0, minute=0, second=0, microsecond=0
-        )
+        end_of_day = (now + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
         ttl = int((end_of_day - now).total_seconds()) + 1
 
         async with self._redis.pipeline(transaction=True) as pipe:
