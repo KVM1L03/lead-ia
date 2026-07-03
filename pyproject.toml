@@ -17,6 +17,7 @@ dependencies = [
     "openinference-instrumentation-dspy>=0.1.37",
     "sqlalchemy>=2.0.51",
     "asyncpg>=0.31.0",
+    "redis[hiredis]>=5.0",
 ]
 
 [dependency-groups]
@@ -26,6 +27,7 @@ dev = [
     "pytest",
     "pytest-asyncio",
     "vcrpy",
+    "fakeredis>=2.26",
 ]
 
 [tool.uv]
