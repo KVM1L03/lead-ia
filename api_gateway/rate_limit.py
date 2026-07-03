@@ -24,14 +24,14 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response
 from starlette.types import ASGIApp
 
-from api_gateway.config import settings
+from api_gateway.config import settings as settings  # explicit re-export for mypy
 
 # ── Redis singleton ────────────────────────────────────────────────────────────
 
-_redis: Redis[str] | None = None
+_redis: Redis | None = None
 
 
-def get_redis() -> Redis[str]:
+def get_redis() -> Redis:
     global _redis
     if _redis is None:
         _redis = Redis.from_url(settings.REDIS_URL, decode_responses=True)
@@ -56,7 +56,7 @@ def get_redis() -> Redis[str]:
 class RunLimiter:
     """Global daily cap on workflow runs. Key: demo:runs:{YYYY-MM-DD} (UTC)."""
 
-    def __init__(self, redis: Redis[str], max_runs: int) -> None:
+    def __init__(self, redis: Redis, max_runs: int) -> None:
         self._redis = redis
         self._max_runs = max_runs
 
@@ -88,7 +88,7 @@ class RunLimiter:
 class RequestLimiter:
     """Per-IP fixed-window cap. Key: demo:reqs:{ip}:{YYYY-MM-DDTHH:MM} (UTC)."""
 
-    def __init__(self, redis: Redis[str], max_per_minute: int) -> None:
+    def __init__(self, redis: Redis, max_per_minute: int) -> None:
         self._redis = redis
         self._max_per_minute = max_per_minute
 

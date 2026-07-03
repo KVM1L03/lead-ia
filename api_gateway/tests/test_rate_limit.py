@@ -30,8 +30,8 @@ from api_gateway.temporal import get_temporal_client
 
 
 @pytest.fixture
-async def fake_redis() -> AsyncGenerator[Redis[str], None]:
-    r: Redis[str] = fakeredis.aioredis.FakeRedis(decode_responses=True)
+async def fake_redis() -> AsyncGenerator[Redis, None]:
+    r: Redis = fakeredis.aioredis.FakeRedis(decode_responses=True)
     yield r
     await r.aclose()
 
@@ -64,14 +64,14 @@ _SEARCH_BODY = {
 
 
 @pytest.mark.asyncio
-async def test_run_limiter_allows_up_to_limit(fake_redis: Redis[str]) -> None:
+async def test_run_limiter_allows_up_to_limit(fake_redis: Redis) -> None:
     limiter = RunLimiter(fake_redis, max_runs=20)
     for _ in range(20):
         assert await limiter.check_and_increment() is True
 
 
 @pytest.mark.asyncio
-async def test_run_limiter_blocks_at_limit(fake_redis: Redis[str]) -> None:
+async def test_run_limiter_blocks_at_limit(fake_redis: Redis) -> None:
     limiter = RunLimiter(fake_redis, max_runs=20)
     for _ in range(20):
         await limiter.check_and_increment()
@@ -79,7 +79,7 @@ async def test_run_limiter_blocks_at_limit(fake_redis: Redis[str]) -> None:
 
 
 @pytest.mark.asyncio
-async def test_run_limiter_concurrent_atomicity(fake_redis: Redis[str]) -> None:
+async def test_run_limiter_concurrent_atomicity(fake_redis: Redis) -> None:
     """Lua atomicity: exactly max_runs allowed under concurrent requests."""
     limiter = RunLimiter(fake_redis, max_runs=5)
     results = await asyncio.gather(*[limiter.check_and_increment() for _ in range(10)])
@@ -87,7 +87,7 @@ async def test_run_limiter_concurrent_atomicity(fake_redis: Redis[str]) -> None:
 
 
 @pytest.mark.asyncio
-async def test_run_limiter_ttl_set_to_end_of_day(fake_redis: Redis[str]) -> None:
+async def test_run_limiter_ttl_set_to_end_of_day(fake_redis: Redis) -> None:
     limiter = RunLimiter(fake_redis, max_runs=20)
     await limiter.check_and_increment()
 
@@ -102,7 +102,7 @@ async def test_run_limiter_ttl_set_to_end_of_day(fake_redis: Redis[str]) -> None
 
 @pytest.mark.asyncio
 async def test_run_limiter_ttl_not_reset_on_subsequent_calls(
-    fake_redis: Redis[str],
+    fake_redis: Redis,
 ) -> None:
     """TTL set only on first increment — later calls must not push it past midnight."""
     limiter = RunLimiter(fake_redis, max_runs=20)
@@ -121,14 +121,14 @@ async def test_run_limiter_ttl_not_reset_on_subsequent_calls(
 
 
 @pytest.mark.asyncio
-async def test_request_limiter_allows_up_to_limit(fake_redis: Redis[str]) -> None:
+async def test_request_limiter_allows_up_to_limit(fake_redis: Redis) -> None:
     limiter = RequestLimiter(fake_redis, max_per_minute=30)
     for _ in range(30):
         assert await limiter.check_and_increment("1.2.3.4") is True
 
 
 @pytest.mark.asyncio
-async def test_request_limiter_blocks_at_limit(fake_redis: Redis[str]) -> None:
+async def test_request_limiter_blocks_at_limit(fake_redis: Redis) -> None:
     limiter = RequestLimiter(fake_redis, max_per_minute=30)
     for _ in range(30):
         await limiter.check_and_increment("1.2.3.4")
@@ -137,7 +137,7 @@ async def test_request_limiter_blocks_at_limit(fake_redis: Redis[str]) -> None:
 
 @pytest.mark.asyncio
 async def test_request_limiter_different_ips_independent(
-    fake_redis: Redis[str],
+    fake_redis: Redis,
 ) -> None:
     limiter = RequestLimiter(fake_redis, max_per_minute=2)
     assert await limiter.check_and_increment("1.1.1.1") is True
@@ -156,7 +156,7 @@ async def test_demo_mode_false_no_redis_calls(monkeypatch: pytest.MonkeyPatch) -
 
     redis_called = False
 
-    def _spy() -> Redis[str]:
+    def _spy() -> Redis:
         nonlocal redis_called
         redis_called = True
         raise AssertionError("get_redis() must not be called when DEMO_MODE=false")
@@ -174,7 +174,7 @@ async def test_demo_mode_false_no_redis_calls(monkeypatch: pytest.MonkeyPatch) -
 
 @pytest.fixture
 async def http_with_exhausted_run_limit(
-    fake_redis: Redis[str],
+    fake_redis: Redis,
     mock_session: AsyncMock,
     mock_temporal: AsyncMock,
 ) -> AsyncGenerator[AsyncClient, None]:
@@ -224,7 +224,7 @@ async def test_run_limit_429_json_body(
 
 
 @pytest.mark.asyncio
-async def test_request_limit_429_retry_after(fake_redis: Redis[str]) -> None:
+async def test_request_limit_429_retry_after(fake_redis: Redis) -> None:
     """31st request from same IP within a minute → 429 with Retry-After: 60."""
     # Pre-fill the per-minute counter to 30 for IP "1.2.3.4"
     req_limiter = RequestLimiter(fake_redis, max_per_minute=30)
