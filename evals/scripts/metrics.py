@@ -202,21 +202,43 @@ def append_csv(providers: dict[str, ProviderMetrics], run_ts: str, csv_path: Pat
         writer = csv.writer(f)
         if write_header:
             writer.writerow(
-                ["timestamp", "provider", "n", "accuracy", "precision", "recall", "f1",
-                 "latency_avg_ms", "latency_p95_ms", "cost_usd", "parse_errors"]
+                [
+                    "timestamp",
+                    "provider",
+                    "n",
+                    "accuracy",
+                    "precision",
+                    "recall",
+                    "f1",
+                    "latency_avg_ms",
+                    "latency_p95_ms",
+                    "cost_usd",
+                    "parse_errors",
+                ]
             )
         for m in sorted(providers.values(), key=lambda x: x.label):
-            writer.writerow([
-                run_ts, m.label, m.total,
-                f"{m.accuracy:.4f}", f"{m.precision:.4f}", f"{m.recall:.4f}", f"{m.f1:.4f}",
-                f"{m.latency_avg:.1f}", f"{m.latency_p95:.1f}",
-                f"{m.total_cost:.6f}", m.parse_failures,
-            ])
+            writer.writerow(
+                [
+                    run_ts,
+                    m.label,
+                    m.total,
+                    f"{m.accuracy:.4f}",
+                    f"{m.precision:.4f}",
+                    f"{m.recall:.4f}",
+                    f"{m.f1:.4f}",
+                    f"{m.latency_avg:.1f}",
+                    f"{m.latency_p95:.1f}",
+                    f"{m.total_cost:.6f}",
+                    m.parse_failures,
+                ]
+            )
 
 
 def print_table(providers: dict[str, ProviderMetrics]) -> None:
-    print(f"\n{'Provider':<30} {'Acc':>6} {'Prec':>6} {'Rec':>6} {'F1':>6} "
-          f"{'AvgMs':>7} {'p95Ms':>7} {'Cost':>8} {'Errs':>5}")
+    print(
+        f"\n{'Provider':<30} {'Acc':>6} {'Prec':>6} {'Rec':>6} {'F1':>6} "
+        f"{'AvgMs':>7} {'p95Ms':>7} {'Cost':>8} {'Errs':>5}"
+    )
     print("-" * 90)
     for m in sorted(providers.values(), key=lambda x: -x.f1):
         print(
