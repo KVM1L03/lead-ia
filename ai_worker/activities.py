@@ -54,7 +54,15 @@ EMAIL_RETRY = RetryPolicy(
 )
 PERSIST_RETRY = RetryPolicy(maximum_attempts=5, non_retryable_error_types=[])
 
-# ── MCP server parameters ──────────────────────────────────────────────────────
+# ── Transport selection ────────────────────────────────────────────────────────
+# MAPS_TRANSPORT=stdio  (default): spawn maps_bridge as a subprocess via MCP stdio.
+#   Zero-trust boundary is an OS process boundary — identical to local dev.
+# MAPS_TRANSPORT=inline (Cloud Run): call maps_bridge provider in-process.
+#   Zero-trust boundary becomes a module boundary; SerpAPI imports remain
+#   exclusively in maps_bridge/ — never in ai_worker/ code.
+_MAPS_TRANSPORT: str = os.environ.get("MAPS_TRANSPORT", "stdio")
+
+# ── MCP stdio parameters (used only when MAPS_TRANSPORT=stdio) ─────────────────
 _APP_ROOT = os.environ.get("PYTHONPATH", "/app").split(os.pathsep)[0] or "/app"
 _MAPS_SERVER = StdioServerParameters(
     command=sys.executable,
@@ -81,7 +89,7 @@ def _extract_tool_payload(result: CallToolResult) -> Any:
     return structured
 
 
-async def _call_search_places(query: str, limit: int) -> list[PlaceSearchResult]:
+async def _call_search_places_stdio(query: str, limit: int) -> list[PlaceSearchResult]:
     """Spawn maps_bridge via stdio and call the search_places MCP tool."""
     async with stdio_client(_MAPS_SERVER) as (read, write):
         async with ClientSession(read, write) as session:
@@ -93,7 +101,7 @@ async def _call_search_places(query: str, limit: int) -> list[PlaceSearchResult]
     return [PlaceSearchResult.model_validate(item) for item in raw]
 
 
-async def _call_get_place_details(place_id: str) -> PlaceDetails:
+async def _call_get_place_details_stdio(place_id: str) -> PlaceDetails:
     """Spawn maps_bridge via stdio and call the get_place_details MCP tool."""
     async with stdio_client(_MAPS_SERVER) as (read, write):
         async with ClientSession(read, write) as session:
@@ -105,6 +113,36 @@ async def _call_get_place_details(place_id: str) -> PlaceDetails:
             f"MCP get_place_details returned unexpected payload: {type(raw).__name__}"
         )
     return PlaceDetails.model_validate(raw)
+
+
+async def _call_search_places_inline(query: str, limit: int) -> list[PlaceSearchResult]:
+    """Call maps_bridge provider in-process (Cloud Run inline mode).
+
+    Lazy import keeps maps_bridge.providers.serpapi out of ai_worker's namespace —
+    zero-trust is preserved at module level even when running in the same process.
+    """
+    from maps_bridge.provider_factory import get_provider
+
+    return list(await get_provider().search_places(query, limit))
+
+
+async def _call_get_place_details_inline(place_id: str) -> PlaceDetails:
+    """Call maps_bridge provider in-process (Cloud Run inline mode)."""
+    from maps_bridge.provider_factory import get_provider
+
+    return await get_provider().get_place_details(place_id)
+
+
+async def _call_search_places(query: str, limit: int) -> list[PlaceSearchResult]:
+    if _MAPS_TRANSPORT == "inline":
+        return await _call_search_places_inline(query, limit)
+    return await _call_search_places_stdio(query, limit)
+
+
+async def _call_get_place_details(place_id: str) -> PlaceDetails:
+    if _MAPS_TRANSPORT == "inline":
+        return await _call_get_place_details_inline(place_id)
+    return await _call_get_place_details_stdio(place_id)
 
 
 # ── Activities ─────────────────────────────────────────────────────────────────
