@@ -21,6 +21,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from temporalio.client import Client
 
 from api_gateway.db import RunRow, get_session
+from api_gateway.rate_limit import enforce_run_limit
 from api_gateway.temporal import get_temporal_client
 
 router = APIRouter(prefix="/api/leads")
@@ -85,6 +86,7 @@ class SearchResponse(BaseModel):
 @router.post("/search", response_model=SearchResponse)
 async def search_leads(
     body: SearchRequest,
+    _: Annotated[None, Depends(enforce_run_limit)],  # Layer 1: global daily cap
     session: Annotated[AsyncSession, Depends(get_session)],
     temporal: Annotated[Client, Depends(get_temporal_client)],
 ) -> SearchResponse:
