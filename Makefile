@@ -38,8 +38,11 @@ test:
 
 eval:
 	@mkdir -p evals/results
-	npx promptfoo@0.120.19 eval -c evals/promptfooconfig.yaml --output evals/results/latest.json
-	uv run python evals/scripts/metrics.py evals/results/latest.json
+	@test -f .env || (echo "Missing .env — copy from .env.example" && exit 1)
+	npx promptfoo@0.120.19 eval -c evals/promptfooconfig.yaml --env-file .env --output evals/results/latest.json; \
+	pf_exit=$$?; \
+	uv run python evals/scripts/metrics.py evals/results/latest.json; \
+	exit $$pf_exit
 
 db-push:
 	cd frontend && npx prisma db push --accept-data-loss

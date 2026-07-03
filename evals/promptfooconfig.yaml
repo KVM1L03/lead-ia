@@ -16,6 +16,9 @@ providers:
       temperature: 0
       generationConfig:
         maxOutputTokens: 512
+        # 2.5 Flash counts reasoning tokens against maxOutputTokens; disable for JSON eval.
+        thinkingConfig:
+          thinkingBudget: 0
 
   - id: openai:gpt-4.1-nano
     label: gpt-4.1-nano
@@ -30,6 +33,11 @@ tests: file://datasets/qualifier_gold.jsonl
 
 # Applied to every test × every provider
 defaultTest:
+  options:
+    # Haiku often wraps JSON in ```json fences despite the prompt — strip before assertions.
+    transform: |
+      return output.replace(/^```(?:json)?\s*\n?/i, '').replace(/\n?```\s*$/i, '').trim();
+
   assert:
     # 1. Output must be parseable JSON
     - type: is-json
@@ -56,7 +64,7 @@ defaultTest:
       value: |
         try {
           const r = JSON.parse(output);
-          const expected = vars.expected === 'true';
+          const expected = context.vars.expected === 'true';
           const actual = r.is_qualified;
           if (actual === expected) {
             return { pass: true, score: 1, reason: `Correct: is_qualified=${actual}` };

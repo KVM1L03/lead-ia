@@ -33,10 +33,20 @@ def _extract_results(data: dict[str, Any]) -> list[dict[str, Any]]:
     return rows  # type: ignore[return-value]
 
 
+def _strip_markdown_fences(output: str) -> str:
+    """Remove optional ```json fences (Haiku wraps JSON despite the prompt)."""
+    text = output.strip()
+    if text.startswith("```"):
+        text = text.removeprefix("```json").removeprefix("```").strip()
+        if text.endswith("```"):
+            text = text[: text.rfind("```")].strip()
+    return text
+
+
 def _get_is_qualified(output: str) -> bool | None:
     """Parse LLM output and extract is_qualified. Returns None on parse failure."""
     try:
-        obj = json.loads(output)
+        obj = json.loads(_strip_markdown_fences(output))
         val = obj.get("is_qualified")
         if isinstance(val, bool):
             return val
