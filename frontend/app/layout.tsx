@@ -27,13 +27,19 @@ const ibmPlexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "LeadForge",
+  title: "LeadIA",
   description: "AI-powered B2B lead generation pipeline",
+  icons: {
+    icon: "/leadia-logo.png",
+    apple: "/leadia-logo.png",
+  },
 };
 
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  const demoMode = process.env.EXECUTION_MODE === "sync";
+
   return (
     <html
       lang="en"
@@ -41,9 +47,9 @@ export default function RootLayout({
     >
       <body className="h-full bg-background text-foreground font-sans antialiased">
         <Toast.Provider>
-          <Sidebar />
+          <Sidebar demoMode={demoMode} />
           <div className="ml-[220px] flex flex-col min-h-screen">
-            <Topbar />
+            <Topbar demoMode={demoMode} />
             <main className="flex-1">{children}</main>
           </div>
           <ToastRegion />

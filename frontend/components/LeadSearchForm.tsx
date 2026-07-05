@@ -11,13 +11,16 @@ import { LeadCohortTable } from "./LeadCohortTable";
 import { SyncProgressOverlay } from "./SyncProgressOverlay";
 
 const LIMIT_MIN = 10;
-const LIMIT_MAX = 200;
+const LIMIT_MAX_FULL = 200;
+const LIMIT_MAX_DEMO = 20;
 const LIMIT_DEFAULT = 50;
+const LIMIT_DEFAULT_DEMO = 10;
 
-export function LeadSearchForm() {
+export function LeadSearchForm({ demoMode = false }: { demoMode?: boolean }) {
   const [prompt, setPrompt] = useState("");
   const [senderContext, setSenderContext] = useState("");
-  const [limit, setLimit] = useState(LIMIT_DEFAULT);
+  const limitMax = demoMode ? LIMIT_MAX_DEMO : LIMIT_MAX_FULL;
+  const [limit, setLimit] = useState(demoMode ? LIMIT_DEFAULT_DEMO : LIMIT_DEFAULT);
   const [isPending, startTransition] = useTransition();
   const [syncResults, setSyncResults] = useState<{ runId: string; leads: Lead[] } | null>(null);
   const [pendingPrompt, setPendingPrompt] = useState("");
@@ -171,8 +174,8 @@ export function LeadSearchForm() {
             <input
               type="range"
               min={LIMIT_MIN}
-              max={LIMIT_MAX}
-              step={10}
+              max={limitMax}
+              step={demoMode ? 5 : 10}
               value={limit}
               onChange={(e) => setLimit(Number(e.target.value))}
               disabled={disabled}
@@ -181,34 +184,36 @@ export function LeadSearchForm() {
             />
             <div className="flex justify-between mt-[7px] font-mono text-[10px] text-muted-fg">
               <span>{LIMIT_MIN}</span>
-              <span>{LIMIT_MAX}</span>
+              <span>{limitMax}</span>
             </div>
           </div>
 
-          {/* Provider toggle */}
-          <div>
-            <p className="font-sans font-medium text-[11px] uppercase tracking-[.14em] text-subtle mb-3">
-              Source
-            </p>
-            <div className="inline-flex border border-edge-input rounded-[4px] overflow-hidden text-[11px] font-sans font-medium">
-              {(["serpapi", "mock"] as const).map((p) => (
-                <button
-                  key={p}
-                  type="button"
-                  onClick={() => setProvider(p)}
-                  disabled={disabled}
-                  className={cn(
-                    "px-3 py-1.5 transition-colors",
-                    provider === p
-                      ? "bg-brand text-white"
-                      : "bg-background text-subtle hover:text-fg disabled:opacity-50",
-                  )}
-                >
-                  {p === "serpapi" ? "SerpAPI" : "Mock"}
-                </button>
-              ))}
+          {/* Provider toggle — hidden in demo mode (SerpAPI only) */}
+          {!demoMode && (
+            <div>
+              <p className="font-sans font-medium text-[11px] uppercase tracking-[.14em] text-subtle mb-3">
+                Source
+              </p>
+              <div className="inline-flex border border-edge-input rounded-[4px] overflow-hidden text-[11px] font-sans font-medium">
+                {(["serpapi", "mock"] as const).map((p) => (
+                  <button
+                    key={p}
+                    type="button"
+                    onClick={() => setProvider(p)}
+                    disabled={disabled}
+                    className={cn(
+                      "px-3 py-1.5 transition-colors",
+                      provider === p
+                        ? "bg-brand text-white"
+                        : "bg-background text-subtle hover:text-fg disabled:opacity-50",
+                    )}
+                  >
+                    {p === "serpapi" ? "SerpAPI" : "Mock"}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Submit row */}

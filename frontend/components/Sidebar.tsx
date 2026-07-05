@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useProvider, setProvider } from "@/lib/useProvider";
@@ -9,7 +10,7 @@ const NAV_LINKS = [
   { href: "/history", label: "History" },
 ] as const;
 
-export function Sidebar() {
+export function Sidebar({ demoMode = false }: { demoMode?: boolean }) {
   const pathname = usePathname();
   const provider = useProvider();
 
@@ -22,15 +23,19 @@ export function Sidebar() {
       {/* Brand */}
       <div className="px-6 pt-8 pb-6 border-b border-edge">
         <div className="flex items-center gap-2 mb-1">
-          <span
-            aria-hidden="true"
-            className="w-[9px] h-[9px] rounded-full bg-brand flex-none"
+          <Image
+            src="/leadia-logo.png"
+            alt="LeadIA"
+            width={24}
+            height={24}
+            className="flex-none rounded-sm"
+            priority
           />
           <span className="font-serif font-semibold text-[17px] leading-none text-fg tracking-[-0.01em]">
-            LeadForge
+            LeadIA
           </span>
         </div>
-        <p className="font-mono font-medium text-[9.5px] uppercase tracking-[.18em] text-muted-fg pl-[17px]">
+        <p className="font-mono font-medium text-[9.5px] uppercase tracking-[.18em] text-muted-fg pl-[32px]">
           B2B Lead Engine
         </p>
       </div>
@@ -64,23 +69,27 @@ export function Sidebar() {
         <p className="font-sans font-medium text-[11px] uppercase tracking-[.16em] text-muted-fg mb-3">
           Provider
         </p>
-        <div className="flex rounded-[3px] border border-edge-input overflow-hidden text-[11px] font-sans font-medium">
-          {(["serpapi", "mock"] as const).map((p) => (
-            <button
-              key={p}
-              type="button"
-              onClick={() => setProvider(p)}
-              className={[
-                "flex-1 py-1.5 transition-colors",
-                provider === p
-                  ? "bg-brand text-white"
-                  : "bg-background text-subtle hover:text-fg",
-              ].join(" ")}
-            >
-              {p === "serpapi" ? "SerpAPI" : "Mock"}
-            </button>
-          ))}
-        </div>
+        {demoMode ? (
+          <p className="font-mono text-[12px] text-fg">SerpAPI</p>
+        ) : (
+          <div className="flex rounded-[3px] border border-edge-input overflow-hidden text-[11px] font-sans font-medium">
+            {(["serpapi", "mock"] as const).map((p) => (
+              <button
+                key={p}
+                type="button"
+                onClick={() => setProvider(p)}
+                className={[
+                  "flex-1 py-1.5 transition-colors",
+                  provider === p
+                    ? "bg-brand text-white"
+                    : "bg-background text-subtle hover:text-fg",
+                ].join(" ")}
+              >
+                {p === "serpapi" ? "SerpAPI" : "Mock"}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
     </aside>
   );

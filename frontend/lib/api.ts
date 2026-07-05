@@ -1,4 +1,4 @@
-// Typed fetch wrappers for the LeadForge backend API.
+// Typed fetch wrappers for the LeadIA backend API.
 // All functions are async and throw on non-2xx responses.
 
 const API_BASE =
