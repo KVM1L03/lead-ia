@@ -148,7 +148,7 @@ async def search_leads(
         )
     except Exception as exc:
         if session is not None:
-            row.status = "failed"  # type: ignore[possibly-undefined]
+            row.status = "failed"
             await session.commit()
         raise HTTPException(status_code=503, detail="Workflow service unavailable") from exc
 

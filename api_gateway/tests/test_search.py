@@ -246,7 +246,9 @@ async def test_sync_mode_caps_limit_at_demo_max(
     captured: list[int] = []
 
     async def _capture_pipeline(**kwargs: object) -> list[Lead]:
-        captured.append(int(kwargs["limit"]))  # type: ignore[arg-type]
+        limit = kwargs["limit"]
+        assert isinstance(limit, int)
+        captured.append(limit)
         return [_MOCK_LEAD]
 
     with (
