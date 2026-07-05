@@ -29,6 +29,10 @@ const ibmPlexMono = IBM_Plex_Mono({
 export const metadata: Metadata = {
   title: "LeadIA",
   description: "AI-powered B2B lead generation pipeline",
+  icons: {
+    icon: "/leadia-logo.png",
+    apple: "/leadia-logo.png",
+  },
 };
 
 export default function RootLayout({
