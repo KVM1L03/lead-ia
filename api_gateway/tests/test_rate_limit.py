@@ -1,4 +1,4 @@
-"""Tests for rate limiting — RunLimiter, RequestLimiter, and FastAPI wiring.
+"""Tests for rate limiting — RunLimiter, RequestLimiter, MemoryRateLimitStore, and FastAPI wiring.
 
 All Redis interaction uses fakeredis.aioredis.FakeRedis — no live Redis needed.
 """
@@ -20,9 +20,11 @@ from api_gateway import rate_limit
 from api_gateway.db import get_session
 from api_gateway.main import app
 from api_gateway.rate_limit import (
+    MemoryRateLimitStore,
     RequestLimiter,
     RunLimiter,
     enforce_run_limit,
+    get_rate_limit_store,
 )
 from api_gateway.temporal import get_temporal_client
 
@@ -146,12 +148,109 @@ async def test_request_limiter_different_ips_independent(
     assert await limiter.check_and_increment("2.2.2.2") is True
 
 
-# ── enforce_run_limit dependency: DEMO_MODE=false bypasses Redis ──────────────
+# ── MemoryRateLimitStore unit tests ──────────────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_memory_run_limiter_allows_up_to_limit() -> None:
+    store = MemoryRateLimitStore(max_runs=3, max_per_minute=30)
+    for _ in range(3):
+        assert await store.check_run() is True
+
+
+@pytest.mark.asyncio
+async def test_memory_run_limiter_blocks_at_limit() -> None:
+    store = MemoryRateLimitStore(max_runs=3, max_per_minute=30)
+    for _ in range(3):
+        await store.check_run()
+    assert await store.check_run() is False
+
+
+@pytest.mark.asyncio
+async def test_memory_request_limiter_allows_up_to_limit() -> None:
+    store = MemoryRateLimitStore(max_runs=20, max_per_minute=2)
+    assert await store.check_request("1.2.3.4") is True
+    assert await store.check_request("1.2.3.4") is True
+
+
+@pytest.mark.asyncio
+async def test_memory_request_limiter_blocks_at_limit() -> None:
+    store = MemoryRateLimitStore(max_runs=20, max_per_minute=2)
+    await store.check_request("1.2.3.4")
+    await store.check_request("1.2.3.4")
+    assert await store.check_request("1.2.3.4") is False
+
+
+@pytest.mark.asyncio
+async def test_memory_request_limiter_different_ips_independent() -> None:
+    store = MemoryRateLimitStore(max_runs=20, max_per_minute=1)
+    assert await store.check_request("1.1.1.1") is True
+    assert await store.check_request("1.1.1.1") is False
+    assert await store.check_request("2.2.2.2") is True  # separate counter
+
+
+@pytest.mark.asyncio
+async def test_memory_backend_zero_redis_calls(monkeypatch: pytest.MonkeyPatch) -> None:
+    """When RATE_LIMIT_BACKEND=memory, no Redis connection must ever be attempted."""
+    monkeypatch.setattr(rate_limit.settings, "RATE_LIMIT_BACKEND", "memory")
+    monkeypatch.setattr(rate_limit.settings, "DEMO_MODE", True)
+
+    # Reset singletons so get_rate_limit_store() picks up the patched setting
+    rate_limit._memory_store = None
+    rate_limit._redis_store = None
+
+    redis_called = False
+
+    def _spy() -> Redis:
+        nonlocal redis_called
+        redis_called = True
+        raise AssertionError("get_redis() must not be called when RATE_LIMIT_BACKEND=memory")
+
+    monkeypatch.setattr(rate_limit, "get_redis", _spy)
+
+    store = get_rate_limit_store()
+    await store.check_run()
+    await store.check_request("1.2.3.4")
+
+    assert not redis_called
+
+    # Restore singletons
+    rate_limit._memory_store = None
+    rate_limit._redis_store = None
+
+
+@pytest.mark.asyncio
+async def test_enforce_run_limit_memory_backend_no_redis(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """enforce_run_limit with memory backend must not call get_redis."""
+    monkeypatch.setattr(rate_limit.settings, "DEMO_MODE", True)
+    monkeypatch.setattr(rate_limit.settings, "RATE_LIMIT_BACKEND", "memory")
+    rate_limit._memory_store = None
+    rate_limit._redis_store = None
+
+    redis_called = False
+
+    def _spy() -> Redis:
+        nonlocal redis_called
+        redis_called = True
+        raise AssertionError("get_redis() must not be called")
+
+    monkeypatch.setattr(rate_limit, "get_redis", _spy)
+
+    await enforce_run_limit()  # must NOT raise
+    assert not redis_called
+
+    rate_limit._memory_store = None
+    rate_limit._redis_store = None
+
+
+# ── enforce_run_limit dependency: DEMO_MODE=false bypasses store ──────────────
 
 
 @pytest.mark.asyncio
 async def test_demo_mode_false_no_redis_calls(monkeypatch: pytest.MonkeyPatch) -> None:
-    """When DEMO_MODE=false, enforce_run_limit must return without calling Redis."""
+    """When DEMO_MODE=false, enforce_run_limit must return without calling any store."""
     monkeypatch.setattr(rate_limit.settings, "DEMO_MODE", False)
 
     redis_called = False
@@ -231,10 +330,12 @@ async def test_request_limit_429_retry_after(fake_redis: Redis) -> None:
     for _ in range(30):
         await req_limiter.check_and_increment("1.2.3.4")
 
-    # Middleware is lazy: it calls get_redis() inside dispatch.
-    # Patch get_redis to return fake_redis so the 31st call hits the same counter.
+    # Reset the redis store singleton so it is rebuilt with the patched get_redis.
+    rate_limit._redis_store = None
+
     with (
         patch("api_gateway.rate_limit.settings.DEMO_MODE", True),
+        patch("api_gateway.rate_limit.settings.RATE_LIMIT_BACKEND", "redis"),
         patch("api_gateway.rate_limit.get_redis", return_value=fake_redis),
     ):
         async with AsyncClient(
@@ -243,6 +344,8 @@ async def test_request_limit_429_retry_after(fake_redis: Redis) -> None:
             headers={"X-Forwarded-For": "1.2.3.4"},
         ) as client:
             resp = await client.get("/health")
+
+    rate_limit._redis_store = None  # restore
 
     assert resp.status_code == 429
     assert resp.headers.get("Retry-After") == "60"
