@@ -1,18 +1,26 @@
-"""POST /api/leads/search — trigger a LeadGenerationWorkflow run.
+"""POST /api/leads/search — trigger a LeadGenerationWorkflow run or run inline.
 
-Flow:
-  1. Translate user prompt → Google Maps search query (DSPy, Haiku).
-  2. Persist a Run row with status='scraping'.
-  3. Start LeadGenerationWorkflow on Temporal (fire-and-forget).
-  4. Return {workflow_id, run_id}.
+Two execution modes (controlled by EXECUTION_MODE env var):
 
-The caller polls /api/leads/status/{id}; this endpoint returns immediately.
+  temporal (default):
+    1. Translate user prompt → Google Maps search query (DSPy, Haiku).
+    2. Persist a Run row with status='scraping'.
+    3. Start LeadGenerationWorkflow on Temporal (fire-and-forget).
+    4. Return {workflow_id, run_id, mode="temporal", results=[]}.
+    The caller polls /api/leads/status/{id}; this endpoint returns immediately.
+
+  sync (demo/Cloud Run):
+    1. Translate user prompt.
+    2. Run the full pipeline inline via asyncio.gather fan-out.
+    3. Skip DB write when PERSISTENCE_ENABLED=false.
+    4. Return {workflow_id, run_id, mode="sync", results=[...leads]}.
+    The caller renders results immediately — no polling needed.
 """
 
 from __future__ import annotations
 
 import uuid
-from typing import Annotated
+from typing import Annotated, Literal
 
 import dspy
 from fastapi import APIRouter, Depends, HTTPException
@@ -20,9 +28,11 @@ from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 from temporalio.client import Client
 
-from api_gateway.db import RunRow, get_session
+from api_gateway.config import settings
+from api_gateway.db import RunRow, get_session_maybe
 from api_gateway.rate_limit import enforce_run_limit
-from api_gateway.temporal import get_temporal_client
+from api_gateway.temporal import get_temporal_client_maybe
+from shared.schemas import Lead
 
 router = APIRouter(prefix="/api/leads")
 
@@ -78,6 +88,8 @@ class SearchRequest(BaseModel):
 class SearchResponse(BaseModel):
     workflow_id: str
     run_id: str
+    mode: Literal["temporal", "sync"] = "temporal"
+    results: list[Lead] = []
 
 
 # ── Route ─────────────────────────────────────────────────────────────────────
@@ -87,27 +99,42 @@ class SearchResponse(BaseModel):
 async def search_leads(
     body: SearchRequest,
     _: Annotated[None, Depends(enforce_run_limit)],  # Layer 1: global daily cap
-    session: Annotated[AsyncSession, Depends(get_session)],
-    temporal: Annotated[Client, Depends(get_temporal_client)],
+    session: Annotated[AsyncSession | None, Depends(get_session_maybe)],
+    temporal: Annotated[Client | None, Depends(get_temporal_client_maybe)],
 ) -> SearchResponse:
-    """Kick off a lead-generation workflow and return its ID immediately."""
-    from ai_worker.workflows import LeadGenerationWorkflow, LeadGenInput
-
+    """Kick off a lead-generation workflow or run inline (depending on EXECUTION_MODE)."""
     run_id = str(uuid.uuid4())
     target_query = translate_prompt(body.prompt)
 
-    row = RunRow(
-        id=run_id,
-        prompt=body.prompt,
-        target_query=target_query,
-        limit=body.limit,
-        sender_context=body.sender_context,
-        status="scraping",
-    )
-    session.add(row)
-    await session.commit()
+    if settings.EXECUTION_MODE == "sync":
+        from ai_worker.pipeline import run_pipeline
+
+        effective_limit = min(body.limit, settings.DEMO_MAX_LEADS_SYNC)
+        leads = await run_pipeline(
+            prompt=body.prompt,
+            target_query=target_query,
+            limit=effective_limit,
+            sender_context=body.sender_context,
+        )
+        return SearchResponse(workflow_id=run_id, run_id=run_id, mode="sync", results=leads)
+
+    # ── Temporal path ──────────────────────────────────────────────────────────
+    from ai_worker.workflows import LeadGenerationWorkflow, LeadGenInput
+
+    if session is not None:
+        row = RunRow(
+            id=run_id,
+            prompt=body.prompt,
+            target_query=target_query,
+            limit=body.limit,
+            sender_context=body.sender_context,
+            status="scraping",
+        )
+        session.add(row)
+        await session.commit()
 
     try:
+        assert temporal is not None, "temporal client must exist in Temporal execution mode"
         await temporal.start_workflow(
             LeadGenerationWorkflow.run,
             LeadGenInput(
@@ -120,8 +147,9 @@ async def search_leads(
             task_queue=_TASK_QUEUE,
         )
     except Exception as exc:
-        row.status = "failed"
-        await session.commit()
+        if session is not None:
+            row.status = "failed"
+            await session.commit()
         raise HTTPException(status_code=503, detail="Workflow service unavailable") from exc
 
-    return SearchResponse(workflow_id=run_id, run_id=run_id)
+    return SearchResponse(workflow_id=run_id, run_id=run_id, mode="temporal")

@@ -13,9 +13,12 @@ import pytest
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from api_gateway.db import get_session
+from api_gateway import rate_limit
+from api_gateway.db import get_session_maybe
 from api_gateway.main import app
-from api_gateway.temporal import get_temporal_client
+from api_gateway.rate_limit import enforce_run_limit
+from api_gateway.temporal import get_temporal_client_maybe
+from shared.schemas import GeneratedEmail, Lead, PlaceDetails, QualifierVerdict
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 
@@ -45,8 +48,8 @@ async def http(
     async def _session_override() -> AsyncGenerator[AsyncSession, None]:
         yield mock_session
 
-    app.dependency_overrides[get_session] = _session_override
-    app.dependency_overrides[get_temporal_client] = lambda: mock_temporal
+    app.dependency_overrides[get_session_maybe] = _session_override
+    app.dependency_overrides[get_temporal_client_maybe] = lambda: mock_temporal
 
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         yield client
@@ -54,7 +57,29 @@ async def http(
     app.dependency_overrides.clear()
 
 
-# ── Tests ─────────────────────────────────────────────────────────────────────
+@pytest.fixture
+async def http_sync(monkeypatch: pytest.MonkeyPatch) -> AsyncGenerator[AsyncClient, None]:
+    """HTTP client configured for EXECUTION_MODE=sync."""
+    monkeypatch.setattr("api_gateway.routes.leads.settings.EXECUTION_MODE", "sync")
+    monkeypatch.setattr("api_gateway.routes.leads.settings.DEMO_MAX_LEADS_SYNC", 25)
+
+    async def _no_session() -> AsyncGenerator[None, None]:
+        yield None
+
+    app.dependency_overrides[get_session_maybe] = _no_session
+    app.dependency_overrides[get_temporal_client_maybe] = lambda: None
+    app.dependency_overrides[enforce_run_limit] = lambda: None
+    # Reset memory store singleton so test isolation is clean
+    rate_limit._memory_store = None
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        yield client
+
+    app.dependency_overrides.clear()
+    rate_limit._memory_store = None
+
+
+# ── Temporal path tests ───────────────────────────────────────────────────────
 
 
 @pytest.mark.asyncio
@@ -81,9 +106,9 @@ async def test_happy_path_returns_workflow_id(
     assert "workflow_id" in data
     assert "run_id" in data
     assert data["workflow_id"] == data["run_id"]
-    # UUID-shaped
     assert len(data["run_id"]) == 36
-    # Temporal and DB were called
+    assert data["mode"] == "temporal"
+    assert data["results"] == []
     mock_temporal.start_workflow.assert_called_once()
     mock_session.add.assert_called_once()
     mock_session.commit.assert_called_once()
@@ -136,7 +161,7 @@ async def test_temporal_receives_correct_input(
         )
 
     call_kwargs = mock_temporal.start_workflow.call_args
-    lead_gen_input = call_kwargs.args[1]  # second positional arg is LeadGenInput
+    lead_gen_input = call_kwargs.args[1]
     assert lead_gen_input.target_query == "dental clinic Warsaw"
     assert lead_gen_input.limit == 50
 
@@ -161,8 +186,97 @@ async def test_temporal_failure_marks_run_failed_and_returns_503(
         )
 
     assert resp.status_code == 503
-    # DB row was added, then its status was updated to 'failed'
     mock_session.add.assert_called_once()
-    assert mock_session.commit.await_count == 2  # first commit (insert) + second (update)
+    assert mock_session.commit.await_count == 2
     added_row = mock_session.add.call_args.args[0]
     assert added_row.status == "failed"
+
+
+# ── Sync path tests ───────────────────────────────────────────────────────────
+
+_PLACE = PlaceDetails(
+    id="p1",
+    name="Acme Dental",
+    address="Warsaw 1",
+    lat=52.0,
+    lng=21.0,
+    category="dentist",
+    rating=4.5,
+    review_count=100,
+    website="https://acme.pl",
+)
+_VERDICT = QualifierVerdict(
+    is_qualified=True, score=0.9, reasoning="good fit", icp_fit={"ok": True}
+)
+_EMAIL = GeneratedEmail(
+    subject="Hi",
+    body="Hello",
+    personalization_hooks=["rating"],
+    model_used="haiku",
+)
+_MOCK_LEAD = Lead(place=_PLACE, verdict=_VERDICT, email=_EMAIL)
+
+
+@pytest.mark.asyncio
+async def test_sync_mode_returns_results_inline(
+    http_sync: AsyncClient,
+) -> None:
+    """EXECUTION_MODE=sync: results returned in the response body, no Temporal call."""
+    with (
+        patch("api_gateway.routes.leads.translate_prompt", return_value="dental warsaw"),
+        patch("ai_worker.pipeline.run_pipeline", new=AsyncMock(return_value=[_MOCK_LEAD])),
+    ):
+        resp = await http_sync.post(
+            "/api/leads/search",
+            json={"prompt": "dental clinics warsaw", "limit": 20, "sender_context": "SaaS"},
+        )
+
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["mode"] == "sync"
+    assert len(data["results"]) == 1
+    assert data["results"][0]["place"]["id"] == "p1"
+
+
+@pytest.mark.asyncio
+async def test_sync_mode_caps_limit_at_demo_max(
+    http_sync: AsyncClient,
+) -> None:
+    """Sync mode caps lead limit at DEMO_MAX_LEADS_SYNC regardless of body.limit."""
+    captured: list[int] = []
+
+    async def _capture_pipeline(**kwargs: object) -> list[Lead]:
+        limit = kwargs["limit"]
+        assert isinstance(limit, int)
+        captured.append(limit)
+        return [_MOCK_LEAD]
+
+    with (
+        patch("api_gateway.routes.leads.translate_prompt", return_value="dental warsaw"),
+        patch("ai_worker.pipeline.run_pipeline", new=_capture_pipeline),
+    ):
+        resp = await http_sync.post(
+            "/api/leads/search",
+            json={"prompt": "dental clinics warsaw", "limit": 200, "sender_context": ""},
+        )
+
+    assert resp.status_code == 200
+    assert captured == [25]  # capped at DEMO_MAX_LEADS_SYNC
+
+
+@pytest.mark.asyncio
+async def test_sync_mode_does_not_write_to_db(
+    http_sync: AsyncClient,
+) -> None:
+    """EXECUTION_MODE=sync: no DB session is requested (session dep yields None)."""
+    with (
+        patch("api_gateway.routes.leads.translate_prompt", return_value="dental warsaw"),
+        patch("ai_worker.pipeline.run_pipeline", new=AsyncMock(return_value=[])),
+    ):
+        resp = await http_sync.post(
+            "/api/leads/search",
+            json={"prompt": "dental clinics warsaw", "limit": 20, "sender_context": ""},
+        )
+
+    assert resp.status_code == 200
+    assert resp.json()["mode"] == "sync"

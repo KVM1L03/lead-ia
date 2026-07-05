@@ -1,11 +1,11 @@
 """Tests for Temporal activities.
 
-All tests use mocked MCP / DSPy calls — no real API or network calls.
-ActivityEnvironment runs activities in-process without Temporal server.
+Activities are thin wrappers — test that they correctly delegate to pipeline functions.
+All tests use ActivityEnvironment (no live Temporal server needed).
 """
 
 from typing import Any
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock
 
 import pytest
 from temporalio.testing import ActivityEnvironment
@@ -68,12 +68,6 @@ _EMAIL = GeneratedEmail(
 )
 
 
-def _mock_lm() -> MagicMock:
-    lm = MagicMock()
-    lm.model = "mock/test"
-    return lm
-
-
 # ---------------------------------------------------------------------------
 # search_places_activity
 # ---------------------------------------------------------------------------
@@ -81,18 +75,19 @@ def _mock_lm() -> MagicMock:
 
 async def test_search_places_returns_place_list(monkeypatch: pytest.MonkeyPatch) -> None:
     env = ActivityEnvironment()
-    monkeypatch.setattr(act, "_call_search_places", AsyncMock(return_value=[_RESULT]))
+    mock = AsyncMock(return_value=[_RESULT])
+    monkeypatch.setattr(act, "search_places", mock)
 
     result = await env.run(search_places_activity, "dental Warsaw", 5)
 
     assert result == [_RESULT]
-    act._call_search_places.assert_called_once_with("dental Warsaw", 5)  # type: ignore[attr-defined]
+    mock.assert_called_once_with("dental Warsaw", 5)
 
 
 async def test_search_places_passes_limit_to_mcp(monkeypatch: pytest.MonkeyPatch) -> None:
     env = ActivityEnvironment()
     mock = AsyncMock(return_value=[_RESULT, _RESULT])
-    monkeypatch.setattr(act, "_call_search_places", mock)
+    monkeypatch.setattr(act, "search_places", mock)
 
     await env.run(search_places_activity, "dentist", 10)
 
@@ -102,7 +97,7 @@ async def test_search_places_passes_limit_to_mcp(monkeypatch: pytest.MonkeyPatch
 async def test_search_places_propagates_mcp_error(monkeypatch: pytest.MonkeyPatch) -> None:
     env = ActivityEnvironment()
     monkeypatch.setattr(
-        act, "_call_search_places", AsyncMock(side_effect=RuntimeError("MCP server down"))
+        act, "search_places", AsyncMock(side_effect=RuntimeError("MCP server down"))
     )
 
     with pytest.raises(RuntimeError, match="MCP server down"):
@@ -116,8 +111,7 @@ async def test_search_places_propagates_mcp_error(monkeypatch: pytest.MonkeyPatc
 
 async def test_qualify_lead_returns_verdict(monkeypatch: pytest.MonkeyPatch) -> None:
     env = ActivityEnvironment()
-    monkeypatch.setattr(act, "qualify_lead", lambda *a, **kw: _VERDICT)
-    monkeypatch.setattr(act, "get_lm", lambda _role: _mock_lm())
+    monkeypatch.setattr(act, "qualify_lead_async", AsyncMock(return_value=_VERDICT))
 
     result = await env.run(qualify_lead_activity, "B2B dental software", _PLACE)
 
@@ -129,12 +123,11 @@ async def test_qualify_lead_passes_outreach_goal(monkeypatch: pytest.MonkeyPatch
     env = ActivityEnvironment()
     captured: dict[str, Any] = {}
 
-    def _capture(goal: str, place: PlaceDetails, *, lm: Any) -> QualifierVerdict:
+    async def _capture(goal: str, place: PlaceDetails) -> QualifierVerdict:
         captured["goal"] = goal
         return _VERDICT
 
-    monkeypatch.setattr(act, "qualify_lead", _capture)
-    monkeypatch.setattr(act, "get_lm", lambda _role: _mock_lm())
+    monkeypatch.setattr(act, "qualify_lead_async", _capture)
 
     await env.run(qualify_lead_activity, "plumbing SaaS", _PLACE)
 
@@ -149,12 +142,10 @@ async def test_qualify_lead_propagates_validation_error(
 
     env = ActivityEnvironment()
 
-    def _bad_qualify(*a: Any, **kw: Any) -> None:
-        # Trigger a real ValidationError through schema validation
+    async def _bad_qualify(*a: Any, **kw: Any) -> None:
         QualifierVerdict.model_validate({"is_qualified": "yes", "score": 99})
 
-    monkeypatch.setattr(act, "qualify_lead", _bad_qualify)
-    monkeypatch.setattr(act, "get_lm", lambda _role: _mock_lm())
+    monkeypatch.setattr(act, "qualify_lead_async", _bad_qualify)
 
     with pytest.raises(ValidationError):
         await env.run(qualify_lead_activity, "goal", _PLACE)
@@ -166,11 +157,10 @@ async def test_qualify_lead_propagates_rate_limit_error(
     """Rate-limit errors surface so Temporal can schedule a retry attempt."""
     env = ActivityEnvironment()
 
-    def _rate_limited(*a: Any, **kw: Any) -> None:
+    async def _rate_limited(*a: Any, **kw: Any) -> None:
         raise RuntimeError("rate limit exceeded")
 
-    monkeypatch.setattr(act, "qualify_lead", _rate_limited)
-    monkeypatch.setattr(act, "get_lm", lambda _role: _mock_lm())
+    monkeypatch.setattr(act, "qualify_lead_async", _rate_limited)
 
     with pytest.raises(RuntimeError, match="rate limit"):
         await env.run(qualify_lead_activity, "goal", _PLACE)
@@ -183,8 +173,7 @@ async def test_qualify_lead_propagates_rate_limit_error(
 
 async def test_generate_email_returns_email(monkeypatch: pytest.MonkeyPatch) -> None:
     env = ActivityEnvironment()
-    monkeypatch.setattr(act, "generate_email", lambda *a, **kw: _EMAIL)
-    monkeypatch.setattr(act, "get_lm", lambda _role: _mock_lm())
+    monkeypatch.setattr(act, "generate_email_async", AsyncMock(return_value=_EMAIL))
 
     result = await env.run(
         generate_email_activity, "B2B dental software", _PLACE, _VERDICT, "I run SaaS."
@@ -198,12 +187,17 @@ async def test_generate_email_passes_sender_context(monkeypatch: pytest.MonkeyPa
     env = ActivityEnvironment()
     captured: dict[str, Any] = {}
 
-    def _capture(*a: Any, **kw: Any) -> GeneratedEmail:
-        captured.update(kw)
+    async def _capture(
+        outreach_goal: str,
+        place: PlaceDetails,
+        verdict: QualifierVerdict,
+        sender_context: str,
+    ) -> GeneratedEmail:
+        captured["sender_context"] = sender_context
+        captured["qualifier_reasoning"] = verdict.reasoning
         return _EMAIL
 
-    monkeypatch.setattr(act, "generate_email", _capture)
-    monkeypatch.setattr(act, "get_lm", lambda _role: _mock_lm())
+    monkeypatch.setattr(act, "generate_email_async", _capture)
 
     await env.run(generate_email_activity, "goal", _PLACE, _VERDICT, "Sender: Jane, value prop: X")
 
@@ -214,11 +208,10 @@ async def test_generate_email_passes_sender_context(monkeypatch: pytest.MonkeyPa
 async def test_generate_email_propagates_llm_error(monkeypatch: pytest.MonkeyPatch) -> None:
     env = ActivityEnvironment()
 
-    def _fail(*a: Any, **kw: Any) -> None:
+    async def _fail(*a: Any, **kw: Any) -> None:
         raise RuntimeError("LLM unavailable")
 
-    monkeypatch.setattr(act, "generate_email", _fail)
-    monkeypatch.setattr(act, "get_lm", lambda _role: _mock_lm())
+    monkeypatch.setattr(act, "generate_email_async", _fail)
 
     with pytest.raises(RuntimeError, match="LLM unavailable"):
         await env.run(generate_email_activity, "goal", _PLACE, _VERDICT, "sender")

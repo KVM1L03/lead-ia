@@ -46,6 +46,21 @@ async def get_session() -> AsyncGenerator[AsyncSession, None]:
         yield session
 
 
+async def get_session_maybe() -> AsyncGenerator[AsyncSession | None, None]:
+    """Yield a session when PERSISTENCE_ENABLED=true, or None when disabled.
+
+    Used by routes that skip DB writes in demo/sync mode.
+    """
+    from api_gateway.config import settings
+
+    if not settings.PERSISTENCE_ENABLED:
+        yield None
+        return
+    factory = _session_factory()
+    async with factory() as session:
+        yield session
+
+
 async def create_app_schema() -> None:
     """Create app schema + tables if they don't exist. Call at startup."""
     _session_factory()

@@ -1,11 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { approveLeads, searchLeads, type EditedEmail } from "@/lib/api";
+import { approveLeads, searchLeads, type EditedEmail, type Lead } from "@/lib/api";
 import { prisma } from "@/lib/prisma";
 
 export type StartSearchResult =
-  | { status: "success"; runId: string; workflowId: string }
+  | { status: "success"; runId: string; workflowId: string; mode: "temporal" | "sync"; results: Lead[] }
   | { status: "error"; message: string };
 
 export async function startSearch(
@@ -19,6 +19,8 @@ export async function startSearch(
       status: "success",
       runId: response.run_id,
       workflowId: response.workflow_id,
+      mode: response.mode,
+      results: response.results,
     };
   } catch (err) {
     return {

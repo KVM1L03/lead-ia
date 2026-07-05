@@ -1,25 +1,22 @@
-"""Temporal activities — all side-effecting work lives here.
+"""Temporal activities — thin wrappers that add retry policy constants and observability.
 
-Workflows schedule these; nodes in agent_graph are NOT imported here to
-avoid circular imports (activities → workflow would create a cycle).
+Business logic lives in pipeline.py. Both Temporal activities (here) and the sync
+execution path (api_gateway/routes/leads.py) call the same pipeline functions.
 """
 
-import asyncio
 import json
-import os
-import sys
 from datetime import timedelta
-from typing import Any
 
-from mcp import ClientSession
-from mcp.client.stdio import StdioServerParameters, stdio_client
-from mcp.types import CallToolResult, TextContent
 from temporalio import activity
 from temporalio.common import RetryPolicy
 
-from ai_worker.dspy_engine import generate_email, qualify_lead
-from ai_worker.llm_router import get_lm
 from ai_worker.observability import activity_span
+from ai_worker.pipeline import (
+    generate_email_async,
+    get_place_details,
+    qualify_lead_async,
+    search_places,
+)
 from shared.schemas import GeneratedEmail, Lead, PlaceDetails, PlaceSearchResult, QualifierVerdict
 
 # ── Timeout defaults — referenced by workflows when scheduling ─────────────────
@@ -54,96 +51,6 @@ EMAIL_RETRY = RetryPolicy(
 )
 PERSIST_RETRY = RetryPolicy(maximum_attempts=5, non_retryable_error_types=[])
 
-# ── Transport selection ────────────────────────────────────────────────────────
-# MAPS_TRANSPORT=stdio  (default): spawn maps_bridge as a subprocess via MCP stdio.
-#   Zero-trust boundary is an OS process boundary — identical to local dev.
-# MAPS_TRANSPORT=inline (Cloud Run): call maps_bridge provider in-process.
-#   Zero-trust boundary becomes a module boundary; SerpAPI imports remain
-#   exclusively in maps_bridge/ — never in ai_worker/ code.
-_MAPS_TRANSPORT: str = os.environ.get("MAPS_TRANSPORT", "stdio")
-
-# ── MCP stdio parameters (used only when MAPS_TRANSPORT=stdio) ─────────────────
-_APP_ROOT = os.environ.get("PYTHONPATH", "/app").split(os.pathsep)[0] or "/app"
-_MAPS_SERVER = StdioServerParameters(
-    command=sys.executable,
-    args=["-m", "maps_bridge.server"],
-    env={**os.environ, "PYTHONPATH": _APP_ROOT},
-    cwd=_APP_ROOT,
-)
-
-
-def _extract_tool_payload(result: CallToolResult) -> Any:
-    """Parse MCP tool output from TextContent and/or FastMCP structuredContent."""
-    if result.isError:
-        raise RuntimeError(f"MCP tool returned an error: {result.content}")
-
-    text_block = next((c for c in result.content if isinstance(c, TextContent)), None)
-    if text_block is not None:
-        return json.loads(text_block.text)
-
-    structured = result.structuredContent
-    if structured is None:
-        raise RuntimeError("MCP tool returned no content")
-    if isinstance(structured, dict) and "result" in structured:
-        return structured["result"]
-    return structured
-
-
-async def _call_search_places_stdio(query: str, limit: int) -> list[PlaceSearchResult]:
-    """Spawn maps_bridge via stdio and call the search_places MCP tool."""
-    async with stdio_client(_MAPS_SERVER) as (read, write):
-        async with ClientSession(read, write) as session:
-            await session.initialize()
-            result = await session.call_tool("search_places", {"query": query, "limit": limit})
-    raw = _extract_tool_payload(result)
-    if not isinstance(raw, list):
-        raise RuntimeError(f"MCP search_places returned unexpected payload: {type(raw).__name__}")
-    return [PlaceSearchResult.model_validate(item) for item in raw]
-
-
-async def _call_get_place_details_stdio(place_id: str) -> PlaceDetails:
-    """Spawn maps_bridge via stdio and call the get_place_details MCP tool."""
-    async with stdio_client(_MAPS_SERVER) as (read, write):
-        async with ClientSession(read, write) as session:
-            await session.initialize()
-            result = await session.call_tool("get_place_details", {"place_id": place_id})
-    raw = _extract_tool_payload(result)
-    if not isinstance(raw, dict):
-        raise RuntimeError(
-            f"MCP get_place_details returned unexpected payload: {type(raw).__name__}"
-        )
-    return PlaceDetails.model_validate(raw)
-
-
-async def _call_search_places_inline(query: str, limit: int) -> list[PlaceSearchResult]:
-    """Call maps_bridge provider in-process (Cloud Run inline mode).
-
-    Lazy import keeps maps_bridge.providers.serpapi out of ai_worker's namespace —
-    zero-trust is preserved at module level even when running in the same process.
-    """
-    from maps_bridge.provider_factory import get_provider
-
-    return list(await get_provider().search_places(query, limit))
-
-
-async def _call_get_place_details_inline(place_id: str) -> PlaceDetails:
-    """Call maps_bridge provider in-process (Cloud Run inline mode)."""
-    from maps_bridge.provider_factory import get_provider
-
-    return await get_provider().get_place_details(place_id)
-
-
-async def _call_search_places(query: str, limit: int) -> list[PlaceSearchResult]:
-    if _MAPS_TRANSPORT == "inline":
-        return await _call_search_places_inline(query, limit)
-    return await _call_search_places_stdio(query, limit)
-
-
-async def _call_get_place_details(place_id: str) -> PlaceDetails:
-    if _MAPS_TRANSPORT == "inline":
-        return await _call_get_place_details_inline(place_id)
-    return await _call_get_place_details_stdio(place_id)
-
 
 # ── Activities ─────────────────────────────────────────────────────────────────
 
@@ -153,7 +60,7 @@ async def search_places_activity(query: str, limit: int) -> list[PlaceSearchResu
     """Call maps_bridge MCP server to search Google Places."""
     info = activity.info()
     with activity_span("search_places", workflow_id=info.workflow_id or ""):
-        return await _call_search_places(query, limit)
+        return await search_places(query, limit)
 
 
 @activity.defn
@@ -161,7 +68,7 @@ async def get_place_details_activity(place_id: str) -> PlaceDetails:
     """Fetch full place details from maps_bridge MCP server."""
     info = activity.info()
     with activity_span("get_place_details", workflow_id=info.workflow_id or "", lead_id=place_id):
-        return await _call_get_place_details(place_id)
+        return await get_place_details(place_id)
 
 
 @activity.defn
@@ -169,7 +76,7 @@ async def qualify_lead_activity(outreach_goal: str, place: PlaceDetails) -> Qual
     """Run the DSPy qualifier for one place; raises on validation or LLM error."""
     info = activity.info()
     with activity_span("qualify_lead", workflow_id=info.workflow_id or "", lead_id=place.id):
-        return await asyncio.to_thread(qualify_lead, outreach_goal, place, lm=get_lm("qualifier"))
+        return await qualify_lead_async(outreach_goal, place)
 
 
 @activity.defn
@@ -182,14 +89,7 @@ async def generate_email_activity(
     """Draft a personalised cold-outreach email for a qualified lead."""
     info = activity.info()
     with activity_span("generate_email", workflow_id=info.workflow_id or "", lead_id=place.id):
-        return await asyncio.to_thread(
-            generate_email,
-            outreach_goal,
-            place,
-            qualifier_reasoning=verdict.reasoning,
-            sender_context=sender_context,
-            lm=get_lm("email"),
-        )
+        return await generate_email_async(outreach_goal, place, verdict, sender_context)
 
 
 @activity.defn

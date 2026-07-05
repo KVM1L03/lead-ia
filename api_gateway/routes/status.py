@@ -24,8 +24,8 @@ from pydantic import BaseModel, ConfigDict, TypeAdapter
 from sqlalchemy.ext.asyncio import AsyncSession
 from temporalio.client import Client
 
-from api_gateway.db import RunRow, get_session
-from api_gateway.temporal import get_temporal_client
+from api_gateway.db import RunRow, get_session_maybe
+from api_gateway.temporal import get_temporal_client_maybe
 from shared.schemas import Lead
 
 _leads_ta: TypeAdapter[list[Lead]] = TypeAdapter(list[Lead])
@@ -66,10 +66,24 @@ class StatusResponse(BaseModel):
 @router.get("/status/{workflow_id}", response_model=StatusResponse)
 async def get_status(
     workflow_id: str,
-    session: Annotated[AsyncSession, Depends(get_session)],
-    temporal: Annotated[Client, Depends(get_temporal_client)],
+    session: Annotated[AsyncSession | None, Depends(get_session_maybe)],
+    temporal: Annotated[Client | None, Depends(get_temporal_client_maybe)],
 ) -> StatusResponse:
-    """Return the current status, progress counts, and partial results for a run."""
+    """Return the current status, progress counts, and partial results for a run.
+
+    Returns 503 when PERSISTENCE_ENABLED=False — status polling is unavailable
+    in sync/demo mode because results are returned inline in the search response.
+    """
+    if session is None:
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "error": "persistence_disabled",
+                "message": "Status polling is unavailable in demo mode. "
+                "Results are returned inline in the search response.",
+            },
+        )
+
     from ai_worker.workflows import LeadGenerationWorkflow, WorkflowProgress
 
     # 1. DB row must exist — if absent, the run_id is unknown ──────────────────
@@ -83,15 +97,18 @@ async def get_status(
     qualified = row.qualified
     emails_generated = row.emails_generated
 
-    handle = temporal.get_workflow_handle(workflow_id)
-    try:
-        progress: WorkflowProgress = await handle.query(LeadGenerationWorkflow.get_progress)
-        stage = _STAGE_MAP.get(progress.stage, progress.stage)
-        scraped = progress.total
-        qualified = progress.qualified
-        emails_generated = progress.emailed
-    except Exception:
-        # Temporal unreachable or workflow history evicted → use DB snapshot
+    if temporal is not None:
+        handle = temporal.get_workflow_handle(workflow_id)
+        try:
+            progress: WorkflowProgress = await handle.query(LeadGenerationWorkflow.get_progress)
+            stage = _STAGE_MAP.get(progress.stage, progress.stage)
+            scraped = progress.total
+            qualified = progress.qualified
+            emails_generated = progress.emailed
+        except Exception:
+            # Temporal unreachable or workflow history evicted → use DB snapshot
+            stage = _STAGE_MAP.get(row.status, row.status)
+    else:
         stage = _STAGE_MAP.get(row.status, row.status)
 
     # 3. Leads from DB (populated by persist_phase_result_activity) ─────────────
