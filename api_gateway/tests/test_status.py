@@ -14,9 +14,9 @@ import pytest
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from api_gateway.db import RunRow, get_session
+from api_gateway.db import RunRow, get_session_maybe
 from api_gateway.main import app
-from api_gateway.temporal import get_temporal_client
+from api_gateway.temporal import get_temporal_client_maybe
 from shared.schemas import (
     GeneratedEmail,
     Lead,
@@ -113,8 +113,8 @@ def _make_http(mock_session: AsyncMock, mock_temporal: AsyncMock) -> AsyncClient
     async def _session_override() -> AsyncGenerator[AsyncSession, None]:
         yield mock_session
 
-    app.dependency_overrides[get_session] = _session_override
-    app.dependency_overrides[get_temporal_client] = lambda: mock_temporal
+    app.dependency_overrides[get_session_maybe] = _session_override
+    app.dependency_overrides[get_temporal_client_maybe] = lambda: mock_temporal
     return AsyncClient(transport=ASGITransport(app=app), base_url="http://test")
 
 
