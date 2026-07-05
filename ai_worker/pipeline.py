@@ -124,9 +124,7 @@ async def qualify_lead_async(outreach_goal: str, place: PlaceDetails) -> Qualifi
     Uses dspy.context(lm=...) per-call — safe under concurrent asyncio tasks
     (avoids the dspy.configure() race condition described in CLAUDE.md §11).
     """
-    return await asyncio.to_thread(
-        qualify_lead, outreach_goal, place, lm=get_lm("qualifier")
-    )
+    return await asyncio.to_thread(qualify_lead, outreach_goal, place, lm=get_lm("qualifier"))
 
 
 async def generate_email_async(
@@ -208,7 +206,6 @@ async def run_pipeline(
     )
 
     unqualified = [
-        lead for lead in qualify_leads
-        if lead.verdict is None or not lead.verdict.is_qualified
+        lead for lead in qualify_leads if lead.verdict is None or not lead.verdict.is_qualified
     ]
     return unqualified + email_leads

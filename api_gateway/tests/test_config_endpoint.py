@@ -23,9 +23,7 @@ async def http() -> AsyncGenerator[AsyncClient, None]:
 
 
 @pytest.mark.asyncio
-async def test_config_default_values(
-    http: AsyncClient, monkeypatch: pytest.MonkeyPatch
-) -> None:
+async def test_config_default_values(http: AsyncClient, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr("api_gateway.routes.config.settings.PERSISTENCE_ENABLED", True)
     monkeypatch.setattr("api_gateway.routes.config.settings.EXECUTION_MODE", "temporal")
     resp = await http.get("/api/config")
@@ -36,9 +34,7 @@ async def test_config_default_values(
 
 
 @pytest.mark.asyncio
-async def test_config_demo_mode_values(
-    http: AsyncClient, monkeypatch: pytest.MonkeyPatch
-) -> None:
+async def test_config_demo_mode_values(http: AsyncClient, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr("api_gateway.routes.config.settings.PERSISTENCE_ENABLED", False)
     monkeypatch.setattr("api_gateway.routes.config.settings.EXECUTION_MODE", "sync")
     resp = await http.get("/api/config")

@@ -125,9 +125,7 @@ async def test_run_pipeline_qualify_error_produces_lead_with_error() -> None:
 @pytest.mark.asyncio
 async def test_search_places_activity_calls_pipeline_search_places() -> None:
     """The Temporal activity is a thin wrapper — it calls pipeline.search_places."""
-    with patch(
-        "ai_worker.activities.search_places", new=AsyncMock(return_value=[])
-    ) as mock_sp:
+    with patch("ai_worker.activities.search_places", new=AsyncMock(return_value=[])) as mock_sp:
         from temporalio.testing import ActivityEnvironment
 
         from ai_worker.activities import search_places_activity
