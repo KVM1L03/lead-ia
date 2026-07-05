@@ -10,7 +10,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from shared.schemas import GeneratedEmail, Lead, PlaceDetails, PlaceSearchResult, QualifierVerdict
+from shared.schemas import GeneratedEmail, PlaceDetails, PlaceSearchResult, QualifierVerdict
 
 _PLACE_SEARCH = PlaceSearchResult(
     id="p1",
@@ -128,8 +128,9 @@ async def test_search_places_activity_calls_pipeline_search_places() -> None:
     with patch(
         "ai_worker.activities.search_places", new=AsyncMock(return_value=[])
     ) as mock_sp:
-        from ai_worker.activities import search_places_activity
         from temporalio.testing import ActivityEnvironment
+
+        from ai_worker.activities import search_places_activity
 
         env = ActivityEnvironment()
         await env.run(search_places_activity, "dental clinic", 10)
@@ -144,8 +145,9 @@ async def test_qualify_lead_activity_calls_pipeline_qualify_lead_async() -> None
         "ai_worker.activities.qualify_lead_async",
         new=AsyncMock(return_value=_VERDICT_YES),
     ) as mock_q:
-        from ai_worker.activities import qualify_lead_activity
         from temporalio.testing import ActivityEnvironment
+
+        from ai_worker.activities import qualify_lead_activity
 
         env = ActivityEnvironment()
         result = await env.run(qualify_lead_activity, "find dentists", _PLACE_DETAILS)
@@ -161,8 +163,9 @@ async def test_generate_email_activity_calls_pipeline_generate_email_async() -> 
         "ai_worker.activities.generate_email_async",
         new=AsyncMock(return_value=_EMAIL),
     ) as mock_e:
-        from ai_worker.activities import generate_email_activity
         from temporalio.testing import ActivityEnvironment
+
+        from ai_worker.activities import generate_email_activity
 
         env = ActivityEnvironment()
         result = await env.run(
