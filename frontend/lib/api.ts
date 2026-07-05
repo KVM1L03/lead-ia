@@ -53,6 +53,8 @@ export type ProgressCounts = {
 export type SearchResponse = {
   workflow_id: string;
   run_id: string;
+  mode: "temporal" | "sync";
+  results: Lead[];
 };
 
 export type StatusResponse = {

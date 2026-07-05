@@ -3,6 +3,31 @@ import { prisma } from "@/lib/prisma";
 import { RunRow } from "@/components/RunRow";
 
 export default async function HistoryPage() {
+  // In demo mode (PERSISTENCE_ENABLED=false) there is no DB to query.
+  if (process.env.PERSISTENCE_ENABLED === "false") {
+    return (
+      <section className="px-8 py-10">
+        <div className="mb-8">
+          <p className="mb-1 font-mono text-[11px] font-medium uppercase tracking-[.18em] text-muted-fg">
+            History
+          </p>
+          <h1 className="font-serif text-[28px] leading-[1.35] tracking-[-0.015em] text-fg">
+            Past runs
+          </h1>
+        </div>
+        <div className="rounded-[3px] border border-edge bg-surface px-6 py-10 text-center">
+          <p className="font-sans text-[13px] text-muted-fg">
+            History is disabled in demo mode — results are returned inline and not persisted.{" "}
+            <Link href="/search" className="text-brand hover:underline">
+              Start a new search
+            </Link>
+            .
+          </p>
+        </div>
+      </section>
+    );
+  }
+
   const runs = await prisma.run.findMany({
     take: 50,
     orderBy: { createdAt: "desc" },

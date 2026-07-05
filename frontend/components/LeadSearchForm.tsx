@@ -1,27 +1,50 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Toast } from "@base-ui/react/toast";
 import { startSearch } from "@/app/actions";
+import type { Lead } from "@/lib/api";
 import { useProvider, setProvider } from "@/lib/useProvider";
 import { cn } from "@/lib/utils";
+import { LeadCohortTable } from "./LeadCohortTable";
 
 const LIMIT_MIN = 10;
 const LIMIT_MAX = 200;
 const LIMIT_DEFAULT = 50;
+
+// Simulated stages shown while the sync pipeline runs (client-side animation).
+const SYNC_STAGES = [
+  "Searching places…",
+  "Fetching details…",
+  "Qualifying leads…",
+  "Drafting emails…",
+];
 
 export function LeadSearchForm() {
   const [prompt, setPrompt] = useState("");
   const [senderContext, setSenderContext] = useState("");
   const [limit, setLimit] = useState(LIMIT_DEFAULT);
   const [isPending, startTransition] = useTransition();
+  const [syncResults, setSyncResults] = useState<{ runId: string; leads: Lead[] } | null>(null);
+  const [stageIndex, setStageIndex] = useState(0);
   const router = useRouter();
   const { add: addToast } = Toast.useToastManager();
   const provider = useProvider();
 
+  // Cycle through simulated stages while pending in sync mode.
+  useEffect(() => {
+    if (!isPending) return;
+    const id = setInterval(() => {
+      setStageIndex((i) => (i + 1) % SYNC_STAGES.length);
+    }, 1200);
+    return () => clearInterval(id);
+  }, [isPending]);
+
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    setSyncResults(null);
+    setStageIndex(0);
 
     if (!prompt.trim()) {
       addToast({
@@ -35,7 +58,11 @@ export function LeadSearchForm() {
     startTransition(async () => {
       const result = await startSearch(prompt.trim(), limit, senderContext.trim());
       if (result.status === "success") {
-        router.push(`/runs/${result.runId}`);
+        if (result.mode === "sync") {
+          setSyncResults({ runId: result.runId, leads: result.results });
+        } else {
+          router.push(`/runs/${result.runId}`);
+        }
       } else {
         addToast({
           title: "Search failed",
@@ -47,6 +74,40 @@ export function LeadSearchForm() {
   }
 
   const disabled = isPending;
+
+  // Inline sync results view — shown after a sync pipeline completes.
+  if (syncResults !== null) {
+    return (
+      <section className="px-8 py-10">
+        <div className="mb-6 flex items-center justify-between">
+          <div>
+            <p className="mb-1 font-mono text-[11px] font-medium uppercase tracking-[.18em] text-muted-fg">
+              Results
+            </p>
+            <h2 className="font-serif text-[28px] leading-[1.35] tracking-[-0.015em] text-fg">
+              {syncResults.leads.length} lead{syncResults.leads.length !== 1 ? "s" : ""} found
+            </h2>
+          </div>
+          <button
+            type="button"
+            onClick={() => setSyncResults(null)}
+            className="inline-flex items-center gap-2 rounded-[3px] border border-edge px-4 py-2 font-sans text-[13px] font-medium text-fg hover:bg-surface transition-colors"
+          >
+            ← New search
+          </button>
+        </div>
+        {syncResults.leads.length === 0 ? (
+          <div className="rounded-[3px] border border-edge bg-surface px-6 py-10 text-center">
+            <p className="font-sans text-[13px] text-muted-fg">
+              No leads matched your criteria. Try a broader prompt.
+            </p>
+          </div>
+        ) : (
+          <LeadCohortTable leads={syncResults.leads} runId={syncResults.runId} />
+        )}
+      </section>
+    );
+  }
 
   return (
     <section className="max-w-[760px] mx-auto px-8 py-[13vh]">
@@ -166,11 +227,14 @@ export function LeadSearchForm() {
         {/* Submit row */}
         <div className="flex items-center gap-[22px] mt-[50px]">
           {isPending ? (
-            /* Skeleton while submitting */
+            /* Animated stage indicator while pipeline runs */
             <div className="flex items-center gap-3">
               <div className="h-[38px] w-[120px] rounded-[3px] bg-skeleton animate-pulse" />
-              <span className="font-mono text-[12px] text-muted-fg">
-                Starting run…
+              <span
+                className="font-mono text-[12px] text-muted-fg transition-opacity duration-300"
+                aria-live="polite"
+              >
+                {SYNC_STAGES[stageIndex]}
               </span>
             </div>
           ) : (

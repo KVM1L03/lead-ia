@@ -31,6 +31,14 @@ function renderForm() {
   return render(<LeadSearchForm />, { wrapper: Wrapper });
 }
 
+const _TEMPORAL_SUCCESS = {
+  status: "success" as const,
+  runId: "run-abc",
+  workflowId: "wf-abc",
+  mode: "temporal" as const,
+  results: [],
+} satisfies StartSearchResult;
+
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
 describe("LeadSearchForm", () => {
@@ -60,11 +68,7 @@ describe("LeadSearchForm", () => {
   });
 
   it("calls startSearch with correct args on submit", async () => {
-    mockStartSearch.mockResolvedValueOnce({
-      status: "success",
-      runId: "run-abc",
-      workflowId: "wf-abc",
-    } satisfies StartSearchResult);
+    mockStartSearch.mockResolvedValueOnce(_TEMPORAL_SUCCESS);
 
     renderForm();
 
@@ -115,7 +119,7 @@ describe("LeadSearchForm", () => {
 
     // Resolve so React can clean up async state
     await act(async () => {
-      resolve({ status: "success", runId: "r", workflowId: "w" });
+      resolve(_TEMPORAL_SUCCESS);
     });
   });
 });
