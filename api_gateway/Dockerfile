@@ -20,8 +20,10 @@ WORKDIR /app
 COPY --from=builder /app/.venv /app/.venv
 
 # ai_worker/ is required: leads.py imports LeadGenerationWorkflow for the Temporal SDK type
+# maps_bridge/ is required: MAPS_TRANSPORT=inline calls maps_bridge.provider_factory in-process
 COPY api_gateway/ ./api_gateway/
 COPY ai_worker/ ./ai_worker/
+COPY maps_bridge/ ./maps_bridge/
 COPY shared/ ./shared/
 
 ENV PATH="/app/.venv/bin:$PATH"
