@@ -21,3 +21,12 @@ async def get_temporal_client() -> Client:
         address = os.environ.get("TEMPORAL_ADDRESS", "localhost:7233")
         _temporal_client = await Client.connect(address, data_converter=pydantic_data_converter)
     return _temporal_client
+
+
+async def get_temporal_client_maybe() -> Client | None:
+    """Return None when EXECUTION_MODE=sync (no Temporal needed), else the shared client."""
+    from api_gateway.config import settings
+
+    if settings.EXECUTION_MODE == "sync":
+        return None
+    return await get_temporal_client()
