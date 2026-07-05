@@ -1,4 +1,4 @@
-# Frontend Agent Rules — LeadForge
+# Frontend Agent Rules — LeadIA
 
 Stack: Next.js 16 · React 19 · Tailwind v4 · Prisma 7 · @base-ui/react · TypeScript strict
 

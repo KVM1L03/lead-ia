@@ -24,7 +24,7 @@ function HealthDot({ status }: { status: HealthStatus }) {
   );
 }
 
-export function Topbar() {
+export function Topbar({ demoMode = false }: { demoMode?: boolean }) {
   const [health, setHealth] = useState<HealthStatus>("unknown");
 
   useEffect(() => {
@@ -54,27 +54,31 @@ export function Topbar() {
       className="sticky top-0 z-30 flex items-center justify-end h-[60px] px-6 gap-5 border-b border-edge"
       style={{ background: "rgba(250,250,247,.85)", backdropFilter: "blur(10px)" }}
     >
-      <a
-        href="http://localhost:3030"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="font-sans font-medium text-[12px] text-muted-fg hover:text-fg transition-colors"
-      >
-        Langfuse
-      </a>
+      {!demoMode && (
+        <>
+          <a
+            href="http://localhost:3030"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-sans font-medium text-[12px] text-muted-fg hover:text-fg transition-colors"
+          >
+            Langfuse
+          </a>
 
-      <span className="w-px h-3.5 bg-edge" aria-hidden="true" />
+          <span className="w-px h-3.5 bg-edge" aria-hidden="true" />
 
-      <a
-        href="http://localhost:8085"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="font-sans font-medium text-[12px] text-muted-fg hover:text-fg transition-colors"
-      >
-        Temporal UI
-      </a>
+          <a
+            href="http://localhost:8085"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-sans font-medium text-[12px] text-muted-fg hover:text-fg transition-colors"
+          >
+            Temporal UI
+          </a>
 
-      <span className="w-px h-3.5 bg-edge" aria-hidden="true" />
+          <span className="w-px h-3.5 bg-edge" aria-hidden="true" />
+        </>
+      )}
 
       <HealthDot status={health} />
     </header>

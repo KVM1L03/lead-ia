@@ -71,6 +71,16 @@ export function EmailDrawer({ lead, runId, onClose, onDecide }: Props) {
             <p className="truncate font-mono text-[11px] text-muted-fg">
               {lead.place.address}
             </p>
+            {lead.place.website && (
+              <a
+                href={lead.place.website}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-block max-w-full truncate font-mono text-[10px] text-brand hover:underline mt-0.5"
+              >
+                {lead.place.website.replace(/^https?:\/\//, "").replace(/\/$/, "")}
+              </a>
+            )}
           </div>
           <button
             onClick={onClose}
