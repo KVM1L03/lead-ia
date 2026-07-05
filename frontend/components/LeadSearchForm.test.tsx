@@ -93,7 +93,7 @@ describe("LeadSearchForm", () => {
     });
   });
 
-  it("hides the submit button while submission is pending", async () => {
+  it("shows the progress overlay while submission is pending", async () => {
     let resolve!: (v: StartSearchResult) => void;
     mockStartSearch.mockReturnValueOnce(
       new Promise<StartSearchResult>((r) => {
@@ -110,14 +110,14 @@ describe("LeadSearchForm", () => {
 
     await userEvent.click(screen.getByRole("button", { name: /start search/i }));
 
-    // Submit button is replaced by the inline skeleton while pending
     await waitFor(() => {
       expect(
-        screen.queryByRole("button", { name: /start search/i }),
-      ).not.toBeInTheDocument();
+        screen.getByRole("dialog", { name: /pipeline in progress/i }),
+      ).toBeInTheDocument();
+      expect(screen.getByText("Scraping Maps")).toBeInTheDocument();
+      expect(screen.getByText("Running pipeline")).toBeInTheDocument();
     });
 
-    // Resolve so React can clean up async state
     await act(async () => {
       resolve(_TEMPORAL_SUCCESS);
     });

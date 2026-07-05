@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useEffect } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Toast } from "@base-ui/react/toast";
 import { startSearch } from "@/app/actions";
@@ -8,18 +8,11 @@ import type { Lead } from "@/lib/api";
 import { useProvider, setProvider } from "@/lib/useProvider";
 import { cn } from "@/lib/utils";
 import { LeadCohortTable } from "./LeadCohortTable";
+import { SyncProgressOverlay } from "./SyncProgressOverlay";
 
 const LIMIT_MIN = 10;
 const LIMIT_MAX = 200;
 const LIMIT_DEFAULT = 50;
-
-// Simulated stages shown while the sync pipeline runs (client-side animation).
-const SYNC_STAGES = [
-  "Searching places…",
-  "Fetching details…",
-  "Qualifying leads…",
-  "Drafting emails…",
-];
 
 export function LeadSearchForm() {
   const [prompt, setPrompt] = useState("");
@@ -27,24 +20,15 @@ export function LeadSearchForm() {
   const [limit, setLimit] = useState(LIMIT_DEFAULT);
   const [isPending, startTransition] = useTransition();
   const [syncResults, setSyncResults] = useState<{ runId: string; leads: Lead[] } | null>(null);
-  const [stageIndex, setStageIndex] = useState(0);
+  const [pendingPrompt, setPendingPrompt] = useState("");
   const router = useRouter();
   const { add: addToast } = Toast.useToastManager();
   const provider = useProvider();
 
-  // Cycle through simulated stages while pending in sync mode.
-  useEffect(() => {
-    if (!isPending) return;
-    const id = setInterval(() => {
-      setStageIndex((i) => (i + 1) % SYNC_STAGES.length);
-    }, 1200);
-    return () => clearInterval(id);
-  }, [isPending]);
-
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setSyncResults(null);
-    setStageIndex(0);
+    setPendingPrompt(prompt.trim());
 
     if (!prompt.trim()) {
       addToast({
@@ -110,7 +94,10 @@ export function LeadSearchForm() {
   }
 
   return (
-    <section className="max-w-[760px] mx-auto px-8 py-[13vh]">
+    <section className="relative max-w-[760px] mx-auto px-8 py-[13vh]">
+      {isPending && (
+        <SyncProgressOverlay prompt={pendingPrompt} limit={limit} />
+      )}
       {/* Label */}
       <p className="font-sans font-medium text-[11px] uppercase tracking-[.18em] text-muted-fg mb-[34px]">
         New run
@@ -226,37 +213,24 @@ export function LeadSearchForm() {
 
         {/* Submit row */}
         <div className="flex items-center gap-[22px] mt-[50px]">
-          {isPending ? (
-            /* Animated stage indicator while pipeline runs */
-            <div className="flex items-center gap-3">
-              <div className="h-[38px] w-[120px] rounded-[3px] bg-skeleton animate-pulse" />
-              <span
-                className="font-mono text-[12px] text-muted-fg transition-opacity duration-300"
-                aria-live="polite"
-              >
-                {SYNC_STAGES[stageIndex]}
-              </span>
-            </div>
-          ) : (
-            <>
-              <button
-                type="submit"
-                disabled={disabled}
-                className={cn(
-                  "inline-flex items-center gap-2 bg-brand text-white",
-                  "font-sans font-semibold text-[14px] leading-none",
-                  "rounded-[3px] px-6 py-[11px]",
-                  "hover:brightness-90 transition-[filter]",
-                  "disabled:opacity-50 disabled:cursor-not-allowed",
-                )}
-              >
-                Start search
-                <span className="font-mono text-[14px]">→</span>
-              </button>
-              <span className="font-mono text-[12px] leading-[1.5] text-muted-fg">
-                cheap-model qualifier
-              </span>
-            </>
+          <button
+            type="submit"
+            disabled={disabled}
+            className={cn(
+              "inline-flex items-center gap-2 bg-brand text-white",
+              "font-sans font-semibold text-[14px] leading-none",
+              "rounded-[3px] px-6 py-[11px]",
+              "hover:brightness-90 transition-[filter]",
+              "disabled:opacity-50 disabled:cursor-not-allowed",
+            )}
+          >
+            {isPending ? "Running…" : "Start search"}
+            {!isPending && <span className="font-mono text-[14px]">→</span>}
+          </button>
+          {!isPending && (
+            <span className="font-mono text-[12px] leading-[1.5] text-muted-fg">
+              cheap-model qualifier
+            </span>
           )}
         </div>
       </form>
