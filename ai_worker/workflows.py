@@ -94,6 +94,17 @@ class LeadGenerationWorkflow:
 
     @workflow.run
     async def run(self, input: LeadGenInput) -> LeadGenOutput:
+        """Temporal execution path: search → enrich → qualify → email (durable, replayable).
+
+        DELIBERATE MIRROR of run_pipeline (ai_worker/pipeline.py) — same four-step order.
+        Not unified because Temporal workflows are 100% deterministic: no direct HTTP, LLM,
+        or MCP calls allowed — all I/O goes through activities with explicit retry policies.
+        The two models also differ in concurrency (workflow semaphore is replay-safe), error
+        handling (per-activity retry vs. gather-level wrapping), and progress tracking
+        (@workflow.query). Leaf logic is shared: qualify_node and email_node in agent_graph.py,
+        called here via qualify_lead_activity / generate_email_activity, and in the sync path
+        via process_one_lead.
+        """
         sem = asyncio.Semaphore(input.max_concurrency)
 
         # 1. Search ────────────────────────────────────────────────────────────

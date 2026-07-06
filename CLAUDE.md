@@ -18,11 +18,13 @@
 - **Backend:** Python 3.12, FastAPI, Pydantic v2 (`ConfigDict(strict=True)`), Temporal, DSPy, LangGraph
 - **Frontend:** Next.js 16, React 19, Tailwind v4, Prisma 7, Server Actions
 - **Data:** Postgres 16 (shared container, dedicated `app` schema), SQLite for SerpAPI cache
-- **LLMs:** Anthropic (Haiku 4.5 for filter, Sonnet 4.6 for emails). OpenAI/Gemini behind a router for fallback only.
+- **LLMs:** Anthropic (Haiku 4.5 for qualify, Sonnet 4.6 for email). OpenAI/Gemini behind a router for fallback only.
 - **Observability:** Langfuse (self-hosted, port 3030)
 - **Tool boundary:** MCP bridge for Google Places — agent never calls SerpAPI directly
 - **Package mgmt:** `uv` for Python, `npm` for Node
 - **Dev infra:** Docker Compose for the full stack, `Makefile` for shortcuts
+
+**AI flow (post-PR1):** LangGraph is the per-lead state machine (`qualify → decide → email`), wired on both the sync and Temporal hot paths. Temporal is the outer batch orchestrator (search, fan-out, per-step retry, persistence, replay). Each graph node maps to one Temporal activity for step-level retry granularity. DSPy typed signatures handle all LLM extraction — no raw prompt strings.
 
 When editing the frontend, also read `frontend/CLAUDE.md` and `frontend/AGENTS.md` (Next.js 16 breaking changes).
 
@@ -33,12 +35,13 @@ When editing the frontend, also read `frontend/CLAUDE.md` and `frontend/AGENTS.m
 ```
 api_gateway/     FastAPI HTTP entry, health, workflow triggers
 maps_bridge/     MCP server — the ONLY process that calls SerpAPI
-ai_worker/       Temporal worker, DSPy/LangGraph activities
+ai_worker/       Temporal worker + LangGraph per-lead graph (qualify→decide→email).
+                 Temporal activities delegate to graph nodes for step-level retry.
 frontend/        Next.js approval UI (Prisma, Server Actions)
 shared/          Pydantic schemas consumed by all backend services
 tests/           pytest (backend)
 evals/           Promptfoo eval configs + results
-docs/            architecture, model choices, branch protection
+docs/            model choices, deployment audit, roadmap
 .github/         CI workflows, LLM review prompt, PR template
 ```
 
@@ -62,17 +65,16 @@ These are checked by the automated LLM diff review (`.github/prompts/llm-review-
 This section is canonical. If a `Makefile` target is missing, implement it to match — don't document a different command set elsewhere.
 
 ```bash
-make bootstrap   # fresh clone: install + seed + up-build + frontend dev
-make dev         # daily use (full stack)
+make bootstrap   # fresh clone: install deps + copy .env.example → .env
 make install     # uv sync + npm ci
-make seed        # regenerate SerpAPI fixtures + mock DB
 make up-build    # docker compose up --build -d
+make up          # docker compose up -d (no rebuild)
 make down        # stop, volumes preserved
 make logs        # tail compose logs
-make frontend    # next dev only
+make frontend    # next dev only (cd frontend && npm run dev)
 make db-push     # prisma generate + db push
 make format      # ruff format (auto-fix)
-make lint        # ruff check + ruff format --check + mypy + eslint + tsc
+make lint        # ruff check + ruff format --check + mypy + eslint
 make test        # pytest + vitest
 make eval        # promptfoo eval suite (cost ~$0.10; uses real API)
 ```
@@ -81,9 +83,9 @@ make eval        # promptfoo eval suite (cost ~$0.10; uses real API)
 
 | Check | CI job | Local |
 |---|---|---|
-| ruff lint + format | `python` | `make lint` |
+| ruff check + format --check | `python` | `make lint` |
 | mypy (`api_gateway ai_worker maps_bridge shared`) | `python` | `make lint` |
-| pytest (mock providers) | `python` | `make test` |
+| pytest (`MAPS_PROVIDER=mock`) | `python` | `make test` |
 | eslint + tsc + vitest | `frontend` | `make lint` + `make test` |
 | prisma generate | `frontend` | `make db-push` |
 | promptfoo evals | `evals` (label only) | `make eval` |
@@ -104,15 +106,16 @@ Copy `.env.example` → `.env` on first clone (`make bootstrap` does this). Neve
 | `TEMPORAL_ADDRESS` | Worker connection | `localhost:7233` | not used in unit CI |
 | `DATABASE_URL` | App + cache DB | `sqlite:///./lead-forge.db` | not used in unit CI |
 | `MAPS_PROVIDER` | Maps adapter | `mock` | `mock` (set in CI) |
-| `LLM_PROVIDER` | LLM adapter | `anthropic` or `mock` | `mock` (set in CI) |
+| `QUALIFIER_MODEL` | Override qualifier LM (optional) | unset → uses `llm_router` default | — |
+| `EMAIL_MODEL` | Override email LM (optional) | unset → uses `llm_router` default | — |
 
-Use `mock` providers locally when you don't need real API spend. Switch to live keys only for manual smoke tests or evals.
+Use `MAPS_PROVIDER=mock` locally to skip SerpAPI calls (fixtures from `maps_bridge` mock adapter). LLM mock is test-level via `DummyLM`/`monkeypatch` — there is no `LLM_PROVIDER` env var in production code.
 
 ---
 
 ## 7. Testing
 
-- **Backend unit/integration:** `tests/` — run with `uv run pytest` or `make test`. CI sets `MAPS_PROVIDER=mock` and `LLM_PROVIDER=mock` — no real API calls.
+- **Backend unit/integration:** `tests/` — run with `uv run pytest` or `make test`. CI sets `MAPS_PROVIDER=mock` — no real Maps API calls. LLM calls are mocked at test level via `DummyLM` / `monkeypatch` (no `LLM_PROVIDER` env var; that var is not read by production code).
 - **Frontend unit:** `frontend/` — vitest, run via `make test` or `cd frontend && npm test -- --run`.
 - **New logic needs tests.** If you add a function with branching, side effects, or parsing, add a pytest or vitest case. CI pytest covers this; LLM review does not check test coverage.
 - **Evals (optional, costs money):** `make eval` locally, or add label `run-evals` on a PR to trigger the `evals` CI job. Only run when changing DSPy signatures or prompt behavior — not on every PR.
@@ -188,11 +191,15 @@ New commits on the PR re-trigger CI (previous runs are cancelled). LLM review ru
 
 ### Merge requirements
 
-Configured in GitHub branch protection — see `docs/branch-protection.md`:
+Configured in **GitHub → Settings → Branches → main** (cannot be stored in the repo; apply manually):
 
-- 1 human approving review
-- `python` and `frontend` checks green
-- branch up to date with `main`
+| Setting | Value |
+|---|---|
+| Require a pull request before merging | ✅ |
+| Required approving reviews | 1 |
+| Required status checks | `python`, `frontend` |
+| Require branch up to date | ✅ |
+| Allow force pushes | ❌ |
 
 `evals` and LLM review do **not** block merge. LLM review is a fast first pass, not a substitute for human review.
 
@@ -213,9 +220,11 @@ Add label `run-evals` **before** opening the PR, or push a new commit after addi
 
 ## 10. When you're confused
 
-- Architecture questions → `docs/architecture.md`
-- Why a model was picked → `docs/model-choices.md`
-- Branch protection / merge gates → `docs/branch-protection.md`
+- Architecture overview → README §Architecture and §Engineering decisions
+- Why a model was picked, eval backlog, migration plan → `docs/model-choices.md`
+- Branch protection / merge gates → §9 above ("Merge requirements" table)
+- Deployment + twelve-factor audit → `docs/twelve-factor-audit.md`
+- Project roadmap → `docs/roadmap.md`
 - Eval results → `evals/results/`
 - How to add a new tool to the MCP bridge → `maps_bridge/README.md`
 - Frontend-specific rules → `frontend/CLAUDE.md`, `frontend/AGENTS.md`

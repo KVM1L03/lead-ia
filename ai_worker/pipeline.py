@@ -124,15 +124,18 @@ async def run_pipeline(
     sender_context: str,
     max_concurrency: int = 10,
 ) -> list[Lead]:
-    """Run the full lead-generation pipeline synchronously (no Temporal).
+    """Sync execution path: search → enrich → qualify → email (EXECUTION_MODE=sync).
 
-    Called by the sync execution path (EXECUTION_MODE=sync). The Temporal path
-    calls search_places(), get_place_details() individually via activities, then
-    routes through qualify_lead_activity → generate_email_activity (each delegates
-    to a LangGraph node). Both paths share the same graph nodes — no divergent logic.
+    DELIBERATE MIRROR of LeadGenerationWorkflow.run (ai_worker/workflows.py) — both follow
+    the same four-step order. They are not unified because Temporal workflows cannot call
+    external services directly (only through activities with explicit retry/timeout metadata),
+    and the two models differ in error handling, concurrency primitives, progress tracking,
+    and determinism constraints. The shared piece is the leaf logic: qualify_node and
+    email_node in agent_graph.py, called here via process_one_lead, and in the Temporal
+    path via qualify_lead_activity / generate_email_activity.
 
-    Uses asyncio.gather for per-lead fan-out — N leads don't run sequentially.
-    max_concurrency limits simultaneous MCP + LLM calls via a semaphore.
+    Uses asyncio.gather for per-lead fan-out; max_concurrency limits simultaneous MCP +
+    LLM calls via a semaphore.
     """
     sem = asyncio.Semaphore(max_concurrency)
 
