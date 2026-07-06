@@ -1,7 +1,13 @@
 """Tests for ai_worker/pipeline.py — shared core logic.
 
 Invariant: both the Temporal activities and the sync path call the same
-pipeline functions. This is verified by mocking at the pipeline level.
+graph nodes. This is verified by mocking at the graph entry point.
+
+Error model for process_one_lead:
+  - LLM/network errors: caught inside qualify_node/email_node → process_one_lead
+    returns Lead(error=...) — never raises for these.
+  - ValidationError: re-raised by nodes → process_one_lead raises → _process
+    wrapper catches it → Lead(error=...) returned from run_pipeline.
 """
 
 from __future__ import annotations
@@ -10,7 +16,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from shared.schemas import GeneratedEmail, PlaceDetails, PlaceSearchResult, QualifierVerdict
+from shared.schemas import GeneratedEmail, Lead, PlaceDetails, PlaceSearchResult, QualifierVerdict
 
 _PLACE_SEARCH = PlaceSearchResult(
     id="p1",
@@ -46,16 +52,18 @@ _EMAIL = GeneratedEmail(
     model_used="haiku",
 )
 
+_LEAD_YES = Lead(place=_PLACE_DETAILS, verdict=_VERDICT_YES, email=_EMAIL)
+_LEAD_NO = Lead(place=_PLACE_DETAILS, verdict=_VERDICT_NO)
+_LEAD_ERROR = Lead(place=_PLACE_DETAILS, error="LLM timeout")
+
 
 @pytest.mark.asyncio
 async def test_run_pipeline_returns_leads() -> None:
-    """run_pipeline calls search_places, get_place_details, qualify_lead_async,
-    and generate_email_async — and returns a list of Lead objects."""
+    """run_pipeline calls search_places, get_place_details, process_one_lead, returns Leads."""
     with (
         patch("ai_worker.pipeline.search_places", new=AsyncMock(return_value=[_PLACE_SEARCH])),
         patch("ai_worker.pipeline.get_place_details", new=AsyncMock(return_value=_PLACE_DETAILS)),
-        patch("ai_worker.pipeline.qualify_lead_async", new=AsyncMock(return_value=_VERDICT_YES)),
-        patch("ai_worker.pipeline.generate_email_async", new=AsyncMock(return_value=_EMAIL)),
+        patch("ai_worker.pipeline.process_one_lead", return_value=_LEAD_YES),
     ):
         from ai_worker.pipeline import run_pipeline
 
@@ -78,8 +86,7 @@ async def test_run_pipeline_unqualified_leads_have_no_email() -> None:
     with (
         patch("ai_worker.pipeline.search_places", new=AsyncMock(return_value=[_PLACE_SEARCH])),
         patch("ai_worker.pipeline.get_place_details", new=AsyncMock(return_value=_PLACE_DETAILS)),
-        patch("ai_worker.pipeline.qualify_lead_async", new=AsyncMock(return_value=_VERDICT_NO)),
-        patch("ai_worker.pipeline.generate_email_async", new=AsyncMock(return_value=_EMAIL)),
+        patch("ai_worker.pipeline.process_one_lead", return_value=_LEAD_NO),
     ):
         from ai_worker.pipeline import run_pipeline
 
@@ -93,19 +100,19 @@ async def test_run_pipeline_unqualified_leads_have_no_email() -> None:
     assert len(leads) == 1
     assert leads[0].verdict is not None
     assert leads[0].verdict.is_qualified is False
-    assert leads[0].email is None  # not generated for unqualified leads
+    assert leads[0].email is None
 
 
 @pytest.mark.asyncio
-async def test_run_pipeline_qualify_error_produces_lead_with_error() -> None:
-    """When qualify_lead_async raises, the lead is included with an error field."""
+async def test_run_pipeline_llm_error_produces_lead_with_error() -> None:
+    """LLM errors are caught inside qualify_node → process_one_lead returns Lead(error=...).
+
+    process_one_lead does NOT raise for LLM errors — the node absorbs them.
+    """
     with (
         patch("ai_worker.pipeline.search_places", new=AsyncMock(return_value=[_PLACE_SEARCH])),
         patch("ai_worker.pipeline.get_place_details", new=AsyncMock(return_value=_PLACE_DETAILS)),
-        patch(
-            "ai_worker.pipeline.qualify_lead_async",
-            new=AsyncMock(side_effect=RuntimeError("LLM timeout")),
-        ),
+        patch("ai_worker.pipeline.process_one_lead", return_value=_LEAD_ERROR),
     ):
         from ai_worker.pipeline import run_pipeline
 
@@ -118,6 +125,34 @@ async def test_run_pipeline_qualify_error_produces_lead_with_error() -> None:
 
     assert len(leads) == 1
     assert leads[0].error == "LLM timeout"
+    assert leads[0].verdict is None
+    assert leads[0].email is None
+
+
+@pytest.mark.asyncio
+async def test_run_pipeline_process_one_lead_exception_produces_lead_with_error() -> None:
+    """If process_one_lead raises (e.g. ValidationError propagated from a node),
+    the _process wrapper catches it and returns Lead(error=...) so other leads continue.
+    """
+    with (
+        patch("ai_worker.pipeline.search_places", new=AsyncMock(return_value=[_PLACE_SEARCH])),
+        patch("ai_worker.pipeline.get_place_details", new=AsyncMock(return_value=_PLACE_DETAILS)),
+        patch(
+            "ai_worker.pipeline.process_one_lead",
+            side_effect=RuntimeError("schema mismatch"),
+        ),
+    ):
+        from ai_worker.pipeline import run_pipeline
+
+        leads = await run_pipeline(
+            prompt="find dental clinics",
+            target_query="dental clinic warsaw",
+            limit=10,
+            sender_context="",
+        )
+
+    assert len(leads) == 1
+    assert leads[0].error == "schema mismatch"
     assert leads[0].verdict is None
     assert leads[0].email is None
 
@@ -137,12 +172,16 @@ async def test_search_places_activity_calls_pipeline_search_places() -> None:
 
 
 @pytest.mark.asyncio
-async def test_qualify_lead_activity_calls_pipeline_qualify_lead_async() -> None:
-    """qualify_lead_activity delegates to pipeline.qualify_lead_async."""
-    with patch(
-        "ai_worker.activities.qualify_lead_async",
-        new=AsyncMock(return_value=_VERDICT_YES),
-    ) as mock_q:
+async def test_qualify_lead_activity_calls_graph_qualify_node() -> None:
+    """qualify_lead_activity delegates to qualify_node (graph node), not pipeline directly."""
+    captured: dict = {}
+
+    def _mock_qualify_node(state: dict) -> dict:
+        captured["goal"] = state["outreach_goal"]
+        captured["place"] = state["place"]
+        return {"verdict": _VERDICT_YES}
+
+    with patch("ai_worker.activities.qualify_node", _mock_qualify_node):
         from temporalio.testing import ActivityEnvironment
 
         from ai_worker.activities import qualify_lead_activity
@@ -150,17 +189,21 @@ async def test_qualify_lead_activity_calls_pipeline_qualify_lead_async() -> None
         env = ActivityEnvironment()
         result = await env.run(qualify_lead_activity, "find dentists", _PLACE_DETAILS)
 
-    mock_q.assert_called_once_with("find dentists", _PLACE_DETAILS)
+    assert captured["goal"] == "find dentists"
+    assert captured["place"] == _PLACE_DETAILS
     assert result.is_qualified is True
 
 
 @pytest.mark.asyncio
-async def test_generate_email_activity_calls_pipeline_generate_email_async() -> None:
-    """generate_email_activity delegates to pipeline.generate_email_async."""
-    with patch(
-        "ai_worker.activities.generate_email_async",
-        new=AsyncMock(return_value=_EMAIL),
-    ) as mock_e:
+async def test_generate_email_activity_calls_graph_email_node() -> None:
+    """generate_email_activity delegates to email_node (graph node), not pipeline directly."""
+    captured: dict = {}
+
+    def _mock_email_node(state: dict) -> dict:
+        captured["sender_context"] = state["sender_context"]
+        return {"email": _EMAIL}
+
+    with patch("ai_worker.activities.email_node", _mock_email_node):
         from temporalio.testing import ActivityEnvironment
 
         from ai_worker.activities import generate_email_activity
@@ -170,5 +213,5 @@ async def test_generate_email_activity_calls_pipeline_generate_email_async() -> 
             generate_email_activity, "find dentists", _PLACE_DETAILS, _VERDICT_YES, "I sell SaaS"
         )
 
-    mock_e.assert_called_once_with("find dentists", _PLACE_DETAILS, _VERDICT_YES, "I sell SaaS")
+    assert captured["sender_context"] == "I sell SaaS"
     assert result.subject == "Hi"

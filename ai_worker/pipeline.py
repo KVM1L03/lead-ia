@@ -1,10 +1,10 @@
 """Core pipeline business logic — shared between Temporal activities and sync path.
 
-Temporal path: activities.py wraps these functions with @activity.defn + retry policies.
+Temporal path: activities.py wraps graph nodes with @activity.defn + retry policies.
 Sync path: api_gateway/routes/leads.py calls run_pipeline() directly.
 
 Never import from activities.py here — that would create a circular dependency.
-Import chain: pipeline.py → dspy_engine.py, llm_router.py, maps_bridge (via MCP)
+Import chain: pipeline.py → agent_graph.py → dspy_engine.py, llm_router.py, maps_bridge (via MCP)
 """
 
 from __future__ import annotations
@@ -19,9 +19,8 @@ from mcp import ClientSession
 from mcp.client.stdio import StdioServerParameters, stdio_client
 from mcp.types import CallToolResult, TextContent
 
-from ai_worker.dspy_engine import generate_email, qualify_lead
-from ai_worker.llm_router import get_lm
-from shared.schemas import GeneratedEmail, Lead, PlaceDetails, PlaceSearchResult, QualifierVerdict
+from ai_worker.agent_graph import LeadProcessingState, process_one_lead
+from shared.schemas import Lead, PlaceDetails, PlaceSearchResult
 
 # ── MCP transport selection ────────────────────────────────────────────────────
 # MAPS_TRANSPORT=stdio  (default): spawn maps_bridge as a subprocess via MCP stdio.
@@ -118,32 +117,6 @@ async def get_place_details(place_id: str) -> PlaceDetails:
     return await _call_get_place_details_stdio(place_id)
 
 
-async def qualify_lead_async(outreach_goal: str, place: PlaceDetails) -> QualifierVerdict:
-    """Async wrapper: runs DSPy qualify_lead in a thread (blocking call).
-
-    Uses dspy.context(lm=...) per-call — safe under concurrent asyncio tasks
-    (avoids the dspy.configure() race condition described in CLAUDE.md §11).
-    """
-    return await asyncio.to_thread(qualify_lead, outreach_goal, place, lm=get_lm("qualifier"))
-
-
-async def generate_email_async(
-    outreach_goal: str,
-    place: PlaceDetails,
-    verdict: QualifierVerdict,
-    sender_context: str,
-) -> GeneratedEmail:
-    """Async wrapper: runs DSPy generate_email in a thread (blocking call)."""
-    return await asyncio.to_thread(
-        generate_email,
-        outreach_goal,
-        place,
-        qualifier_reasoning=verdict.reasoning,
-        sender_context=sender_context,
-        lm=get_lm("email"),
-    )
-
-
 async def run_pipeline(
     prompt: str,
     target_query: str,
@@ -154,10 +127,9 @@ async def run_pipeline(
     """Run the full lead-generation pipeline synchronously (no Temporal).
 
     Called by the sync execution path (EXECUTION_MODE=sync). The Temporal path
-    calls search_places(), get_place_details(), qualify_lead_async(), and
-    generate_email_async() individually via activities with retry policies.
-
-    Both paths share the same functions — no divergent business logic.
+    calls search_places(), get_place_details() individually via activities, then
+    routes through qualify_lead_activity → generate_email_activity (each delegates
+    to a LangGraph node). Both paths share the same graph nodes — no divergent logic.
 
     Uses asyncio.gather for per-lead fan-out — N leads don't run sequentially.
     max_concurrency limits simultaneous MCP + LLM calls via a semaphore.
@@ -174,38 +146,21 @@ async def run_pipeline(
 
     places: list[PlaceDetails] = list(await asyncio.gather(*[_fetch(r) for r in results]))
 
-    # 3. Qualify (parallel, partial failure → Lead.error) ───────────────────────
-    async def _qualify(place: PlaceDetails) -> Lead:
+    # 3. Per-lead: qualify → decide → email via LangGraph graph (partial failure OK)
+    async def _process(place: PlaceDetails) -> Lead:
         async with sem:
+            state: LeadProcessingState = {
+                "outreach_goal": prompt,
+                "sender_context": sender_context,
+                "place": place,
+                "verdict": None,
+                "email": None,
+                "error": None,
+            }
             try:
-                verdict = await qualify_lead_async(prompt, place)
-                return Lead(place=place, verdict=verdict)
+                return await asyncio.to_thread(process_one_lead, state)
             except Exception as exc:
                 root = exc.__cause__ if exc.__cause__ is not None else exc
                 return Lead(place=place, error=str(root))
 
-    qualify_leads: list[Lead] = list(await asyncio.gather(*[_qualify(p) for p in places]))
-    qualified_pairs: list[tuple[PlaceDetails, QualifierVerdict]] = [
-        (lead.place, lead.verdict)
-        for lead in qualify_leads
-        if lead.verdict is not None and lead.verdict.is_qualified
-    ]
-
-    # 4. Email (parallel, partial failure → Lead without email) ─────────────────
-    async def _email(place: PlaceDetails, verdict: QualifierVerdict) -> Lead:
-        async with sem:
-            try:
-                email = await generate_email_async(prompt, place, verdict, sender_context)
-                return Lead(place=place, verdict=verdict, email=email)
-            except Exception as exc:
-                root = exc.__cause__ if exc.__cause__ is not None else exc
-                return Lead(place=place, verdict=verdict, error=str(root))
-
-    email_leads: list[Lead] = list(
-        await asyncio.gather(*[_email(p, v) for p, v in qualified_pairs])
-    )
-
-    unqualified = [
-        lead for lead in qualify_leads if lead.verdict is None or not lead.verdict.is_qualified
-    ]
-    return unqualified + email_leads
+    return list(await asyncio.gather(*[_process(p) for p in places]))
