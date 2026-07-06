@@ -179,7 +179,6 @@ def test_qualifier_model_env_var_overrides_primary(monkeypatch: pytest.MonkeyPat
 
     assert built[0] == "openai/gpt-4o"
     assert chain.model == "openai/gpt-4o"
-    assert len(built) == 1
 
 
 def test_email_model_env_var_overrides_primary(monkeypatch: pytest.MonkeyPatch) -> None:

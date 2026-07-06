@@ -14,10 +14,11 @@ import ai_worker.agent_graph as ag
 from ai_worker.agent_graph import (
     LeadProcessingState,
     _decide_node,
-    _email_node,
-    _qualify_node,
     _route,
+    email_node,
     process_one_lead,
+    qualify_node,
+    should_generate_email,
 )
 from shared.schemas import Lead, PlaceDetails
 
@@ -83,7 +84,7 @@ def test_qualify_node_sets_verdict_on_success(monkeypatch: pytest.MonkeyPatch) -
     lm = DummyLM(answers=[_QUALIFY_GOOD])
     monkeypatch.setattr(ag, "get_lm", lambda _role: lm)
 
-    result = _qualify_node(_base_state())
+    result = qualify_node(_base_state())
 
     assert "verdict" in result
     assert result["verdict"].is_qualified is True
@@ -97,7 +98,7 @@ def test_qualify_node_sets_error_on_exception(monkeypatch: pytest.MonkeyPatch) -
     monkeypatch.setattr(ag, "qualify_lead", _bad_qualify)
     monkeypatch.setattr(ag, "get_lm", lambda _role: DummyLM(answers=[]))
 
-    result = _qualify_node(_base_state())
+    result = qualify_node(_base_state())
 
     assert result.get("verdict") is None
     assert "LLM rate limit" in result["error"]
@@ -153,6 +154,33 @@ def test_route_returns_end_when_verdict_none() -> None:
 
 
 # ---------------------------------------------------------------------------
+# should_generate_email
+# ---------------------------------------------------------------------------
+
+
+def test_should_generate_email_returns_true_for_qualified() -> None:
+    from shared.schemas import QualifierVerdict
+
+    verdict = QualifierVerdict(is_qualified=True, score=0.9, reasoning="fit", icp_fit={"x": True})
+    assert should_generate_email(_base_state(verdict=verdict, error=None)) is True
+
+
+def test_should_generate_email_returns_false_for_not_qualified() -> None:
+    from shared.schemas import QualifierVerdict
+
+    verdict = QualifierVerdict(is_qualified=False, score=0.1, reasoning="no", icp_fit={"x": False})
+    assert should_generate_email(_base_state(verdict=verdict, error=None)) is False
+
+
+def test_should_generate_email_returns_false_when_error_set() -> None:
+    assert should_generate_email(_base_state(error="something broke", verdict=None)) is False
+
+
+def test_should_generate_email_returns_false_when_verdict_none() -> None:
+    assert should_generate_email(_base_state(verdict=None, error=None)) is False
+
+
+# ---------------------------------------------------------------------------
 # Node unit tests — email
 # ---------------------------------------------------------------------------
 
@@ -167,10 +195,28 @@ def test_email_node_sets_email_on_success(monkeypatch: pytest.MonkeyPatch) -> No
         is_qualified=True, score=0.9, reasoning="fits ICP", icp_fit={"x": True}
     )
     state = _base_state(verdict=verdict)
-    result = _email_node(state)
+    result = email_node(state)
 
     assert "email" in result
     assert len(result["email"].subject) > 0
+
+
+def test_email_node_sets_error_on_exception(monkeypatch: pytest.MonkeyPatch) -> None:
+    from shared.schemas import QualifierVerdict
+
+    def _bad_email(*args: Any, **kwargs: Any) -> None:
+        raise RuntimeError("LLM rate limit")
+
+    monkeypatch.setattr(ag, "generate_email", _bad_email)
+    monkeypatch.setattr(ag, "get_lm", lambda _role: DummyLM(answers=[]))
+
+    verdict = QualifierVerdict(
+        is_qualified=True, score=0.9, reasoning="fits ICP", icp_fit={"x": True}
+    )
+    result = email_node(_base_state(verdict=verdict))
+
+    assert result.get("email") is None
+    assert "LLM rate limit" in result["error"]
 
 
 # ---------------------------------------------------------------------------
