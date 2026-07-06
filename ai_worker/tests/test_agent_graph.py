@@ -168,9 +168,7 @@ def test_should_generate_email_returns_true_for_qualified() -> None:
 def test_should_generate_email_returns_false_for_not_qualified() -> None:
     from shared.schemas import QualifierVerdict
 
-    verdict = QualifierVerdict(
-        is_qualified=False, score=0.1, reasoning="no", icp_fit={"x": False}
-    )
+    verdict = QualifierVerdict(is_qualified=False, score=0.1, reasoning="no", icp_fit={"x": False})
     assert should_generate_email(_base_state(verdict=verdict, error=None)) is False
 
 

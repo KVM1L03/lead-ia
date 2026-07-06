@@ -81,11 +81,7 @@ def email_node(state: LeadProcessingState) -> dict[str, Any]:
 
 def should_generate_email(state: LeadProcessingState) -> bool:
     """True if the lead is qualified and no error occurred — mirrors workflow routing."""
-    return (
-        state["error"] is None
-        and state["verdict"] is not None
-        and state["verdict"].is_qualified
-    )
+    return state["error"] is None and state["verdict"] is not None and state["verdict"].is_qualified
 
 
 def _route(state: LeadProcessingState) -> str:
