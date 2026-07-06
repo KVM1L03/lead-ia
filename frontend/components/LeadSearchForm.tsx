@@ -98,7 +98,7 @@ export function LeadSearchForm({ demoMode = false }: { demoMode?: boolean }) {
 
   return (
     <section className="relative max-w-[760px] mx-auto px-8 py-[13vh]">
-      {isPending && (
+      {isPending && demoMode && (
         <SyncProgressOverlay prompt={pendingPrompt} limit={limit} />
       )}
       {/* Label */}
