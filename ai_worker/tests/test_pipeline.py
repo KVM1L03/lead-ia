@@ -12,6 +12,7 @@ Error model for process_one_lead:
 
 from __future__ import annotations
 
+from typing import Any
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -174,9 +175,9 @@ async def test_search_places_activity_calls_pipeline_search_places() -> None:
 @pytest.mark.asyncio
 async def test_qualify_lead_activity_calls_graph_qualify_node() -> None:
     """qualify_lead_activity delegates to qualify_node (graph node), not pipeline directly."""
-    captured: dict = {}
+    captured: dict[str, Any] = {}
 
-    def _mock_qualify_node(state: dict) -> dict:
+    def _mock_qualify_node(state: dict[str, Any]) -> dict[str, Any]:
         captured["goal"] = state["outreach_goal"]
         captured["place"] = state["place"]
         return {"verdict": _VERDICT_YES}
@@ -197,9 +198,9 @@ async def test_qualify_lead_activity_calls_graph_qualify_node() -> None:
 @pytest.mark.asyncio
 async def test_generate_email_activity_calls_graph_email_node() -> None:
     """generate_email_activity delegates to email_node (graph node), not pipeline directly."""
-    captured: dict = {}
+    captured: dict[str, Any] = {}
 
-    def _mock_email_node(state: dict) -> dict:
+    def _mock_email_node(state: dict[str, Any]) -> dict[str, Any]:
         captured["sender_context"] = state["sender_context"]
         return {"email": _EMAIL}
 

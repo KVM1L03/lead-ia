@@ -91,7 +91,7 @@ async def qualify_lead_activity(outreach_goal: str, place: PlaceDetails) -> Qual
         patch = await asyncio.to_thread(qualify_node, state)
         if patch.get("error") is not None:
             raise RuntimeError(patch["error"])
-        verdict = patch.get("verdict")
+        verdict: QualifierVerdict | None = patch.get("verdict")
         if verdict is None:
             raise RuntimeError("qualify_node returned no verdict")
         return verdict
@@ -118,10 +118,10 @@ async def generate_email_activity(
         patch = await asyncio.to_thread(email_node, state)
         if patch.get("error") is not None:
             raise RuntimeError(patch["error"])
-        email = patch.get("email")
-        if email is None:
+        email_result: GeneratedEmail | None = patch.get("email")
+        if email_result is None:
             raise RuntimeError("email_node returned no email")
-        return email
+        return email_result
 
 
 @activity.defn
