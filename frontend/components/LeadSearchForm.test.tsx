@@ -27,8 +27,8 @@ function Wrapper({ children }: { children: React.ReactNode }) {
   return <Toast.Provider>{children}</Toast.Provider>;
 }
 
-function renderForm() {
-  return render(<LeadSearchForm />, { wrapper: Wrapper });
+function renderForm(demoMode = false) {
+  return render(<LeadSearchForm demoMode={demoMode} />, { wrapper: Wrapper });
 }
 
 const _TEMPORAL_SUCCESS = {
@@ -93,7 +93,7 @@ describe("LeadSearchForm", () => {
     });
   });
 
-  it("shows the progress overlay while submission is pending", async () => {
+  it("shows the progress overlay in demo mode while submission is pending", async () => {
     let resolve!: (v: StartSearchResult) => void;
     mockStartSearch.mockReturnValueOnce(
       new Promise<StartSearchResult>((r) => {
@@ -101,7 +101,7 @@ describe("LeadSearchForm", () => {
       }),
     );
 
-    renderForm();
+    renderForm(true);
 
     await userEvent.type(
       screen.getByRole("textbox", { name: /describe the leads/i }),
