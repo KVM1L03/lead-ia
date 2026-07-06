@@ -5,7 +5,9 @@
 🚀 **[Try it live](https://lead-ia-ten.vercel.app)** — first load may take 5–10 s (Cloud Run cold start).
 The full durable stack (Temporal, Langfuse, PostgreSQL) runs locally via Docker Compose.
 
-![demo](docs/media/demo.gif)
+
+https://github.com/user-attachments/assets/6f2cede9-5fb4-4460-9317-9c871fe2f6e3
+
 
 ---
 
