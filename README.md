@@ -208,6 +208,6 @@ The app runs as two stateless Cloud Run services (`api_gateway` + `ai_worker` wi
 ## License
 
 Licensed under the [PolyForm Noncommercial License 1.0.0](https://polyformproject.org/licenses/noncommercial/1.0.0/).
-Free for noncommercial use, study, and modification. Commercial use requires a separate license — contact klabus03@gmail.com.
+Free for noncommercial use, study, and modification. Commercial use requires a separate license — contact klabusit@gmail.com.
 
 © 2026 Kamil Labus
