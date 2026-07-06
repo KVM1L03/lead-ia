@@ -10,6 +10,7 @@ via get_lm() at invocation time so importing this module makes no API calls.
 from typing import Any
 
 from langgraph.graph import END, START, StateGraph
+from pydantic import ValidationError
 from typing_extensions import TypedDict
 
 from ai_worker.dspy_engine import generate_email, qualify_lead
@@ -30,12 +31,12 @@ class LeadProcessingState(TypedDict):
 
 
 # ---------------------------------------------------------------------------
-# Nodes
+# Nodes (public — called directly by Temporal activities)
 # ---------------------------------------------------------------------------
 
 
-def _qualify_node(state: LeadProcessingState) -> dict[str, Any]:
-    """Qualify the lead; on any exception set error and leave verdict=None."""
+def qualify_node(state: LeadProcessingState) -> dict[str, Any]:
+    """Qualify the lead; catches LLM/network errors, lets ValidationError propagate."""
     try:
         verdict = qualify_lead(
             state["outreach_goal"],
@@ -43,6 +44,8 @@ def _qualify_node(state: LeadProcessingState) -> dict[str, Any]:
             lm=get_lm("qualifier"),
         )
         return {"verdict": verdict}
+    except ValidationError:
+        raise  # non-retryable; Temporal marks it via QUALIFY_RETRY.non_retryable_error_types
     except Exception as exc:
         return {"error": str(exc)}
 
@@ -52,18 +55,23 @@ def _decide_node(state: LeadProcessingState) -> dict[str, Any]:
     return {}
 
 
-def _email_node(state: LeadProcessingState) -> dict[str, Any]:
-    """Generate a personalised email for a qualified lead."""
+def email_node(state: LeadProcessingState) -> dict[str, Any]:
+    """Generate a personalised email; catches LLM errors, lets ValidationError propagate."""
     verdict = state["verdict"]
     assert verdict is not None  # invariant guaranteed by _route
-    email = generate_email(
-        state["outreach_goal"],
-        state["place"],
-        qualifier_reasoning=verdict.reasoning,
-        sender_context=state["sender_context"],
-        lm=get_lm("email"),
-    )
-    return {"email": email}
+    try:
+        email = generate_email(
+            state["outreach_goal"],
+            state["place"],
+            qualifier_reasoning=verdict.reasoning,
+            sender_context=state["sender_context"],
+            lm=get_lm("email"),
+        )
+        return {"email": email}
+    except ValidationError:
+        raise  # non-retryable
+    except Exception as exc:
+        return {"error": str(exc)}
 
 
 # ---------------------------------------------------------------------------
@@ -71,14 +79,18 @@ def _email_node(state: LeadProcessingState) -> dict[str, Any]:
 # ---------------------------------------------------------------------------
 
 
+def should_generate_email(state: LeadProcessingState) -> bool:
+    """True if the lead is qualified and no error occurred — mirrors workflow routing."""
+    return (
+        state["error"] is None
+        and state["verdict"] is not None
+        and state["verdict"].is_qualified
+    )
+
+
 def _route(state: LeadProcessingState) -> str:
     """Return next node name: 'email' if qualified, END otherwise."""
-    if state["error"] is not None:
-        return _END
-    verdict = state["verdict"]
-    if verdict is None or not verdict.is_qualified:
-        return _END
-    return "email"
+    return "email" if should_generate_email(state) else _END
 
 
 # ---------------------------------------------------------------------------
@@ -88,9 +100,9 @@ def _route(state: LeadProcessingState) -> str:
 
 def _build_graph() -> Any:
     g: StateGraph[LeadProcessingState] = StateGraph(LeadProcessingState)
-    g.add_node("qualify", _qualify_node)
+    g.add_node("qualify", qualify_node)
     g.add_node("decide", _decide_node)
-    g.add_node("email", _email_node)
+    g.add_node("email", email_node)
     g.add_edge(START, "qualify")
     g.add_edge("qualify", "decide")
     g.add_conditional_edges("decide", _route)
