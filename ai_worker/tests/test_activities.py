@@ -1,6 +1,6 @@
 """Tests for Temporal activities.
 
-Activities are thin wrappers — test that they correctly delegate to pipeline functions.
+Activities are thin wrappers — test that they correctly delegate to graph nodes.
 All tests use ActivityEnvironment (no live Temporal server needed).
 """
 
@@ -16,6 +16,7 @@ from ai_worker.activities import (
     qualify_lead_activity,
     search_places_activity,
 )
+from ai_worker.agent_graph import LeadProcessingState
 from shared.schemas import (
     GeneratedEmail,
     PlaceDetails,
@@ -69,7 +70,7 @@ _EMAIL = GeneratedEmail(
 
 
 # ---------------------------------------------------------------------------
-# search_places_activity
+# search_places_activity (unchanged delegation — still calls pipeline.search_places)
 # ---------------------------------------------------------------------------
 
 
@@ -105,13 +106,17 @@ async def test_search_places_propagates_mcp_error(monkeypatch: pytest.MonkeyPatc
 
 
 # ---------------------------------------------------------------------------
-# qualify_lead_activity
+# qualify_lead_activity — delegates to qualify_node
 # ---------------------------------------------------------------------------
 
 
 async def test_qualify_lead_returns_verdict(monkeypatch: pytest.MonkeyPatch) -> None:
     env = ActivityEnvironment()
-    monkeypatch.setattr(act, "qualify_lead_async", AsyncMock(return_value=_VERDICT))
+
+    def _mock_node(state: LeadProcessingState) -> dict[str, Any]:
+        return {"verdict": _VERDICT}
+
+    monkeypatch.setattr(act, "qualify_node", _mock_node)
 
     result = await env.run(qualify_lead_activity, "B2B dental software", _PLACE)
 
@@ -123,15 +128,17 @@ async def test_qualify_lead_passes_outreach_goal(monkeypatch: pytest.MonkeyPatch
     env = ActivityEnvironment()
     captured: dict[str, Any] = {}
 
-    async def _capture(goal: str, place: PlaceDetails) -> QualifierVerdict:
-        captured["goal"] = goal
-        return _VERDICT
+    def _capture_node(state: LeadProcessingState) -> dict[str, Any]:
+        captured["goal"] = state["outreach_goal"]
+        captured["place"] = state["place"]
+        return {"verdict": _VERDICT}
 
-    monkeypatch.setattr(act, "qualify_lead_async", _capture)
+    monkeypatch.setattr(act, "qualify_node", _capture_node)
 
     await env.run(qualify_lead_activity, "plumbing SaaS", _PLACE)
 
     assert captured["goal"] == "plumbing SaaS"
+    assert captured["place"] == _PLACE
 
 
 async def test_qualify_lead_propagates_validation_error(
@@ -142,10 +149,12 @@ async def test_qualify_lead_propagates_validation_error(
 
     env = ActivityEnvironment()
 
-    async def _bad_qualify(*a: Any, **kw: Any) -> None:
+    def _bad_node(state: LeadProcessingState) -> dict[str, Any]:
+        # qualify_node re-raises ValidationError (doesn't catch it)
         QualifierVerdict.model_validate({"is_qualified": "yes", "score": 99})
+        return {}  # unreachable
 
-    monkeypatch.setattr(act, "qualify_lead_async", _bad_qualify)
+    monkeypatch.setattr(act, "qualify_node", _bad_node)
 
     with pytest.raises(ValidationError):
         await env.run(qualify_lead_activity, "goal", _PLACE)
@@ -154,26 +163,30 @@ async def test_qualify_lead_propagates_validation_error(
 async def test_qualify_lead_propagates_rate_limit_error(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Rate-limit errors surface so Temporal can schedule a retry attempt."""
+    """LLM errors (caught by qualify_node as {"error": ...}) are re-raised by the activity."""
     env = ActivityEnvironment()
 
-    async def _rate_limited(*a: Any, **kw: Any) -> None:
-        raise RuntimeError("rate limit exceeded")
+    def _error_node(state: LeadProcessingState) -> dict[str, Any]:
+        return {"error": "rate limit exceeded"}
 
-    monkeypatch.setattr(act, "qualify_lead_async", _rate_limited)
+    monkeypatch.setattr(act, "qualify_node", _error_node)
 
     with pytest.raises(RuntimeError, match="rate limit"):
         await env.run(qualify_lead_activity, "goal", _PLACE)
 
 
 # ---------------------------------------------------------------------------
-# generate_email_activity
+# generate_email_activity — delegates to email_node
 # ---------------------------------------------------------------------------
 
 
 async def test_generate_email_returns_email(monkeypatch: pytest.MonkeyPatch) -> None:
     env = ActivityEnvironment()
-    monkeypatch.setattr(act, "generate_email_async", AsyncMock(return_value=_EMAIL))
+
+    def _mock_node(state: LeadProcessingState) -> dict[str, Any]:
+        return {"email": _EMAIL}
+
+    monkeypatch.setattr(act, "email_node", _mock_node)
 
     result = await env.run(
         generate_email_activity, "B2B dental software", _PLACE, _VERDICT, "I run SaaS."
@@ -187,17 +200,12 @@ async def test_generate_email_passes_sender_context(monkeypatch: pytest.MonkeyPa
     env = ActivityEnvironment()
     captured: dict[str, Any] = {}
 
-    async def _capture(
-        outreach_goal: str,
-        place: PlaceDetails,
-        verdict: QualifierVerdict,
-        sender_context: str,
-    ) -> GeneratedEmail:
-        captured["sender_context"] = sender_context
-        captured["qualifier_reasoning"] = verdict.reasoning
-        return _EMAIL
+    def _capture_node(state: LeadProcessingState) -> dict[str, Any]:
+        captured["sender_context"] = state["sender_context"]
+        captured["qualifier_reasoning"] = state["verdict"].reasoning  # type: ignore[union-attr]
+        return {"email": _EMAIL}
 
-    monkeypatch.setattr(act, "generate_email_async", _capture)
+    monkeypatch.setattr(act, "email_node", _capture_node)
 
     await env.run(generate_email_activity, "goal", _PLACE, _VERDICT, "Sender: Jane, value prop: X")
 
@@ -208,10 +216,10 @@ async def test_generate_email_passes_sender_context(monkeypatch: pytest.MonkeyPa
 async def test_generate_email_propagates_llm_error(monkeypatch: pytest.MonkeyPatch) -> None:
     env = ActivityEnvironment()
 
-    async def _fail(*a: Any, **kw: Any) -> None:
-        raise RuntimeError("LLM unavailable")
+    def _error_node(state: LeadProcessingState) -> dict[str, Any]:
+        return {"error": "LLM unavailable"}
 
-    monkeypatch.setattr(act, "generate_email_async", _fail)
+    monkeypatch.setattr(act, "email_node", _error_node)
 
     with pytest.raises(RuntimeError, match="LLM unavailable"):
         await env.run(generate_email_activity, "goal", _PLACE, _VERDICT, "sender")

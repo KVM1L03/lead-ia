@@ -1,20 +1,24 @@
 """Temporal activities — thin wrappers that add retry policy constants and observability.
 
-Business logic lives in pipeline.py. Both Temporal activities (here) and the sync
-execution path (api_gateway/routes/leads.py) call the same pipeline functions.
+Per-lead business logic lives in agent_graph.py nodes. Both Temporal activities (here)
+and the sync execution path (pipeline.py) delegate to the same graph nodes.
 """
 
+import asyncio
 import json
 from datetime import timedelta
 
 from temporalio import activity
 from temporalio.common import RetryPolicy
 
+from ai_worker.agent_graph import (
+    LeadProcessingState,
+    email_node,
+    qualify_node,
+)
 from ai_worker.observability import activity_span
 from ai_worker.pipeline import (
-    generate_email_async,
     get_place_details,
-    qualify_lead_async,
     search_places,
 )
 from shared.schemas import GeneratedEmail, Lead, PlaceDetails, PlaceSearchResult, QualifierVerdict
@@ -73,10 +77,24 @@ async def get_place_details_activity(place_id: str) -> PlaceDetails:
 
 @activity.defn
 async def qualify_lead_activity(outreach_goal: str, place: PlaceDetails) -> QualifierVerdict:
-    """Run the DSPy qualifier for one place; raises on validation or LLM error."""
+    """Run the LangGraph qualify_node for one place; raises on validation or LLM error."""
     info = activity.info()
     with activity_span("qualify_lead", workflow_id=info.workflow_id or "", lead_id=place.id):
-        return await qualify_lead_async(outreach_goal, place)
+        state: LeadProcessingState = {
+            "outreach_goal": outreach_goal,
+            "sender_context": "",
+            "place": place,
+            "verdict": None,
+            "email": None,
+            "error": None,
+        }
+        patch = await asyncio.to_thread(qualify_node, state)
+        if patch.get("error") is not None:
+            raise RuntimeError(patch["error"])
+        verdict = patch.get("verdict")
+        if verdict is None:
+            raise RuntimeError("qualify_node returned no verdict")
+        return verdict
 
 
 @activity.defn
@@ -86,10 +104,24 @@ async def generate_email_activity(
     verdict: QualifierVerdict,
     sender_context: str,
 ) -> GeneratedEmail:
-    """Draft a personalised cold-outreach email for a qualified lead."""
+    """Draft a personalised cold-outreach email via the LangGraph email_node."""
     info = activity.info()
     with activity_span("generate_email", workflow_id=info.workflow_id or "", lead_id=place.id):
-        return await generate_email_async(outreach_goal, place, verdict, sender_context)
+        state: LeadProcessingState = {
+            "outreach_goal": outreach_goal,
+            "sender_context": sender_context,
+            "place": place,
+            "verdict": verdict,
+            "email": None,
+            "error": None,
+        }
+        patch = await asyncio.to_thread(email_node, state)
+        if patch.get("error") is not None:
+            raise RuntimeError(patch["error"])
+        email = patch.get("email")
+        if email is None:
+            raise RuntimeError("email_node returned no email")
+        return email
 
 
 @activity.defn
