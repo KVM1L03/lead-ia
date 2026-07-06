@@ -23,48 +23,35 @@ You describe who you're looking for ("dental practices in Warsaw with no online 
 
 ## Architecture
 
+**Agent flow** — one prompt in, reviewed cohort out:
+
 ```mermaid
-flowchart TD
-    Browser["Browser\nNext.js 16 — Vercel / :3000"]
+flowchart TB
+    START(["You · ICP prompt + who you are"])
 
-    subgraph GW["api_gateway  :8000"]
-        API["FastAPI\nRateLimitMiddleware · DSPy PromptToQuery"]
+    START --> PARSE["① Parse prompt → Maps search query · DSPy"]
+    PARSE --> SEARCH["② Search Google Maps · MCP → SerpAPI"]
+
+    SEARCH --> LOOP
+
+    subgraph LOOP["③–⑤ Per business · parallel"]
+        direction TB
+        ENRICH["Enrich details"]
+        QUAL{"ICP fit? · Haiku"}
+        EMAIL["Draft email · Sonnet"]
+        DROP([discard])
+
+        ENRICH --> QUAL
+        QUAL -->|qualified| EMAIL
+        QUAL -->|not a fit| DROP
     end
 
-    subgraph AW["ai_worker"]
-        PIPE["pipeline.py\nsearch → qualify → email"]
-        subgraph DUR["Durable path — local only"]
-            WF["LeadGenerationWorkflow\nTemporal"]
-            ACTS["5 Activities\nper-step retry + timeout"]
-        end
-    end
-
-    subgraph MB["maps_bridge — MCP zero-trust boundary"]
-        MCP["FastMCP\nsearch_places · get_place_details"]
-        SERP[("SerpAPI")]
-    end
-
-    subgraph INFRA["Local infra — Docker Compose"]
-        TEMPORAL[("Temporal  :7233")]
-        PGDB[("PostgreSQL  :5432")]
-        LANGFUSE[("Langfuse  :3030")]
-    end
-
-    Browser -->|"POST /api/leads/search"| API
-    Browser -->|"GET /api/leads/status/:id  (Temporal mode)"| API
-    API -->|"EXECUTION_MODE=sync  demo / Cloud Run"| PIPE
-    API -->|"EXECUTION_MODE=temporal  local full stack"| WF
-    WF <-->|"durable execution"| TEMPORAL
-    WF --> ACTS
-    ACTS -->|"individual pipeline fns"| PIPE
-    PIPE -->|"MCP stdio or inline"| MCP
-    MCP --> SERP
-    ACTS -.->|"OTel spans"| LANGFUSE
-    ACTS --> PGDB
-    API --> PGDB
+    LOOP --> COHORT["⑥ Lead cohort"]
+    COHORT --> REVIEW{"⑦ Human review · approve · edit · reject"}
+    REVIEW --> OUT(["Send-ready drafts"])
 ```
 
-The full-stack mode runs all business logic inside `LeadGenerationWorkflow` — 100% deterministic (no `datetime.now()`, no raw HTTP) so Temporal can replay it on crash without side effects. All LLM calls trace to Langfuse via a `SHA-256(workflow_id)` span-correlation trick because Temporal doesn't propagate OTel context natively across activity boundaries. The deployed demo strips both: no Temporal (scale-to-zero kills persistent pollers), no PostgreSQL (stateless Cloud Run) — the same `pipeline.py` functions run synchronously on the FastAPI request thread behind an in-process rate limiter.
+**Under the hood (local full stack):** each numbered step above is a Temporal activity with its own timeout and retry policy — crash mid-run replays from the last completed step. LLM calls trace to Langfuse via a `SHA-256(workflow_id)` correlation trick (Temporal doesn't propagate OTel context across activity boundaries). The [live demo](https://lead-ia-ten.vercel.app) runs the same pipeline synchronously on Cloud Run (`EXECUTION_MODE=sync`) — no Temporal poller, no Postgres persistence — behind an in-process rate limiter.
 
 ---
 
