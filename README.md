@@ -152,14 +152,56 @@ See [`evals/`](./evals/) for the full suite, gold dataset, and metrics script.
 
 ## Run it locally
 
-**Prerequisites:** Docker, Python 3.12+, Node 20+, [`uv`](https://docs.astral.sh/uv/), `npm`.
+**Prerequisites:** Docker, Python 3.12+, **Node 20+** ([`uv`](https://docs.astral.sh/uv/), `npm`). System Node 18 breaks Prisma and vitest — see [`frontend/CLAUDE.md`](./frontend/CLAUDE.md).
+
+Canonical env reference: [`.env.example`](./.env.example). Root `.env` uses `localhost` URLs (correct for host processes and exposed compose ports); containers get internal hostnames via `docker-compose.yml`.
 
 ```bash
 git clone https://github.com/KVM1L03/lead-ia
 cd lead-ia
 make bootstrap          # uv sync + npm ci + copy .env.example → .env
-# fill in .env: ANTHROPIC_API_KEY and SERPAPI_API_KEY
-make up-build           # Docker Compose: Temporal, Langfuse, Postgres, api-gateway, ai-worker
+```
+
+**1. Edit root `.env`** — minimum for the full stack:
+
+| Variable | Purpose |
+|---|---|
+| `ANTHROPIC_API_KEY` | LLM calls (required for a live pipeline run) |
+| `SERPAPI_API_KEY` | Google Maps via SerpAPI (skip if `MAPS_PROVIDER=mock`) |
+| `LANGFUSE_NEXTAUTH_SECRET`, `LANGFUSE_SALT`, `LANGFUSE_ENCRYPTION_KEY` | Langfuse container secrets — generate **before** first boot: `openssl rand -hex 32` (×3) |
+
+Full-stack defaults (already in `.env.example`): `EXECUTION_MODE=temporal`, `PERSISTENCE_ENABLED=true`, `DEMO_MODE=false`, `MAPS_TRANSPORT=stdio`.
+
+**2. Start infra + backend**
+
+```bash
+make up-build           # Temporal, Langfuse, Postgres, api-gateway, ai-worker
+```
+
+**3. Langfuse API keys** — open http://localhost:3030, create a project, copy `LANGFUSE_PUBLIC_KEY` / `LANGFUSE_SECRET_KEY` into root `.env`, then:
+
+```bash
+docker compose restart api-gateway ai-worker
+```
+
+**4. Database schema + frontend env**
+
+```bash
+make db-push            # Prisma schema → Postgres (/history needs this)
+```
+
+Create `frontend/.env.local` (Next.js does **not** read root `.env` at runtime):
+
+```bash
+PRISMA_DATABASE_URL=postgresql://temporal:temporal@localhost:5432/temporal
+NEXT_PUBLIC_API_URL=http://localhost:8000
+EXECUTION_MODE=temporal
+PERSISTENCE_ENABLED=true
+```
+
+**5. Run the UI**
+
+```bash
 make frontend           # Next.js dev server on :3000
 ```
 
@@ -170,13 +212,13 @@ make frontend           # Next.js dev server on :3000
 | Temporal UI | http://localhost:8085 |
 | Langfuse | http://localhost:3030 |
 
-Set `MAPS_PROVIDER=mock` and `LLM_PROVIDER=mock` in `.env` for zero-cost local development (no API calls).
+**Zero-cost maps (optional):** set `MAPS_PROVIDER=mock` in root `.env` — no SerpAPI calls (fixtures from `maps_bridge` mock adapter). LLM calls still require `ANTHROPIC_API_KEY` (or fallback keys `OPENAI_API_KEY` / `GOOGLE_API_KEY` via the LiteLLM router) when you run the pipeline.
 
 ---
 
 ## Deploy it
 
-The app runs as two stateless Cloud Run services (`api_gateway` + `ai_worker` with `maps_bridge` inlined) and a Vercel frontend. See [`docs/twelve-factor-audit.md`](./docs/twelve-factor-audit.md) for the full twelve-factor compliance audit and Cloud Run configuration notes. GCP infrastructure (VPC, Artifact Registry, serverless VPC connector) is in [`infra/terraform/`](./infra/terraform/).
+The live demo runs on **Vercel** (frontend) + **Cloud Run** (backend). The backend uses `EXECUTION_MODE=sync`, `MAPS_TRANSPORT=inline`, and in-process rate limiting — see [Engineering decisions](#temporal-for-durable-execution--and-why-the-demo-bypasses-it). The codebase is split into `api_gateway`, `ai_worker`, and `maps_bridge` (inlined on Cloud Run); the portfolio deploy may use one or two Cloud Run services. See [`docs/twelve-factor-audit.md`](./docs/twelve-factor-audit.md) for the twelve-factor audit and Cloud Run notes. GCP infrastructure (VPC, Artifact Registry, serverless VPC connector) is in [`infra/terraform/`](./infra/terraform/).
 
 ---
 
@@ -185,7 +227,7 @@ The app runs as two stateless Cloud Run services (`api_gateway` + `ai_worker` wi
 | Layer | Tech |
 |---|---|
 | **Backend** | Python 3.12, FastAPI, Pydantic v2 (strict mode), Temporal |
-| **AI / LLM** | DSPy, LangGraph, LiteLLM (multi-provider fallback router), Langfuse (OTel observability) |
+| **AI / LLM** | DSPy, LiteLLM (multi-provider fallback router), Langfuse (OTel observability) |
 | **Scraping** | SerpAPI via MCP bridge (FastMCP), SQLite 24 h cache |
 | **Frontend** | Next.js 16, React 19, Tailwind v4, Prisma 7 |
 | **Data** | PostgreSQL 16 (SQLAlchemy async + Prisma read), SQLite |
