@@ -6,7 +6,11 @@
 The full durable stack (Temporal, Langfuse, PostgreSQL) runs locally via Docker Compose.
 
 
-https://github.com/user-attachments/assets/6f2cede9-5fb4-4460-9317-9c871fe2f6e3
+
+
+https://github.com/user-attachments/assets/bf714471-e784-45da-b5b2-55ff26b23700
+
+
 
 
 ---
