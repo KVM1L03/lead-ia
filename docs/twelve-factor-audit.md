@@ -94,7 +94,7 @@ Temporal's activity concurrency is controlled internally by asyncio semaphores (
 
 - Same Docker images for local dev (`make up-build`) and Cloud Run — no separate dev Dockerfiles.
 - `MAPS_PROVIDER=mock` (local) vs `serpapi` (prod), `MAPS_TRANSPORT=stdio` (local compose) vs `inline` (Cloud Run) — both are single env var toggles, not code branches.
-- `LLM_PROVIDER=mock` for CI; `anthropic` for live — same code path.
+- `MAPS_PROVIDER=mock` for CI; `serpapi` for live — same code path. (`LLM_PROVIDER` was removed: not read by production code; LLM mocking is test-level via `DummyLM`.)
 - Langfuse self-hosted locally (port 3030) vs cloud-hosted in prod — same SDK, different `LANGFUSE_BASE_URL`.
 
 ### XI. Logs — ✅ Pass
@@ -110,7 +110,6 @@ Temporal's activity concurrency is controlled internally by asyncio semaphores (
 One-off admin commands are run as separate processes, not inside the app container:
 
 - `make db-push` — `prisma generate && prisma db push` for frontend schema migrations
-- `make seed` — regenerate SerpAPI fixtures and mock DB
 - `make eval` — promptfoo eval suite (run manually or via CI label)
 
 No admin logic is embedded in the startup CMD of any service.

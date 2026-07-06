@@ -146,7 +146,7 @@ promote on promptfoo alone.
 - [ ] **DSPy qualifier eval** — extend `evals/` (or a one-off script) to run
   `QualifyLead` via `dspy.Predict` + `get_lm("qualifier")` on
   `qualifier_gold.jsonl`; compare F1 to promptfoo baseline (Gemini ≥ Haiku + margin).
-- [ ] **End-to-end smoke** — one full Temporal workflow with `LLM_PROVIDER` live,
+- [ ] **End-to-end smoke** — one full Temporal workflow with live API keys,
   Langfuse trace review (latency, JSON parse errors, qualification counts).
 - [ ] **Router change** — swap primary in `_DEFAULTS["qualifier"]`:
   `gemini/gemini-2.5-flash` → `anthropic/claude-haiku-4-5-20251001` → nano.
@@ -196,3 +196,33 @@ EMAIL_MODEL=anthropic/claude-sonnet-4-6
 4. Update decision record and demote Anthropic to fallback in docs.
 
 **Do not merge router changes until the relevant checklist section is complete.**
+
+---
+
+## Eval backlog
+
+> Moved from `docs/evals-backlog.md` — living checklist of eval-suite and model-validation work not yet implemented.
+
+**Current baseline (2026-07-03):** plain-prompt qualifier eval via promptfoo (`make eval`), 100-example gold set, three providers. See [Migration plan: Gemini primary](#migration-plan-gemini-primary) for the merge gate.
+
+### Eval quality & coverage
+
+- [ ] **Sync `evals/README.md`** — results table must match this file (stale ~89% Haiku vs latest ~78% / Gemini 83% F1).
+- [ ] **Slice metrics in `metrics.py`** — F1 / precision / recall by: category (positive / negative / ambiguous), outreach goal (5 × 20), provider comparison per slice.
+- [ ] **DSPy qualifier eval** — run `QualifyLead` via `dspy.Predict` + `get_lm("qualifier")` on `qualifier_gold.jsonl`; compare to promptfoo baseline. Production path, not plain `qualify.txt`.
+- [ ] **Multi-run stability** — 3× `--no-cache` runs; report mean ± std for F1 (nano showed variance).
+- [ ] **Regression thresholds** — optional CI fail when F1 drops >N pp vs committed baseline JSON.
+- [ ] **Email eval (automated)** — `evals/datasets/email_gold.jsonl` + rubric: schema, max length, mentions business name, no spam phrases.
+- [ ] **Email eval (human)** — blind Sonnet vs Gemini on ~20 leads; approval rate, edit distance, "would send as-is" score.
+
+### Cost & metrics tooling
+
+- [ ] **Centralize pricing** — `evals/pricing.yaml` (model id → $/M) used by `metrics.py` instead of hardcoded Flash rates.
+- [ ] **Fixture test for total cost** — load trimmed `latest.json`; assert aggregated cost matches expected sum.
+- [ ] **Cached-token handling** — document or apply discounted rate for cache read tokens.
+
+### CI & ops
+
+- [ ] **CI eval env parity** — evals CI job should mirror local `make eval` (secrets injection pattern).
+- [ ] **Committed baseline artifact** — pin `evals/results/baseline.json` updated intentionally on gold-set or prompt changes.
+- [ ] **Eval cost budget note** — document expected ~$0.15/run in README and when to use `run-evals` label.

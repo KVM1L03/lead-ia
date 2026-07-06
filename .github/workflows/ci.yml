@@ -44,9 +44,8 @@ jobs:
       - name: Tests (pytest)
         run: uv run pytest -q --tb=short
         env:
-          # CI uses mock adapter for Maps + mock LLM — no real API spend
+          # CI uses mock adapter for Maps — no real API spend
           MAPS_PROVIDER: mock
-          LLM_PROVIDER: mock
 
   # ──────────────────────────────────────────────────────────────
   # Frontend: eslint + tsc + vitest
