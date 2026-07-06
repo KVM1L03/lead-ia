@@ -79,6 +79,19 @@ The business logic is identical — both paths call the same functions in `pipel
 
 ---
 
+### Why two orchestration paths
+
+The business flow is **one**: search → enrich → qualify → email. The leaf logic runs once, in `qualify_node` and `email_node` (`agent_graph.py`). But the orchestration shell is **two by necessity**.
+
+Temporal workflows are 100% deterministic — no direct HTTP, LLM, or MCP calls. Every external operation must go through an activity with an explicit timeout and retry policy. The sync path has no such constraint: `run_pipeline()` calls MCP and graph nodes directly in an asyncio gather loop. That difference propagates into error handling (per-activity retries vs. gather-level exception wrapping), concurrency primitives (replay-safe workflow semaphore vs. plain `asyncio.Semaphore`), and progress visibility (`@workflow.query` vs. nothing). Extracting a shared `orchestrate(steps, executor)` callback adapter was considered and rejected — it would be a leaky abstraction over two genuinely different execution models, harder to read and harder to defend than explicit duplication.
+
+| Path | Orchestrator | Leaf logic |
+|---|---|---|
+| `EXECUTION_MODE=sync` | `run_pipeline()` — `pipeline.py` | `process_one_lead()` → graph nodes |
+| `EXECUTION_MODE=temporal` | `LeadGenerationWorkflow.run()` — `workflows.py` | `qualify_lead_activity` + `generate_email_activity` → same graph nodes |
+
+---
+
 ### Two-model split: Haiku (qualify) vs Sonnet (email)
 
 Qualification runs on every scraped place. Email generation runs only on qualified leads (~40–70% of results). The eval result drove the split — see [Evaluation](#evaluation) below.
