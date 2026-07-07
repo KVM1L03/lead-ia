@@ -224,7 +224,7 @@ make frontend           # Next.js dev server on :3000
 
 ## Deploy it
 
-The live demo runs on **Vercel** (frontend) + **Cloud Run** (backend). The backend uses `EXECUTION_MODE=sync`, `MAPS_TRANSPORT=inline`, and in-process rate limiting — see [Engineering decisions](#temporal-for-durable-execution--and-why-the-demo-bypasses-it). The codebase is split into `api_gateway`, `ai_worker`, and `maps_bridge` (inlined on Cloud Run); the portfolio deploy may use one or two Cloud Run services. See [`docs/twelve-factor-audit.md`](./docs/twelve-factor-audit.md) for the twelve-factor audit and Cloud Run notes. GCP infrastructure (VPC, Artifact Registry, serverless VPC connector) is in [`infra/terraform/`](./infra/terraform/).
+The live demo runs on **Vercel** (frontend) + **Cloud Run** (backend). The backend is a single Cloud Run service (`lead-api`) running `EXECUTION_MODE=sync`, `MAPS_TRANSPORT=inline`, and in-process rate limiting — `maps_bridge` is inlined in the same container, no sidecar. See [Engineering decisions](#temporal-for-durable-execution--and-why-the-demo-bypasses-it). [`infra/terraform/`](./infra/terraform/) codifies the IaC foundation (VPC, Artifact Registry, API enablement); the live service is deployed via `gcloud`. The VPC connector and Cloud SQL/Redis are defined in Terraform but not yet provisioned — the demo runs without them (in-process rate limiting, `PERSISTENCE_ENABLED=false`). See [`docs/twelve-factor-audit.md`](./docs/twelve-factor-audit.md) for the full Cloud Run audit.
 
 ---
 
