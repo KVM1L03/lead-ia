@@ -41,6 +41,7 @@ x-langfuse-env: &langfuse-env
   LANGFUSE_S3_BATCH_EXPORT_FORCE_PATH_STYLE: "true"
 
 x-backend-env: &backend-env
+  PORT: ${PORT:-8000}
   TEMPORAL_ADDRESS: temporal:7233
   APP_DATABASE_URL: postgresql+asyncpg://temporal:temporal@postgres:5432/temporal
   ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
