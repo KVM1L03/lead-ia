@@ -2,6 +2,15 @@
 
 **Prompt → Google Maps → AI qualifier → personalized email → human approval**
 
+[![Python 3.12](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![Next.js 16](https://img.shields.io/badge/Next.js-16-000000?logo=next.js&logoColor=white)](https://nextjs.org/)
+[![Temporal](https://img.shields.io/badge/Temporal-000000?logo=temporal&logoColor=white)](https://temporal.io/)
+[![LangGraph](https://img.shields.io/badge/LangGraph-1C3C3C?logo=langchain&logoColor=white)](https://langchain-ai.github.io/langgraph/)
+[![DSPy](https://img.shields.io/badge/DSPy-FF6F00?logoColor=white)](https://dspy.ai/)
+[![Docker](https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
+[![CI](https://github.com/KVM1L03/lead-ia/actions/workflows/ci.yml/badge.svg)](https://github.com/KVM1L03/lead-ia/actions/workflows/ci.yml)
+
 🚀 **[Try it live](https://lead-ia-ten.vercel.app)** — first load may take 5–10 s (Cloud Run cold start).
 The full durable stack (Temporal, Langfuse, PostgreSQL) runs locally via Docker Compose.
 
@@ -224,7 +233,7 @@ make frontend           # Next.js dev server on :3000
 
 ## Deploy it
 
-The live demo runs on **Vercel** (frontend) + **Cloud Run** (backend). The backend uses `EXECUTION_MODE=sync`, `MAPS_TRANSPORT=inline`, and in-process rate limiting — see [Engineering decisions](#temporal-for-durable-execution--and-why-the-demo-bypasses-it). The codebase is split into `api_gateway`, `ai_worker`, and `maps_bridge` (inlined on Cloud Run); the portfolio deploy may use one or two Cloud Run services. See [`docs/twelve-factor-audit.md`](./docs/twelve-factor-audit.md) for the twelve-factor audit and Cloud Run notes. GCP infrastructure (VPC, Artifact Registry, serverless VPC connector) is in [`infra/terraform/`](./infra/terraform/).
+The live demo runs on **Vercel** (frontend) + **Cloud Run** (backend). The backend is a single Cloud Run service (`lead-api`) running `EXECUTION_MODE=sync`, `MAPS_TRANSPORT=inline`, and in-process rate limiting — `maps_bridge` is inlined in the same container, no sidecar. See [Engineering decisions](#temporal-for-durable-execution--and-why-the-demo-bypasses-it). [`infra/terraform/`](./infra/terraform/) codifies the IaC foundation (VPC, Artifact Registry, API enablement); the live service is deployed via `gcloud`. The VPC connector and Cloud SQL/Redis are defined in Terraform but not yet provisioned — the demo runs without them (in-process rate limiting, `PERSISTENCE_ENABLED=false`). See [`docs/twelve-factor-audit.md`](./docs/twelve-factor-audit.md) for the full Cloud Run audit.
 
 ---
 
