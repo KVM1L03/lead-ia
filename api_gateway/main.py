@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 
 from api_gateway.rate_limit import RateLimitMiddleware
-from api_gateway.routes import approve, config, leads, status
+from api_gateway.routes import approve, config, export, leads, status
 
 app = FastAPI()
 
@@ -13,6 +13,7 @@ app.add_middleware(RateLimitMiddleware)
 app.include_router(leads.router)
 app.include_router(status.router)
 app.include_router(approve.router)
+app.include_router(export.router)
 app.include_router(config.router)
 
 
