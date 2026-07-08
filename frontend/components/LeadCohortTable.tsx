@@ -3,8 +3,9 @@
 import { startTransition, useOptimistic, useState } from "react";
 import type { Lead } from "@/lib/api";
 import { allIndustries, groupIntoCohorts, DEFAULT_FILTERS, type Cohort, type FilterState } from "@/lib/cohorts";
-import { serverApproveLeads } from "@/app/actions";
+import { serverApproveLeads, serverExportLeads } from "@/app/actions";
 import { EmailDrawer } from "./EmailDrawer";
+import { ExportCsvButton } from "./ExportCsvButton";
 import { cn } from "@/lib/utils";
 
 type Props = { leads: Lead[]; runId: string };
@@ -178,8 +179,11 @@ export function LeadCohortTable({ leads: initialLeads, runId }: Props) {
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [toast, setToast] = useState<string | null>(null);
 
+  // baseLeads is the committed source of truth. useOptimistic builds on top of it
+  // so the optimistic update persists after the transition instead of reverting.
+  const [baseLeads, setBaseLeads] = useState<Lead[]>(initialLeads);
   const [optimisticLeads, applyOptimistic] = useOptimistic(
-    initialLeads,
+    baseLeads,
     (state, { placeIds, action }: { placeIds: string[]; action: "approved" | "rejected" }) =>
       state.map((l) => placeIds.includes(l.place.id) ? { ...l, decision: action as Lead["decision"] } : l),
   );
@@ -197,6 +201,13 @@ export function LeadCohortTable({ leads: initialLeads, runId }: Props) {
       applyOptimistic({ placeIds, action });
       try {
         await serverApproveLeads(runId, placeIds, action, editedEmails);
+        // Commit: update the base state so the optimistic change persists.
+        // On error (catch), baseLeads is NOT updated → useOptimistic auto-reverts.
+        setBaseLeads((prev) =>
+          prev.map((l) =>
+            placeIds.includes(l.place.id) ? { ...l, decision: action } : l,
+          ),
+        );
       } catch {
         showToast("Failed to save decision — please try again.");
       }
@@ -209,17 +220,91 @@ export function LeadCohortTable({ leads: initialLeads, runId }: Props) {
     setSelectedLead(null);
   }
 
+  const [isApproveExporting, setIsApproveExporting] = useState(false);
+
+  async function handleApproveAllAndExport(): Promise<void> {
+    const qualifiedIds = optimisticLeads
+      .filter((l) => l.verdict?.is_qualified)
+      .map((l) => l.place.id);
+    if (qualifiedIds.length === 0) return;
+
+    setIsApproveExporting(true);
+    startTransition(async () => {
+      applyOptimistic({ placeIds: qualifiedIds, action: "approved" });
+      try {
+        await serverApproveLeads(runId, qualifiedIds, "approved");
+        const newLeads = baseLeads.map((l) =>
+          qualifiedIds.includes(l.place.id) ? { ...l, decision: "approved" as Lead["decision"] } : l,
+        );
+        setBaseLeads(newLeads);
+
+        const approvedLeads = newLeads.filter((l) => l.decision === "approved");
+        const result = await serverExportLeads(runId, approvedLeads);
+        if (!result.ok) {
+          showToast(result.error);
+          return;
+        }
+        const blob = new Blob([result.csv], { type: "text/csv;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        try {
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = `leadia-export-${new Date().toISOString().slice(0, 10)}.csv`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+        } finally {
+          URL.revokeObjectURL(url);
+        }
+      } catch {
+        showToast("Failed to approve and export — please try again.");
+      } finally {
+        setIsApproveExporting(false);
+      }
+    });
+  }
+
   const totalQualified = optimisticLeads.filter((l) => l.verdict?.is_qualified).length;
   const totalApproved = optimisticLeads.filter((l) => l.decision === "approved").length;
 
   return (
     <div className="mx-auto max-w-3xl px-6 py-8">
-      <div className="mb-6 flex items-baseline justify-between">
+      <div className="mb-6 flex items-center justify-between gap-4">
         <div>
           <p className="mb-1 font-mono text-[11px] font-medium uppercase tracking-[.18em] text-muted-fg">Review</p>
           <h1 className="font-serif text-[22px] leading-snug tracking-[-0.01em] text-fg">
             {totalApproved} / {totalQualified} approved
           </h1>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => void handleApproveAllAndExport()}
+            disabled={isApproveExporting || totalQualified === 0}
+            title={totalQualified === 0 ? "No qualified leads to export" : "Approve all leads and download CSV"}
+            className={cn(
+              "inline-flex items-center gap-1.5 rounded-[3px] px-3 py-1.5",
+              "font-sans text-[12px] font-medium transition-colors",
+              "bg-brand text-white hover:opacity-90",
+              (isApproveExporting || totalQualified === 0) && "cursor-not-allowed opacity-50",
+            )}
+          >
+            {isApproveExporting ? (
+              "Exporting…"
+            ) : (
+              <>
+                <svg viewBox="0 0 12 12" aria-hidden="true" className="h-3 w-3 shrink-0 fill-none stroke-current stroke-[1.5]">
+                  <path d="M6 1v7M3 5l3 3 3-3M1 10h10" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                Approve all & export
+              </>
+            )}
+          </button>
+          <ExportCsvButton
+            runId={runId}
+            approvedLeads={optimisticLeads.filter((l) => l.decision === "approved")}
+            onError={showToast}
+          />
         </div>
       </div>
 

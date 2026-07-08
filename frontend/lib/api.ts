@@ -133,3 +133,24 @@ export async function approveLeads(
     }),
   });
 }
+
+// ── Export ────────────────────────────────────────────────────────────────────
+
+export async function exportLeadsCsv(
+  runId: string,
+  approvedLeads: Lead[],
+): Promise<string> {
+  // Always send both fields. The backend picks run_id (when PERSISTENCE_ENABLED=true,
+  // DB mode) or leads (when PERSISTENCE_ENABLED=false, sync/demo mode) based on
+  // its own PERSISTENCE_ENABLED setting — the frontend never needs to know the mode.
+  const res = await fetch(`${API_BASE}/api/leads/export`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ run_id: runId, leads: approvedLeads }),
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => res.statusText);
+    throw new Error(`${res.status} /api/leads/export: ${text}`);
+  }
+  return res.text();
+}
