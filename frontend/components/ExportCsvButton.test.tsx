@@ -59,6 +59,8 @@ describe("ExportCsvButton", () => {
     // jsdom has no URL.createObjectURL — stub it
     URL.createObjectURL = vi.fn(() => "blob:mock-url");
     URL.revokeObjectURL = vi.fn();
+    // jsdom cannot handle anchor navigation — suppress the expected noise
+    vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
   });
 
   it("is disabled when approvedLeads is empty", () => {
@@ -107,6 +109,9 @@ describe("ExportCsvButton", () => {
 
     await waitFor(() => {
       expect(mockServerExportLeads).toHaveBeenCalledWith("run-1", [_APPROVED_LEAD]);
+    });
+    await waitFor(() => {
+      expect(URL.createObjectURL).toHaveBeenCalled();
     });
   });
 
