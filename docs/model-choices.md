@@ -143,9 +143,12 @@ and higher F1/precision on the plain-prompt gold set (2026-07-03).
 Plain-prompt eval (`make eval`) favors Gemini; production uses DSPy. Do **not**
 promote on promptfoo alone.
 
-- [ ] **DSPy qualifier eval** — extend `evals/` (or a one-off script) to run
-  `QualifyLead` via `dspy.Predict` + `get_lm("qualifier")` on
-  `qualifier_gold.jsonl`; compare F1 to promptfoo baseline (Gemini ≥ Haiku + margin).
+- [x] **DSPy qualifier eval** — `evals/dspy_eval.py` / `make eval-dspy`. Runs
+  `qualify_lead()` (production path) on `qualifier_gold.jsonl`. Haiku result
+  (2026-07-08): **Acc 81%, Prec 89%, Rec 78%, F1 83%, p95 2810 ms, $0.134/100**.
+  Gemini DSPy-path numbers still pending — run
+  `make eval-dspy ARGS="--model gemini/gemini-2.5-flash"` after wiring
+  `thinkingBudget: 0` into the DSPy LiteLLM kwargs.
 - [ ] **End-to-end smoke** — one full Temporal workflow with live API keys,
   Langfuse trace review (latency, JSON parse errors, qualification counts).
 - [ ] **Router change** — swap primary in `_DEFAULTS["qualifier"]`:
@@ -209,7 +212,7 @@ EMAIL_MODEL=anthropic/claude-sonnet-4-6
 
 - [ ] **Sync `evals/README.md`** — results table must match this file (stale ~89% Haiku vs latest ~78% / Gemini 83% F1).
 - [ ] **Slice metrics in `metrics.py`** — F1 / precision / recall by: category (positive / negative / ambiguous), outreach goal (5 × 20), provider comparison per slice.
-- [ ] **DSPy qualifier eval** — run `QualifyLead` via `dspy.Predict` + `get_lm("qualifier")` on `qualifier_gold.jsonl`; compare to promptfoo baseline. Production path, not plain `qualify.txt`.
+- [x] **DSPy qualifier eval** — `make eval-dspy` ships. Haiku: F1 83% on production path vs 78% on plain-text proxy (+5 pp). Gemini DSPy-path pending.
 - [ ] **Multi-run stability** — 3× `--no-cache` runs; report mean ± std for F1 (nano showed variance).
 - [ ] **Regression thresholds** — optional CI fail when F1 drops >N pp vs committed baseline JSON.
 - [ ] **Email eval (automated)** — `evals/datasets/email_gold.jsonl` + rubric: schema, max length, mentions business name, no spam phrases.

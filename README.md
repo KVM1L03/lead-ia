@@ -149,19 +149,29 @@ Two independent rate-limit layers, both no-ops when `DEMO_MODE=false`:
 
 ## Evaluation
 
-100-example hand-labeled gold set (50 qualified, 30 hard negatives, 20 ambiguous; 5 outreach goals × 20 each). Run 2026-07-03 via promptfoo at temperature=0, 3 providers in parallel.
+Same 100-example hand-labeled gold set throughout (50 qualified, 30 hard negatives, 20 ambiguous; 5 outreach goals × 20 each). Temperature=0 for reproducibility.
+
+**DSPy-path eval** (`make eval-dspy`) — runs the actual production `qualify_lead()` function through the `QualifyLead` DSPy signature. Run 2026-07-08.
 
 | Model | Accuracy | Precision | Recall | F1 | p95 Latency | Cost / 100 calls |
 |---|---|---|---|---|---|---|
-| `claude-haiku-4-5-20251001` ✅ | 77% | 89% | 70% | 78% | 2 492 ms | $0.095 |
+| `claude-haiku-4-5-20251001` ✅ | 81% | 89% | 78% | **83%** | 2 810 ms | $0.134 |
+| `gemini-2.5-flash` | not yet run | — | — | — | — | — |
+| `openai/gpt-4.1-nano` | not yet run | — | — | — | — | — |
+
+**Plain-text prompt eval** (`make eval`) — promptfoo against `evals/prompts/qualify.txt` (a proxy for the signature, not the production code). Run 2026-07-03.
+
+| Model | Accuracy | Precision | Recall | F1 | p95 Latency | Cost / 100 calls |
+|---|---|---|---|---|---|---|
 | `gemini-2.5-flash` | 82% | 94% | 75% | 83% | 1 212 ms | $0.032 |
+| `claude-haiku-4-5-20251001` ✅ | 77% | 89% | 70% | 78% | 2 492 ms | $0.095 |
 | `openai/gpt-4.1-nano` | 42% | 100% | 2% | 3% | 1 726 ms | $0.007 |
 
-**Note:** this eval benchmarks plain-text prompts via promptfoo, not the `QualifyLead` DSPy signature used in production. Gemini's eval used `thinkingBudget: 0` to prevent JSON truncation. A DSPy-path eval (on the production code) is on the backlog before any model migration ships.
+**DSPy vs plain-text for Haiku:** the production DSPy path scores F1 83% vs 78% on the proxy eval (+5 pp), with recall 78% vs 70% (+8 pp). The structured `QualifyLead` output format gives the model more explicit guidance than the flat prompt — the gap is an argument for not using the plain-text eval as a migration gate. The Gemini DSPy-path numbers are pending (`make eval-dspy ARGS="--model gemini/gemini-2.5-flash"` — Gemini Flash `thinkingBudget: 0` must be wired into the DSPy call first to prevent JSON truncation).
 
-> **In progress:** testing `gemini-2.5-flash` with thinking in **auto mode** (adaptive budget, not `thinkingBudget: 0`) as a drop-in replacement for both Haiku (qualifier) and Sonnet (email). Migration requires a DSPy-path eval + human email comparison. Rollback via `QUALIFIER_MODEL` / `EMAIL_MODEL` env vars.
+> **In progress:** testing `gemini-2.5-flash` as a drop-in replacement for both Haiku (qualifier) and Sonnet (email). Migration gate: DSPy-path eval for qualifier + human email comparison. Rollback via `QUALIFIER_MODEL` / `EMAIL_MODEL` env vars.
 
-See [`evals/`](./evals/) for the full suite, gold dataset, and metrics script.
+See [`evals/`](./evals/) for the full suite, gold dataset, and metrics scripts (`make eval` for plain-text, `make eval-dspy` for the production path).
 
 ---
 
@@ -256,7 +266,7 @@ The live demo runs on **Vercel** (frontend) + **Cloud Run** (backend). The backe
 - **Always-on Temporal worker.** The sync/Temporal duality exists purely because scale-to-zero economics on Cloud Run conflict with a persistent task-queue poller. A real deployment keeps one worker running and drops the sync path entirely.
 - **Real auth.** The demo has no identity layer. Multi-tenant use needs user accounts, per-user API key storage, and billing.
 - **PostgreSQL in demo too.** In-memory rate limiting and stateless results are fine for a showcase but break across deploys and Cloud Run instances.
-- **DSPy-path eval before model migration.** The current eval benchmarks plain-text prompts, not the `QualifyLead` signature in production. Shipping the Gemini migration on promptfoo numbers alone is a gap.
+- **DSPy-path eval now available (`make eval-dspy`).** The plain-text promptfoo eval was a proxy; the production path (`QualifyLead` DSPy signature) is now separately benchmarked and scores higher for Haiku (F1 83% vs 78%). Gemini DSPy-path numbers still pending before the migration gate is fully closed.
 - **Email sending + warming.** The approval step produces a CSV export (business data, drafted emails, qualification scores) but stops short of delivery — production needs an ESP integration, domain warming, and deliverability monitoring.
 - **Multi-region.** Cloud Run is single-region. Global B2B prospecting has latency and data-residency implications worth planning early.
 
