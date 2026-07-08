@@ -32,7 +32,7 @@ Manual B2B prospecting is slow: find companies, filter by fit, write personalize
 
 **prompt → SerpAPI (Google Maps) → LLM qualifier → email draft → human approval cohort**
 
-You describe who you're looking for ("dental practices in Warsaw with no online booking"), optionally add a line about yourself, and pick how many leads to find. The pipeline scrapes Google Maps for matching businesses, qualifies each one against your ICP using a cheap fast model, drafts a personalized cold email for qualified leads with a pricier quality model, and surfaces a cohort for review — approve, edit, or reject before anything sends.
+You describe who you're looking for ("dental practices in Warsaw with no online booking"), optionally add a line about yourself, and pick how many leads to find. The pipeline scrapes Google Maps for matching businesses, qualifies each one against your ICP using a cheap fast model, drafts a personalized cold email for qualified leads with a pricier quality model, and surfaces a cohort for review — approve, edit, or reject, then export approved leads to CSV (business data, drafted email, qualification metadata). No email sending built in; the CSV is the handoff artifact.
 
 ## Architecture
 
@@ -257,7 +257,7 @@ The live demo runs on **Vercel** (frontend) + **Cloud Run** (backend). The backe
 - **Real auth.** The demo has no identity layer. Multi-tenant use needs user accounts, per-user API key storage, and billing.
 - **PostgreSQL in demo too.** In-memory rate limiting and stateless results are fine for a showcase but break across deploys and Cloud Run instances.
 - **DSPy-path eval before model migration.** The current eval benchmarks plain-text prompts, not the `QualifyLead` signature in production. Shipping the Gemini migration on promptfoo numbers alone is a gap.
-- **Email sending + warming.** The approval step stops at "approved in the UI." Production needs an ESP integration, domain warming, and deliverability monitoring.
+- **Email sending + warming.** The approval step produces a CSV export (business data, drafted emails, qualification scores) but stops short of delivery — production needs an ESP integration, domain warming, and deliverability monitoring.
 - **Multi-region.** Cloud Run is single-region. Global B2B prospecting has latency and data-residency implications worth planning early.
 
 ---

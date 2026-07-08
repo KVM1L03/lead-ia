@@ -41,7 +41,6 @@ The approval UI works on desktop but is not mobile-friendly. Priority fixes:
 
 - **Better empty states:** first-time user flow — what to type, example prompts, expected wait time.
 - **Progress feedback:** the sync path currently has no server-sent events. Add a simple SSE or polling endpoint so the UI shows per-lead progress (not just a spinner).
-- **Lead export:** CSV download of the approved cohort (no email-sending, just the draft + metadata).
 - **Prompt history:** persist the last N prompts per session (localStorage is fine for demo; no auth needed).
 - **Audit which tools are missing:** after 10+ real demo sessions, identify the top 2-3 friction points before building anything.
 
