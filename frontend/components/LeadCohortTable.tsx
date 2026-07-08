@@ -5,6 +5,7 @@ import type { Lead } from "@/lib/api";
 import { allIndustries, groupIntoCohorts, DEFAULT_FILTERS, type Cohort, type FilterState } from "@/lib/cohorts";
 import { serverApproveLeads } from "@/app/actions";
 import { EmailDrawer } from "./EmailDrawer";
+import { ExportCsvButton } from "./ExportCsvButton";
 import { cn } from "@/lib/utils";
 
 type Props = { leads: Lead[]; runId: string };
@@ -214,13 +215,18 @@ export function LeadCohortTable({ leads: initialLeads, runId }: Props) {
 
   return (
     <div className="mx-auto max-w-3xl px-6 py-8">
-      <div className="mb-6 flex items-baseline justify-between">
+      <div className="mb-6 flex items-center justify-between gap-4">
         <div>
           <p className="mb-1 font-mono text-[11px] font-medium uppercase tracking-[.18em] text-muted-fg">Review</p>
           <h1 className="font-serif text-[22px] leading-snug tracking-[-0.01em] text-fg">
             {totalApproved} / {totalQualified} approved
           </h1>
         </div>
+        <ExportCsvButton
+          runId={runId}
+          approvedLeads={optimisticLeads.filter((l) => l.decision === "approved")}
+          onError={showToast}
+        />
       </div>
 
       <FiltersBar filters={filters} onChange={setFilters} industries={industries} />
