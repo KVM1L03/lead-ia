@@ -46,6 +46,8 @@ describe("detectIndustry", () => {
   it("title-cases hyphenated", () => expect(detectIndustry(makeLead({ category: "beauty-salon" }))).toBe("Beauty Salon"));
   it("handles underscore", () => expect(detectIndustry(makeLead({ category: "real_estate" }))).toBe("Real Estate"));
   it("empty category → Other", () => expect(detectIndustry(makeLead({ category: "" }))).toBe("Other"));
+  it("comma-joined SerpAPI categories → first segment only", () =>
+    expect(detectIndustry(makeLead({ category: "Advertising Agency, Branding Agency, B2B Service" }))).toBe("Advertising Agency"));
 });
 
 // ── cohortStats ───────────────────────────────────────────────────────────────

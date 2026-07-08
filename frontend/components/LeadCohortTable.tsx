@@ -179,8 +179,11 @@ export function LeadCohortTable({ leads: initialLeads, runId }: Props) {
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [toast, setToast] = useState<string | null>(null);
 
+  // baseLeads is the committed source of truth. useOptimistic builds on top of it
+  // so the optimistic update persists after the transition instead of reverting.
+  const [baseLeads, setBaseLeads] = useState<Lead[]>(initialLeads);
   const [optimisticLeads, applyOptimistic] = useOptimistic(
-    initialLeads,
+    baseLeads,
     (state, { placeIds, action }: { placeIds: string[]; action: "approved" | "rejected" }) =>
       state.map((l) => placeIds.includes(l.place.id) ? { ...l, decision: action as Lead["decision"] } : l),
   );
@@ -198,6 +201,13 @@ export function LeadCohortTable({ leads: initialLeads, runId }: Props) {
       applyOptimistic({ placeIds, action });
       try {
         await serverApproveLeads(runId, placeIds, action, editedEmails);
+        // Commit: update the base state so the optimistic change persists.
+        // On error (catch), baseLeads is NOT updated → useOptimistic auto-reverts.
+        setBaseLeads((prev) =>
+          prev.map((l) =>
+            placeIds.includes(l.place.id) ? { ...l, decision: action } : l,
+          ),
+        );
       } catch {
         showToast("Failed to save decision — please try again.");
       }

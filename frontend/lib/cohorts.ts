@@ -47,7 +47,9 @@ export function scoreBucket(score: number): ScoreBucket {
 export function detectIndustry(lead: Lead): string {
   const raw = lead.place.category;
   if (!raw) return "Other";
-  return raw
+  // SerpAPI may join multiple types with ", " — take only the first.
+  const first = raw.split(",")[0]!.trim();
+  return first
     .split(/[\s_-]+/)
     .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
     .join(" ");
