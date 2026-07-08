@@ -1,0 +1,916 @@
+{
+  "eval_type": "dspy-path",
+  "model": "anthropic/claude-haiku-4-5-20251001",
+  "run_ts": "2026-07-08T09:52:38Z",
+  "n": 100,
+  "accuracy": 0.81,
+  "precision": 0.8846,
+  "recall": 0.7797,
+  "f1": 0.8288,
+  "latency_avg_ms": 1936.2,
+  "latency_p95_ms": 2810.3,
+  "cost_usd": 0.133869,
+  "errors": 0,
+  "rows": [
+    {
+      "description": "positive-dental-general-practice",
+      "outreach_goal": "Appointment scheduling software for independent dental practices with 1-5 chairs",
+      "business_id": "place_001",
+      "expected": true,
+      "predicted": true,
+      "latency_ms": 2520.3,
+      "cost_usd": 0.001433
+    },
+    {
+      "description": "positive-dental-orthodontics",
+      "outreach_goal": "Appointment scheduling software for independent dental practices with 1-5 chairs",
+      "business_id": "place_002",
+      "expected": true,
+      "predicted": true,
+      "latency_ms": 1829.9,
+      "cost_usd": 0.00147
+    },
+    {
+      "description": "positive-dental-family-practice",
+      "outreach_goal": "Appointment scheduling software for independent dental practices with 1-5 chairs",
+      "business_id": "place_003",
+      "expected": true,
+      "predicted": true,
+      "latency_ms": 1959.3,
+      "cost_usd": 0.001435
+    },
+    {
+      "description": "positive-dental-cosmetic",
+      "outreach_goal": "Appointment scheduling software for independent dental practices with 1-5 chairs",
+      "business_id": "place_004",
+      "expected": true,
+      "predicted": true,
+      "latency_ms": 1834.6,
+      "cost_usd": 0.001416
+    },
+    {
+      "description": "positive-dental-solo-practitioner",
+      "outreach_goal": "Appointment scheduling software for independent dental practices with 1-5 chairs",
+      "business_id": "place_005",
+      "expected": true,
+      "predicted": true,
+      "latency_ms": 3702.5,
+      "cost_usd": 0.001405
+    },
+    {
+      "description": "positive-dental-pediatric",
+      "outreach_goal": "Appointment scheduling software for independent dental practices with 1-5 chairs",
+      "business_id": "place_006",
+      "expected": true,
+      "predicted": true,
+      "latency_ms": 2548.5,
+      "cost_usd": 0.001382
+    },
+    {
+      "description": "positive-dental-implants",
+      "outreach_goal": "Appointment scheduling software for independent dental practices with 1-5 chairs",
+      "business_id": "place_007",
+      "expected": true,
+      "predicted": false,
+      "latency_ms": 1997.4,
+      "cost_usd": 0.001336
+    },
+    {
+      "description": "positive-dental-periodontist",
+      "outreach_goal": "Appointment scheduling software for independent dental practices with 1-5 chairs",
+      "business_id": "place_008",
+      "expected": true,
+      "predicted": false,
+      "latency_ms": 1998.7,
+      "cost_usd": 0.001336
+    },
+    {
+      "description": "positive-dental-emergency",
+      "outreach_goal": "Appointment scheduling software for independent dental practices with 1-5 chairs",
+      "business_id": "place_009",
+      "expected": true,
+      "predicted": false,
+      "latency_ms": 1669.6,
+      "cost_usd": 0.001339
+    },
+    {
+      "description": "positive-dental-endodontist",
+      "outreach_goal": "Appointment scheduling software for independent dental practices with 1-5 chairs",
+      "business_id": "place_010",
+      "expected": true,
+      "predicted": false,
+      "latency_ms": 1798.0,
+      "cost_usd": 0.001373
+    },
+    {
+      "description": "hard-neg-dental-supplier-not-a-practice",
+      "outreach_goal": "Appointment scheduling software for independent dental practices with 1-5 chairs",
+      "business_id": "place_011",
+      "expected": false,
+      "predicted": false,
+      "latency_ms": 2560.0,
+      "cost_usd": 0.001252
+    },
+    {
+      "description": "hard-neg-dental-school-not-independent",
+      "outreach_goal": "Appointment scheduling software for independent dental practices with 1-5 chairs",
+      "business_id": "place_012",
+      "expected": false,
+      "predicted": false,
+      "latency_ms": 1640.6,
+      "cost_usd": 0.001298
+    },
+    {
+      "description": "hard-neg-dental-chain-900-locations",
+      "outreach_goal": "Appointment scheduling software for independent dental practices with 1-5 chairs",
+      "business_id": "place_013",
+      "expected": false,
+      "predicted": false,
+      "latency_ms": 1735.4,
+      "cost_usd": 0.00124
+    },
+    {
+      "description": "hard-neg-dental-lab-manufacturer-not-patient-facing",
+      "outreach_goal": "Appointment scheduling software for independent dental practices with 1-5 chairs",
+      "business_id": "place_014",
+      "expected": false,
+      "predicted": false,
+      "latency_ms": 1782.4,
+      "cost_usd": 0.001279
+    },
+    {
+      "description": "hard-neg-dental-billing-service-not-a-practice",
+      "outreach_goal": "Appointment scheduling software for independent dental practices with 1-5 chairs",
+      "business_id": "place_015",
+      "expected": false,
+      "predicted": false,
+      "latency_ms": 2810.3,
+      "cost_usd": 0.001268
+    },
+    {
+      "description": "hard-neg-dental-staffing-agency-not-a-practice",
+      "outreach_goal": "Appointment scheduling software for independent dental practices with 1-5 chairs",
+      "business_id": "place_016",
+      "expected": false,
+      "predicted": false,
+      "latency_ms": 1851.4,
+      "cost_usd": 0.001288
+    },
+    {
+      "description": "ambiguous-dental-spa-primarily-cosmetic-aesthetics",
+      "outreach_goal": "Appointment scheduling software for independent dental practices with 1-5 chairs",
+      "business_id": "place_017",
+      "expected": false,
+      "predicted": false,
+      "latency_ms": 1725.8,
+      "cost_usd": 0.001418
+    },
+    {
+      "description": "ambiguous-dental-plus-aesthetics-still-has-dental-chairs",
+      "outreach_goal": "Appointment scheduling software for independent dental practices with 1-5 chairs",
+      "business_id": "place_018",
+      "expected": true,
+      "predicted": false,
+      "latency_ms": 1572.6,
+      "cost_usd": 0.001416
+    },
+    {
+      "description": "ambiguous-potentially-retired-dentist-listing-stale",
+      "outreach_goal": "Appointment scheduling software for independent dental practices with 1-5 chairs",
+      "business_id": "place_019",
+      "expected": false,
+      "predicted": true,
+      "latency_ms": 1778.8,
+      "cost_usd": 0.001312
+    },
+    {
+      "description": "ambiguous-mobile-dental-no-fixed-appointment-slot-system",
+      "outreach_goal": "Appointment scheduling software for independent dental practices with 1-5 chairs",
+      "business_id": "place_020",
+      "expected": false,
+      "predicted": false,
+      "latency_ms": 1775.9,
+      "cost_usd": 0.001321
+    },
+    {
+      "description": "positive-restaurant-independent-italian-38-seats",
+      "outreach_goal": "POS software for independent restaurants under 50 seats",
+      "business_id": "place_021",
+      "expected": true,
+      "predicted": true,
+      "latency_ms": 1640.0,
+      "cost_usd": 0.001304
+    },
+    {
+      "description": "positive-restaurant-independent-sushi-22-seats",
+      "outreach_goal": "POS software for independent restaurants under 50 seats",
+      "business_id": "place_022",
+      "expected": true,
+      "predicted": true,
+      "latency_ms": 1692.2,
+      "cost_usd": 0.001383
+    },
+    {
+      "description": "positive-restaurant-independent-cafe-35-seats",
+      "outreach_goal": "POS software for independent restaurants under 50 seats",
+      "business_id": "place_023",
+      "expected": true,
+      "predicted": true,
+      "latency_ms": 1609.1,
+      "cost_usd": 0.001361
+    },
+    {
+      "description": "positive-restaurant-independent-burgers-28-seats",
+      "outreach_goal": "POS software for independent restaurants under 50 seats",
+      "business_id": "place_024",
+      "expected": true,
+      "predicted": true,
+      "latency_ms": 1558.8,
+      "cost_usd": 0.001338
+    },
+    {
+      "description": "positive-restaurant-independent-vietnamese-42-seats",
+      "outreach_goal": "POS software for independent restaurants under 50 seats",
+      "business_id": "place_025",
+      "expected": true,
+      "predicted": true,
+      "latency_ms": 2397.8,
+      "cost_usd": 0.001339
+    },
+    {
+      "description": "positive-restaurant-independent-thai-26-seats",
+      "outreach_goal": "POS software for independent restaurants under 50 seats",
+      "business_id": "place_026",
+      "expected": true,
+      "predicted": true,
+      "latency_ms": 1654.6,
+      "cost_usd": 0.001329
+    },
+    {
+      "description": "positive-restaurant-independent-pizza-38-seats",
+      "outreach_goal": "POS software for independent restaurants under 50 seats",
+      "business_id": "place_027",
+      "expected": true,
+      "predicted": true,
+      "latency_ms": 1747.5,
+      "cost_usd": 0.001369
+    },
+    {
+      "description": "positive-restaurant-independent-mexican-18-seats",
+      "outreach_goal": "POS software for independent restaurants under 50 seats",
+      "business_id": "place_028",
+      "expected": true,
+      "predicted": true,
+      "latency_ms": 2674.1,
+      "cost_usd": 0.001318
+    },
+    {
+      "description": "positive-restaurant-independent-wine-bar-32-seats",
+      "outreach_goal": "POS software for independent restaurants under 50 seats",
+      "business_id": "place_029",
+      "expected": true,
+      "predicted": true,
+      "latency_ms": 1563.4,
+      "cost_usd": 0.001292
+    },
+    {
+      "description": "positive-restaurant-independent-brunch-46-seats",
+      "outreach_goal": "POS software for independent restaurants under 50 seats",
+      "business_id": "place_030",
+      "expected": true,
+      "predicted": true,
+      "latency_ms": 1616.3,
+      "cost_usd": 0.00132
+    },
+    {
+      "description": "hard-neg-restaurant-mcdonalds-franchise-chain",
+      "outreach_goal": "POS software for independent restaurants under 50 seats",
+      "business_id": "place_031",
+      "expected": false,
+      "predicted": false,
+      "latency_ms": 1583.6,
+      "cost_usd": 0.001253
+    },
+    {
+      "description": "hard-neg-restaurant-panera-franchise-chain",
+      "outreach_goal": "POS software for independent restaurants under 50 seats",
+      "business_id": "place_032",
+      "expected": false,
+      "predicted": false,
+      "latency_ms": 1506.3,
+      "cost_usd": 0.001219
+    },
+    {
+      "description": "hard-neg-restaurant-banquet-hall-200-plus-seats",
+      "outreach_goal": "POS software for independent restaurants under 50 seats",
+      "business_id": "place_033",
+      "expected": false,
+      "predicted": false,
+      "latency_ms": 1291.5,
+      "cost_usd": 0.001224
+    },
+    {
+      "description": "hard-neg-restaurant-ghost-kitchen-delivery-only-no-seats",
+      "outreach_goal": "POS software for independent restaurants under 50 seats",
+      "business_id": "place_034",
+      "expected": false,
+      "predicted": false,
+      "latency_ms": 1452.1,
+      "cost_usd": 0.001287
+    },
+    {
+      "description": "hard-neg-restaurant-hotel-restaurant-not-independent",
+      "outreach_goal": "POS software for independent restaurants under 50 seats",
+      "business_id": "place_035",
+      "expected": false,
+      "predicted": false,
+      "latency_ms": 1562.2,
+      "cost_usd": 0.001237
+    },
+    {
+      "description": "hard-neg-restaurant-institutional-cafeteria-not-independent",
+      "outreach_goal": "POS software for independent restaurants under 50 seats",
+      "business_id": "place_036",
+      "expected": false,
+      "predicted": false,
+      "latency_ms": 1740.6,
+      "cost_usd": 0.001263
+    },
+    {
+      "description": "ambiguous-restaurant-small-chain-4-locations-not-independent",
+      "outreach_goal": "POS software for independent restaurants under 50 seats",
+      "business_id": "place_037",
+      "expected": false,
+      "predicted": false,
+      "latency_ms": 1641.3,
+      "cost_usd": 0.001293
+    },
+    {
+      "description": "ambiguous-restaurant-food-truck-no-seats-different-pos-needs",
+      "outreach_goal": "POS software for independent restaurants under 50 seats",
+      "business_id": "place_038",
+      "expected": false,
+      "predicted": false,
+      "latency_ms": 1794.2,
+      "cost_usd": 0.001326
+    },
+    {
+      "description": "ambiguous-restaurant-just-opened-40-seats-needs-pos",
+      "outreach_goal": "POS software for independent restaurants under 50 seats",
+      "business_id": "place_039",
+      "expected": true,
+      "predicted": true,
+      "latency_ms": 1827.5,
+      "cost_usd": 0.001358
+    },
+    {
+      "description": "ambiguous-restaurant-bar-with-15-seat-food-area-independent",
+      "outreach_goal": "POS software for independent restaurants under 50 seats",
+      "business_id": "place_040",
+      "expected": true,
+      "predicted": true,
+      "latency_ms": 2978.7,
+      "cost_usd": 0.001488
+    },
+    {
+      "description": "positive-financial-independent-ria-14-employees",
+      "outreach_goal": "Cybersecurity consulting for independent financial advisory firms with 5-50 employees",
+      "business_id": "place_041",
+      "expected": true,
+      "predicted": true,
+      "latency_ms": 1844.3,
+      "cost_usd": 0.001372
+    },
+    {
+      "description": "positive-financial-independent-insurance-brokerage-9-agents",
+      "outreach_goal": "Cybersecurity consulting for independent financial advisory firms with 5-50 employees",
+      "business_id": "place_042",
+      "expected": true,
+      "predicted": false,
+      "latency_ms": 1973.7,
+      "cost_usd": 0.001289
+    },
+    {
+      "description": "positive-financial-wealth-management-boutique-17-employees",
+      "outreach_goal": "Cybersecurity consulting for independent financial advisory firms with 5-50 employees",
+      "business_id": "place_043",
+      "expected": true,
+      "predicted": true,
+      "latency_ms": 1931.9,
+      "cost_usd": 0.001346
+    },
+    {
+      "description": "positive-financial-tax-plus-advisory-8-employees",
+      "outreach_goal": "Cybersecurity consulting for independent financial advisory firms with 5-50 employees",
+      "business_id": "place_044",
+      "expected": true,
+      "predicted": true,
+      "latency_ms": 2044.5,
+      "cost_usd": 0.001356
+    },
+    {
+      "description": "positive-financial-small-regional-credit-union-23-employees",
+      "outreach_goal": "Cybersecurity consulting for independent financial advisory firms with 5-50 employees",
+      "business_id": "place_045",
+      "expected": true,
+      "predicted": false,
+      "latency_ms": 1753.7,
+      "cost_usd": 0.001319
+    },
+    {
+      "description": "positive-financial-independent-mortgage-broker-11-employees",
+      "outreach_goal": "Cybersecurity consulting for independent financial advisory firms with 5-50 employees",
+      "business_id": "place_046",
+      "expected": true,
+      "predicted": false,
+      "latency_ms": 1802.9,
+      "cost_usd": 0.001283
+    },
+    {
+      "description": "positive-financial-independent-cfp-firm-6-employees",
+      "outreach_goal": "Cybersecurity consulting for independent financial advisory firms with 5-50 employees",
+      "business_id": "place_047",
+      "expected": true,
+      "predicted": true,
+      "latency_ms": 2323.3,
+      "cost_usd": 0.001364
+    },
+    {
+      "description": "positive-financial-small-hedge-fund-9-employees",
+      "outreach_goal": "Cybersecurity consulting for independent financial advisory firms with 5-50 employees",
+      "business_id": "place_048",
+      "expected": true,
+      "predicted": false,
+      "latency_ms": 1611.6,
+      "cost_usd": 0.001314
+    },
+    {
+      "description": "positive-financial-cpa-with-advisory-7-employees",
+      "outreach_goal": "Cybersecurity consulting for independent financial advisory firms with 5-50 employees",
+      "business_id": "place_049",
+      "expected": true,
+      "predicted": true,
+      "latency_ms": 2280.5,
+      "cost_usd": 0.001459
+    },
+    {
+      "description": "positive-financial-retirement-planning-boutique-22-employees",
+      "outreach_goal": "Cybersecurity consulting for independent financial advisory firms with 5-50 employees",
+      "business_id": "place_050",
+      "expected": true,
+      "predicted": true,
+      "latency_ms": 1593.8,
+      "cost_usd": 0.001322
+    },
+    {
+      "description": "hard-neg-financial-large-bank-branch-too-big",
+      "outreach_goal": "Cybersecurity consulting for independent financial advisory firms with 5-50 employees",
+      "business_id": "place_051",
+      "expected": false,
+      "predicted": false,
+      "latency_ms": 4802.6,
+      "cost_usd": 0.001351
+    },
+    {
+      "description": "hard-neg-financial-coinbase-tech-native-too-large",
+      "outreach_goal": "Cybersecurity consulting for independent financial advisory firms with 5-50 employees",
+      "business_id": "place_052",
+      "expected": false,
+      "predicted": false,
+      "latency_ms": 1719.4,
+      "cost_usd": 0.001305
+    },
+    {
+      "description": "hard-neg-financial-hrblock-franchise-tax-only-no-advisory",
+      "outreach_goal": "Cybersecurity consulting for independent financial advisory firms with 5-50 employees",
+      "business_id": "place_053",
+      "expected": false,
+      "predicted": false,
+      "latency_ms": 1942.1,
+      "cost_usd": 0.001296
+    },
+    {
+      "description": "hard-neg-financial-solo-freelance-coach-1-person-no-budget",
+      "outreach_goal": "Cybersecurity consulting for independent financial advisory firms with 5-50 employees",
+      "business_id": "place_054",
+      "expected": false,
+      "predicted": false,
+      "latency_ms": 1848.8,
+      "cost_usd": 0.001341
+    },
+    {
+      "description": "hard-neg-financial-reit-different-industry-real-estate",
+      "outreach_goal": "Cybersecurity consulting for independent financial advisory firms with 5-50 employees",
+      "business_id": "place_055",
+      "expected": false,
+      "predicted": false,
+      "latency_ms": 1450.5,
+      "cost_usd": 0.001264
+    },
+    {
+      "description": "hard-neg-financial-accounting-only-no-advisory-component",
+      "outreach_goal": "Cybersecurity consulting for independent financial advisory firms with 5-50 employees",
+      "business_id": "place_056",
+      "expected": false,
+      "predicted": false,
+      "latency_ms": 1727.2,
+      "cost_usd": 0.001338
+    },
+    {
+      "description": "ambiguous-financial-fintech-18-engineers-tech-native-handles-security-in-house",
+      "outreach_goal": "Cybersecurity consulting for independent financial advisory firms with 5-50 employees",
+      "business_id": "place_057",
+      "expected": false,
+      "predicted": false,
+      "latency_ms": 1939.9,
+      "cost_usd": 0.001383
+    },
+    {
+      "description": "ambiguous-financial-payday-lender-12-employees-compliance-heavy",
+      "outreach_goal": "Cybersecurity consulting for independent financial advisory firms with 5-50 employees",
+      "business_id": "place_058",
+      "expected": true,
+      "predicted": false,
+      "latency_ms": 1819.3,
+      "cost_usd": 0.001307
+    },
+    {
+      "description": "ambiguous-financial-bank-branch-corporate-it-handles-security",
+      "outreach_goal": "Cybersecurity consulting for independent financial advisory firms with 5-50 employees",
+      "business_id": "place_059",
+      "expected": false,
+      "predicted": false,
+      "latency_ms": 2066.6,
+      "cost_usd": 0.001311
+    },
+    {
+      "description": "ambiguous-financial-bookkeeping-plus-light-advice-4-employees-too-small",
+      "outreach_goal": "Cybersecurity consulting for independent financial advisory firms with 5-50 employees",
+      "business_id": "place_060",
+      "expected": false,
+      "predicted": false,
+      "latency_ms": 1999.8,
+      "cost_usd": 0.001288
+    },
+    {
+      "description": "positive-hvac-property-mgmt-8-office-buildings",
+      "outreach_goal": "Commercial HVAC maintenance contracts for office property managers",
+      "business_id": "place_061",
+      "expected": true,
+      "predicted": true,
+      "latency_ms": 1483.8,
+      "cost_usd": 0.001269
+    },
+    {
+      "description": "positive-hvac-commercial-re-3-office-properties",
+      "outreach_goal": "Commercial HVAC maintenance contracts for office property managers",
+      "business_id": "place_062",
+      "expected": true,
+      "predicted": true,
+      "latency_ms": 1926.0,
+      "cost_usd": 0.001355
+    },
+    {
+      "description": "positive-hvac-corporate-facilities-management",
+      "outreach_goal": "Commercial HVAC maintenance contracts for office property managers",
+      "business_id": "place_063",
+      "expected": true,
+      "predicted": true,
+      "latency_ms": 1684.2,
+      "cost_usd": 0.001301
+    },
+    {
+      "description": "positive-hvac-office-tower-owner-2-buildings",
+      "outreach_goal": "Commercial HVAC maintenance contracts for office property managers",
+      "business_id": "place_064",
+      "expected": true,
+      "predicted": true,
+      "latency_ms": 1759.0,
+      "cost_usd": 0.001321
+    },
+    {
+      "description": "positive-hvac-business-park-12-buildings",
+      "outreach_goal": "Commercial HVAC maintenance contracts for office property managers",
+      "business_id": "place_065",
+      "expected": true,
+      "predicted": true,
+      "latency_ms": 1960.3,
+      "cost_usd": 0.001262
+    },
+    {
+      "description": "positive-hvac-office-complex-landlord-65k-sqft",
+      "outreach_goal": "Commercial HVAC maintenance contracts for office property managers",
+      "business_id": "place_066",
+      "expected": true,
+      "predicted": true,
+      "latency_ms": 1450.7,
+      "cost_usd": 0.001296
+    },
+    {
+      "description": "positive-hvac-commercial-property-management",
+      "outreach_goal": "Commercial HVAC maintenance contracts for office property managers",
+      "business_id": "place_067",
+      "expected": true,
+      "predicted": true,
+      "latency_ms": 1409.8,
+      "cost_usd": 0.001258
+    },
+    {
+      "description": "positive-hvac-corporate-campus-manager",
+      "outreach_goal": "Commercial HVAC maintenance contracts for office property managers",
+      "business_id": "place_068",
+      "expected": true,
+      "predicted": true,
+      "latency_ms": 2169.8,
+      "cost_usd": 0.00131
+    },
+    {
+      "description": "positive-hvac-mid-size-office-self-managed",
+      "outreach_goal": "Commercial HVAC maintenance contracts for office property managers",
+      "business_id": "place_069",
+      "expected": true,
+      "predicted": true,
+      "latency_ms": 2001.0,
+      "cost_usd": 0.001294
+    },
+    {
+      "description": "positive-hvac-multi-tenant-office-buildings",
+      "outreach_goal": "Commercial HVAC maintenance contracts for office property managers",
+      "business_id": "place_070",
+      "expected": true,
+      "predicted": true,
+      "latency_ms": 1591.0,
+      "cost_usd": 0.00131
+    },
+    {
+      "description": "hard-neg-hvac-residential-apartments-not-commercial-office",
+      "outreach_goal": "Commercial HVAC maintenance contracts for office property managers",
+      "business_id": "place_071",
+      "expected": false,
+      "predicted": false,
+      "latency_ms": 2062.1,
+      "cost_usd": 0.001305
+    },
+    {
+      "description": "hard-neg-hvac-retail-mall-different-hvac-spec",
+      "outreach_goal": "Commercial HVAC maintenance contracts for office property managers",
+      "business_id": "place_072",
+      "expected": false,
+      "predicted": true,
+      "latency_ms": 1633.0,
+      "cost_usd": 0.001315
+    },
+    {
+      "description": "hard-neg-hvac-hospital-facilities-medical-grade-hvac-different-spec",
+      "outreach_goal": "Commercial HVAC maintenance contracts for office property managers",
+      "business_id": "place_073",
+      "expected": false,
+      "predicted": false,
+      "latency_ms": 2391.1,
+      "cost_usd": 0.001374
+    },
+    {
+      "description": "hard-neg-hvac-government-buildings-different-procurement",
+      "outreach_goal": "Commercial HVAC maintenance contracts for office property managers",
+      "business_id": "place_074",
+      "expected": false,
+      "predicted": true,
+      "latency_ms": 1598.0,
+      "cost_usd": 0.001282
+    },
+    {
+      "description": "hard-neg-hvac-tenant-renting-one-office-not-the-building-manager",
+      "outreach_goal": "Commercial HVAC maintenance contracts for office property managers",
+      "business_id": "place_075",
+      "expected": false,
+      "predicted": true,
+      "latency_ms": 1736.3,
+      "cost_usd": 0.001317
+    },
+    {
+      "description": "hard-neg-hvac-industrial-warehouse-different-hvac-requirements",
+      "outreach_goal": "Commercial HVAC maintenance contracts for office property managers",
+      "business_id": "place_076",
+      "expected": false,
+      "predicted": false,
+      "latency_ms": 1568.5,
+      "cost_usd": 0.001284
+    },
+    {
+      "description": "ambiguous-hvac-coworking-space-manages-commercial-hvac-contracts",
+      "outreach_goal": "Commercial HVAC maintenance contracts for office property managers",
+      "business_id": "place_077",
+      "expected": true,
+      "predicted": true,
+      "latency_ms": 1818.5,
+      "cost_usd": 0.001328
+    },
+    {
+      "description": "ambiguous-hvac-mixed-use-building-30pct-office-component",
+      "outreach_goal": "Commercial HVAC maintenance contracts for office property managers",
+      "business_id": "place_078",
+      "expected": true,
+      "predicted": true,
+      "latency_ms": 1707.5,
+      "cost_usd": 0.001366
+    },
+    {
+      "description": "ambiguous-hvac-medical-office-park-commercial-needs-maintenance",
+      "outreach_goal": "Commercial HVAC maintenance contracts for office property managers",
+      "business_id": "place_079",
+      "expected": true,
+      "predicted": true,
+      "latency_ms": 1479.9,
+      "cost_usd": 0.00133
+    },
+    {
+      "description": "ambiguous-hvac-mixed-residential-commercial-60pct-residential-not-focused",
+      "outreach_goal": "Commercial HVAC maintenance contracts for office property managers",
+      "business_id": "place_080",
+      "expected": false,
+      "predicted": true,
+      "latency_ms": 1510.1,
+      "cost_usd": 0.001267
+    },
+    {
+      "description": "positive-law-solo-immigration-attorney",
+      "outreach_goal": "Practice management software for solo attorneys and law firms under 8 attorneys",
+      "business_id": "place_081",
+      "expected": true,
+      "predicted": true,
+      "latency_ms": 1815.2,
+      "cost_usd": 0.001323
+    },
+    {
+      "description": "positive-law-4-attorney-criminal-defense-firm",
+      "outreach_goal": "Practice management software for solo attorneys and law firms under 8 attorneys",
+      "business_id": "place_082",
+      "expected": true,
+      "predicted": true,
+      "latency_ms": 1520.8,
+      "cost_usd": 0.001303
+    },
+    {
+      "description": "positive-law-solo-family-law-attorney",
+      "outreach_goal": "Practice management software for solo attorneys and law firms under 8 attorneys",
+      "business_id": "place_083",
+      "expected": true,
+      "predicted": true,
+      "latency_ms": 1677.0,
+      "cost_usd": 0.001307
+    },
+    {
+      "description": "positive-law-3-attorney-personal-injury-firm",
+      "outreach_goal": "Practice management software for solo attorneys and law firms under 8 attorneys",
+      "business_id": "place_084",
+      "expected": true,
+      "predicted": false,
+      "latency_ms": 1507.0,
+      "cost_usd": 0.001333
+    },
+    {
+      "description": "positive-law-solo-estate-planning-attorney",
+      "outreach_goal": "Practice management software for solo attorneys and law firms under 8 attorneys",
+      "business_id": "place_085",
+      "expected": true,
+      "predicted": true,
+      "latency_ms": 2041.3,
+      "cost_usd": 0.001372
+    },
+    {
+      "description": "positive-law-5-attorney-business-law-firm",
+      "outreach_goal": "Practice management software for solo attorneys and law firms under 8 attorneys",
+      "business_id": "place_086",
+      "expected": true,
+      "predicted": false,
+      "latency_ms": 2023.1,
+      "cost_usd": 0.001337
+    },
+    {
+      "description": "positive-law-solo-divorce-attorney",
+      "outreach_goal": "Practice management software for solo attorneys and law firms under 8 attorneys",
+      "business_id": "place_087",
+      "expected": true,
+      "predicted": true,
+      "latency_ms": 1792.0,
+      "cost_usd": 0.001298
+    },
+    {
+      "description": "positive-law-6-attorney-employment-law-firm",
+      "outreach_goal": "Practice management software for solo attorneys and law firms under 8 attorneys",
+      "business_id": "place_088",
+      "expected": true,
+      "predicted": false,
+      "latency_ms": 2223.7,
+      "cost_usd": 0.001395
+    },
+    {
+      "description": "positive-law-solo-ip-patent-attorney",
+      "outreach_goal": "Practice management software for solo attorneys and law firms under 8 attorneys",
+      "business_id": "place_089",
+      "expected": true,
+      "predicted": true,
+      "latency_ms": 1528.2,
+      "cost_usd": 0.001379
+    },
+    {
+      "description": "positive-law-7-attorney-real-estate-law-firm",
+      "outreach_goal": "Practice management software for solo attorneys and law firms under 8 attorneys",
+      "business_id": "place_090",
+      "expected": true,
+      "predicted": true,
+      "latency_ms": 3684.2,
+      "cost_usd": 0.002798
+    },
+    {
+      "description": "hard-neg-law-large-firm-900-plus-attorneys",
+      "outreach_goal": "Practice management software for solo attorneys and law firms under 8 attorneys",
+      "business_id": "place_091",
+      "expected": false,
+      "predicted": false,
+      "latency_ms": 1593.7,
+      "cost_usd": 0.001279
+    },
+    {
+      "description": "hard-neg-law-school-clinic-educational-not-commercial",
+      "outreach_goal": "Practice management software for solo attorneys and law firms under 8 attorneys",
+      "business_id": "place_092",
+      "expected": false,
+      "predicted": false,
+      "latency_ms": 2192.8,
+      "cost_usd": 0.00134
+    },
+    {
+      "description": "hard-neg-law-document-prep-service-not-a-law-firm",
+      "outreach_goal": "Practice management software for solo attorneys and law firms under 8 attorneys",
+      "business_id": "place_093",
+      "expected": false,
+      "predicted": false,
+      "latency_ms": 1324.8,
+      "cost_usd": 0.001241
+    },
+    {
+      "description": "hard-neg-law-court-reporting-service-legal-adjacent-not-law-firm",
+      "outreach_goal": "Practice management software for solo attorneys and law firms under 8 attorneys",
+      "business_id": "place_094",
+      "expected": false,
+      "predicted": false,
+      "latency_ms": 1682.2,
+      "cost_usd": 0.001276
+    },
+    {
+      "description": "hard-neg-law-paralegal-services-not-licensed-attorney",
+      "outreach_goal": "Practice management software for solo attorneys and law firms under 8 attorneys",
+      "business_id": "place_095",
+      "expected": false,
+      "predicted": false,
+      "latency_ms": 1610.2,
+      "cost_usd": 0.00127
+    },
+    {
+      "description": "hard-neg-law-legaltech-software-company-builds-for-law-firms-not-a-firm",
+      "outreach_goal": "Practice management software for solo attorneys and law firms under 8 attorneys",
+      "business_id": "place_096",
+      "expected": false,
+      "predicted": false,
+      "latency_ms": 1447.7,
+      "cost_usd": 0.001259
+    },
+    {
+      "description": "ambiguous-law-10-attorney-firm-slightly-above-8-attorney-threshold",
+      "outreach_goal": "Practice management software for solo attorneys and law firms under 8 attorneys",
+      "business_id": "place_097",
+      "expected": false,
+      "predicted": false,
+      "latency_ms": 1769.4,
+      "cost_usd": 0.001255
+    },
+    {
+      "description": "ambiguous-law-consulting-firm-with-legal-services-unclear-licensure",
+      "outreach_goal": "Practice management software for solo attorneys and law firms under 8 attorneys",
+      "business_id": "place_098",
+      "expected": false,
+      "predicted": true,
+      "latency_ms": 6661.9,
+      "cost_usd": 0.001339
+    },
+    {
+      "description": "ambiguous-law-just-opened-1-attorney-new-bar-admission",
+      "outreach_goal": "Practice management software for solo attorneys and law firms under 8 attorneys",
+      "business_id": "place_099",
+      "expected": true,
+      "predicted": true,
+      "latency_ms": 1927.6,
+      "cost_usd": 0.001372
+    },
+    {
+      "description": "ambiguous-law-3-attorneys-plus-3-cpas-hybrid-firm-has-attorneys",
+      "outreach_goal": "Practice management software for solo attorneys and law firms under 8 attorneys",
+      "business_id": "place_100",
+      "expected": true,
+      "predicted": true,
+      "latency_ms": 1556.0,
+      "cost_usd": 0.001323
+    }
+  ]
+}

@@ -1,0 +1,2 @@
+timestamp,eval_type,model,n,accuracy,precision,recall,f1,latency_avg_ms,latency_p95_ms,cost_usd,errors
+2026-07-08T09:52:38Z,dspy-path,anthropic/claude-haiku-4-5-20251001,100,0.8100,0.8846,0.7797,0.8288,1936.2,2810.3,0.133869,0
