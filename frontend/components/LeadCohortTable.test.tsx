@@ -83,7 +83,8 @@ describe("LeadCohortTable", () => {
 
     expect(screen.getByText("0 / 2 approved")).toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole("button", { name: /approve all/i }));
+    // Click the cohort-card "Approve all" (exact match, not "Approve all & export")
+    await userEvent.click(screen.getByRole("button", { name: /^approve all$/i }));
 
     await waitFor(() => {
       expect(screen.getByText("2 / 2 approved")).toBeInTheDocument();
@@ -122,11 +123,28 @@ describe("LeadCohortTable", () => {
 
     expect(screen.getByRole("button", { name: /export csv/i })).toBeDisabled();
 
-    await userEvent.click(screen.getByRole("button", { name: /approve all/i }));
+    await userEvent.click(screen.getByRole("button", { name: /^approve all$/i }));
 
     await waitFor(() => {
       expect(screen.getByRole("button", { name: /export csv/i })).not.toBeDisabled();
     });
+  });
+
+  it("'Approve all & export' approves all qualified leads and triggers a download in one click", async () => {
+    const { serverExportLeads } = await import("@/app/actions");
+    vi.mocked(serverExportLeads).mockResolvedValueOnce({ ok: true, csv: "business_name\nBusiness a\nBusiness b" });
+
+    render(<LeadCohortTable leads={TWO_LEADS} runId="run-1" />);
+
+    expect(screen.getByText("0 / 2 approved")).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: /approve all & export/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText("2 / 2 approved")).toBeInTheDocument();
+    });
+    expect(URL.createObjectURL).toHaveBeenCalled();
+    expect(URL.revokeObjectURL).toHaveBeenCalled();
   });
 
   it("category filter chips render as individual buttons, not a comma blob", () => {
