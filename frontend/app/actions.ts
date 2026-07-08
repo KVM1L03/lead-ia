@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { approveLeads, searchLeads, type EditedEmail, type Lead } from "@/lib/api";
+import { approveLeads, exportLeadsCsv, searchLeads, type EditedEmail, type Lead } from "@/lib/api";
 import { prisma } from "@/lib/prisma";
 
 export type StartSearchResult =
@@ -42,4 +42,19 @@ export async function serverApproveLeads(
   editedEmails?: Record<string, EditedEmail>,
 ): Promise<{ updated: number }> {
   return approveLeads(runId, placeIds, action, editedEmails);
+}
+
+export async function serverExportLeads(
+  runId: string,
+  approvedLeads: Lead[],
+): Promise<{ ok: true; csv: string } | { ok: false; error: string }> {
+  try {
+    const csv = await exportLeadsCsv(runId, approvedLeads);
+    return { ok: true, csv };
+  } catch (err) {
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : "Export failed.",
+    };
+  }
 }
