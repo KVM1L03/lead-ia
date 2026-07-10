@@ -18,7 +18,7 @@ import pytest
 _SCRIPTS_DIR = Path(__file__).resolve().parent.parent.parent / "scripts"
 sys.path.insert(0, str(_SCRIPTS_DIR))
 
-import record_fixtures  # noqa: E402, I001
+import record_fixtures  # type: ignore[import-not-found]  # noqa: E402, I001
 
 
 # ---------------------------------------------------------------------------
@@ -59,7 +59,7 @@ _FAKE_DETAILS.model_dump_json.return_value = json.dumps(
 )
 
 
-def _make_provider(search_results: list, details_result: object) -> MagicMock:
+def _make_provider(search_results: list[MagicMock], details_result: object) -> MagicMock:
     provider = MagicMock()
     provider.search_places = AsyncMock(return_value=search_results)
     provider.get_place_details = AsyncMock(return_value=details_result)
@@ -72,7 +72,7 @@ def _make_provider(search_results: list, details_result: object) -> MagicMock:
 
 
 @pytest.mark.asyncio
-async def test_dry_run_prints_plan_and_makes_no_calls(capsys: pytest.CaptureFixture) -> None:
+async def test_dry_run_prints_plan_and_makes_no_calls(capsys: pytest.CaptureFixture[str]) -> None:
     queries = [("dental clinics Wrocław", 3)]
     await record_fixtures.record(
         queries=queries,
@@ -101,7 +101,7 @@ async def test_dry_run_does_not_write_files(tmp_path: Path) -> None:
 
 
 @pytest.mark.asyncio
-async def test_dry_run_does_not_call_provider(capsys: pytest.CaptureFixture) -> None:
+async def test_dry_run_does_not_call_provider(capsys: pytest.CaptureFixture[str]) -> None:
     provider_mock = _make_provider([_FAKE_SEARCH_RESULT], _FAKE_DETAILS)
     with patch(
         "maps_bridge.providers.google_places.GooglePlacesProvider", return_value=provider_mock
@@ -138,7 +138,7 @@ def test_estimate_calls_multiple_queries() -> None:
 
 @pytest.mark.asyncio
 async def test_max_calls_aborts_before_any_calls_when_estimate_exceeds_limit(
-    capsys: pytest.CaptureFixture,
+    capsys: pytest.CaptureFixture[str],
 ) -> None:
     """Estimated calls > max_calls → sys.exit(1) before any network call."""
     queries = [("query a", 10), ("query b", 10)]  # estimate = 22 calls
@@ -216,7 +216,7 @@ async def test_max_calls_aborts_mid_run_on_details(tmp_path: Path) -> None:
 
 
 @pytest.mark.asyncio
-async def test_user_declines_confirmation_exits(capsys: pytest.CaptureFixture) -> None:
+async def test_user_declines_confirmation_exits(capsys: pytest.CaptureFixture[str]) -> None:
     provider_mock = _make_provider([_FAKE_SEARCH_RESULT], _FAKE_DETAILS)
     with (
         patch.object(record_fixtures, "GooglePlacesProvider", return_value=provider_mock),
