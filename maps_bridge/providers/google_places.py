@@ -27,7 +27,7 @@ _DETAILS_URL = "https://places.googleapis.com/v1/places/{place_id}"
 #
 # NEVER add places.rating, places.userRatingCount, places.reviews, or any
 # atmosphere field to _SEARCH_MASK.  One forgotten field silently upgrades
-# every search call to Enterprise — 5× smaller free quota with no warning.
+# every search call to Enterprise — 5x smaller free quota with no warning.
 # test_google_places_provider.py::test_search_mask_excludes_rating_and_reviews
 # enforces this invariant automatically.
 # ---------------------------------------------------------------------------
@@ -66,16 +66,18 @@ _DETAILS_MASK = (
 # Internal Pydantic models (loose — API shape may vary; no strict mode)
 # ---------------------------------------------------------------------------
 
-_GENERIC_TYPES = frozenset({
-    "point_of_interest",
-    "establishment",
-    "store",
-    "food",
-    "premise",
-    "route",
-    "locality",
-    "political",
-})
+_GENERIC_TYPES = frozenset(
+    {
+        "point_of_interest",
+        "establishment",
+        "store",
+        "food",
+        "premise",
+        "route",
+        "locality",
+        "political",
+    }
+)
 
 
 def _pick_category(primary_type: str | None, types: list[str]) -> str:
@@ -90,7 +92,7 @@ def _pick_category(primary_type: str | None, types: list[str]) -> str:
 
 class _LocalizedText(BaseModel):
     text: str = ""
-    languageCode: str = ""
+    languageCode: str = ""  # noqa: N815
 
 
 class _LatLng(BaseModel):
@@ -99,19 +101,19 @@ class _LatLng(BaseModel):
 
 
 class _OpeningHours(BaseModel):
-    weekdayDescriptions: list[str] = []
+    weekdayDescriptions: list[str] = []  # noqa: N815
 
 
 class _Place(BaseModel):
     id: str = ""
-    displayName: _LocalizedText = Field(default_factory=_LocalizedText)
-    formattedAddress: str = ""
+    displayName: _LocalizedText = Field(default_factory=_LocalizedText)  # noqa: N815
+    formattedAddress: str = ""  # noqa: N815
     location: _LatLng = Field(default_factory=_LatLng)
-    primaryType: str | None = None
+    primaryType: str | None = None  # noqa: N815
     types: list[str] = []
-    websiteUri: str | None = None
-    nationalPhoneNumber: str | None = None
-    regularOpeningHours: _OpeningHours | None = None
+    websiteUri: str | None = None  # noqa: N815
+    nationalPhoneNumber: str | None = None  # noqa: N815
+    regularOpeningHours: _OpeningHours | None = None  # noqa: N815
 
 
 class _SearchResponse(BaseModel):
@@ -178,7 +180,7 @@ class GooglePlacesProvider:
                 lat=place.location.latitude,
                 lng=place.location.longitude,
                 category=_pick_category(place.primaryType, place.types),
-                rating=None,        # excluded from FieldMask — see _SEARCH_MASK comment
+                rating=None,  # excluded from FieldMask — see _SEARCH_MASK comment
                 review_count=None,  # excluded from FieldMask — see _SEARCH_MASK comment
             )
             for place in data.places[:limit]
@@ -195,14 +197,12 @@ class GooglePlacesProvider:
             lat=place.location.latitude,
             lng=place.location.longitude,
             category=_pick_category(place.primaryType, place.types),
-            rating=None,        # excluded from FieldMask — see _DETAILS_MASK comment
+            rating=None,  # excluded from FieldMask — see _DETAILS_MASK comment
             review_count=None,  # excluded from FieldMask — see _DETAILS_MASK comment
             website=place.websiteUri,
             phone=place.nationalPhoneNumber,
             hours=(
-                place.regularOpeningHours.weekdayDescriptions
-                if place.regularOpeningHours
-                else []
+                place.regularOpeningHours.weekdayDescriptions if place.regularOpeningHours else []
             ),
             photos=[],
         )

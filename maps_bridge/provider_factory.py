@@ -30,9 +30,7 @@ def get_provider() -> MapsProvider:
         return CachingMapsProvider(inner, cache)
     if settings.MAPS_PROVIDER == "google_places":
         if not settings.GOOGLE_MAPS_API_KEY:
-            raise ValueError(
-                "GOOGLE_MAPS_API_KEY must be set when MAPS_PROVIDER=google_places"
-            )
+            raise ValueError("GOOGLE_MAPS_API_KEY must be set when MAPS_PROVIDER=google_places")
         from maps_bridge.cache import CachingMapsProvider, SQLiteCache
         from maps_bridge.providers.google_places import GooglePlacesProvider
 
