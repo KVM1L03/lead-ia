@@ -54,19 +54,36 @@ async def test_get_place_details_missing_raises_key_error(provider: MockMapsProv
 
 
 def test_pydantic_strict_rejects_missing_required_field() -> None:
+    # rating/review_count are now optional; omit a truly required field (name) instead
     with pytest.raises(ValidationError):
         PlaceSearchResult.model_validate(
             {
                 "id": "bad",
-                "name": "Bad Place",
+                # name intentionally omitted — still required
                 "address": "1 Bad Street",
                 "lat": 51.5,
                 "lng": -0.1,
                 "category": "dental",
-                # rating intentionally omitted
+                "rating": 4.5,
                 "review_count": 10,
             }
         )
+
+
+def test_place_search_result_rating_optional() -> None:
+    # rating and review_count may be absent (e.g. Google Places API New)
+    r = PlaceSearchResult.model_validate(
+        {
+            "id": "no-rating",
+            "name": "No Rating Place",
+            "address": "1 Street",
+            "lat": 51.5,
+            "lng": -0.1,
+            "category": "dental",
+        }
+    )
+    assert r.rating is None
+    assert r.review_count is None
 
 
 def test_pydantic_strict_rejects_string_for_float_field() -> None:

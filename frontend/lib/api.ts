@@ -13,8 +13,8 @@ export type PlaceDetails = {
   lat: number;
   lng: number;
   category: string;
-  rating: number;
-  review_count: number;
+  rating: number | null;
+  review_count: number | null;
   website: string | null;
   phone: string | null;
   hours: string[];
