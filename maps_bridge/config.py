@@ -6,6 +6,7 @@ class Settings(BaseSettings):
 
     MAPS_PROVIDER: str = "mock"
     SERPAPI_API_KEY: str | None = None
+    GOOGLE_MAPS_API_KEY: str | None = None
     CACHE_DB_PATH: str = "/tmp/cache.db"
 
 
