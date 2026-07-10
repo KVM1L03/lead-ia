@@ -14,6 +14,8 @@
 🚀 **[Try it live](https://lead-ia-ten.vercel.app)** — first load may take 5–10 s (Cloud Run cold start).
 The full durable stack (Temporal, Langfuse, PostgreSQL) runs locally via Docker Compose.
 
+> **Demo data:** the live demo runs on recorded Google Places responses — real API data, cached as fixture files rather than called live. The demo cap is 20 runs/day (~600/month); the Places API (New) Place Details free tier supports ~200 runs/month at 25 leads each. Serving live traffic from a free API key would exhaust the quota in roughly 10 days. Both the Google Places and SerpAPI integrations are real — clone and run locally with your own key for live search.
+
 
 
 
@@ -162,6 +164,18 @@ Two independent rate-limit layers, both no-ops when `DEMO_MODE=false`:
 **Traded away:** global rate-limit accuracy under horizontal scale — in-memory counters are per-instance, not shared across replicas.
 
 **Why:** Redis adds ~$15/month and a VPC dependency. The in-process backend is explicitly documented as a soft guard (not a billing fence). The hard lead cap enforces a Cloud Run timeout ceiling *before* any LLM calls start — clean 429 error, not a mid-flight 504.
+
+---
+
+### Demo data: recorded fixtures instead of live API calls
+
+The live demo runs `MAPS_PROVIDER=mock`, backed by Google Places API responses recorded once and committed to `maps_bridge/fixtures/recorded/`. The mock provider replays them with exact-token, Jaccard-fuzzy, and round-robin fallback matching — no live API calls, no quota risk.
+
+**Why:** The demo cap allows 20 runs/day (~600/month). The Places API (New) Place Details free tier is 5,000 calls/month; at 25 leads per run, that's ~200 runs before the quota is exhausted. Serving real demo traffic from a free key would burn through it in ~10 days — a recruiter opening the link mid-month would see a quota error instead of a product. Caching the responses eliminates that failure mode entirely, at the cost of data freshness — which is irrelevant: a month-old set of Warsaw dental clinics looks identical for the purposes of demonstrating the pipeline.
+
+**Traded away:** data freshness and the ability to search arbitrary categories in the live demo. Queries that don't match a recorded category return a representative cross-category sample rather than a live result.
+
+**The integrations are real.** `GooglePlacesProvider` and `SerpAPIMapsProvider` are production code, wired through the same `MapsProvider` Protocol the mock satisfies. Set `MAPS_PROVIDER=google_places` (with a GCP key) or `MAPS_PROVIDER=serpapi` locally for live search.
 
 ---
 
