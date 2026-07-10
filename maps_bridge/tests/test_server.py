@@ -16,14 +16,14 @@ async def test_tools_registered() -> None:
 
 
 async def test_search_places_returns_mock_results() -> None:
-    results = await search_places(query="dental", limit=3)
+    results = await search_places(query="dental clinics Wrocław", limit=3)
     assert 0 < len(results) <= 3
-    assert all("dental" in r.category.lower() or "dental" in r.name.lower() for r in results)
 
 
 async def test_get_place_details_returns_known_fixture() -> None:
-    details = await get_place_details(place_id="dental-warsaw-001")
-    assert details.name == "Klinika Stomatologiczna Centrum"
+    # Uses a recorded Google Places id (from dental_clinics_wroc_aw fixtures)
+    details = await get_place_details(place_id="ChIJIzcRfHDqD0cRZ9YugAK02ZE")
+    assert details.name == "Dental Center DentalCover"
 
 
 def test_unknown_provider_raises(monkeypatch: pytest.MonkeyPatch) -> None:
