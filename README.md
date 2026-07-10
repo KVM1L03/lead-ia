@@ -1,7 +1,5 @@
 # LeadIA
 
-**Prompt → Google Maps → AI qualifier → personalized email → human approval**
-
 [![Python 3.12](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 [![Next.js 16](https://img.shields.io/badge/Next.js-16-000000?logo=next.js&logoColor=white)](https://nextjs.org/)
@@ -11,7 +9,7 @@
 [![Docker](https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
 [![CI](https://github.com/KVM1L03/lead-ia/actions/workflows/ci.yml/badge.svg)](https://github.com/KVM1L03/lead-ia/actions/workflows/ci.yml)
 
-🚀 **[Try it live](https://lead-ia-ten.vercel.app)** — first load may take 5–10 s (Cloud Run cold start).
+🔴 **[Try it live](https://lead-ia-ten.vercel.app)** — first load may take 5–10 s (Cloud Run cold start).
 The full durable stack (Temporal, Langfuse, PostgreSQL) runs locally via Docker Compose.
 
 > **Demo data:** the live demo runs on recorded Google Places responses — real API data, cached as fixture files rather than called live. The demo cap is 20 runs/day (~600/month); the Places API (New) Place Details free tier supports ~200 runs/month at 25 leads each. Serving live traffic from a free API key would exhaust the quota in roughly 10 days. Both the Google Places and SerpAPI integrations are real — clone and run locally with your own key for live search.
