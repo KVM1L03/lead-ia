@@ -1,0 +1,22 @@
+{
+  "id": "ChIJR6-x-_XMHkcRrY-J1JL2iXM",
+  "name": "Woloszański & Partners Law Firm",
+  "address": "Spectrum Tower, XIX p, Twarda 18, 00-105 Warszawa, Poland",
+  "lat": 52.2344308,
+  "lng": 20.999343,
+  "category": "Consultant",
+  "rating": null,
+  "review_count": null,
+  "website": "http://www.wlaw.pl/en",
+  "phone": "22 295 08 90",
+  "hours": [
+    "Monday: 9:00 AM – 5:00 PM",
+    "Tuesday: 9:00 AM – 5:00 PM",
+    "Wednesday: 9:00 AM – 5:00 PM",
+    "Thursday: 9:00 AM – 5:00 PM",
+    "Friday: 9:00 AM – 5:00 PM",
+    "Saturday: Closed",
+    "Sunday: Closed"
+  ],
+  "photos": []
+}

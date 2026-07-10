@@ -1,0 +1,22 @@
+{
+  "id": "ChIJhzjm5EDCD0cRVLx4ONDZCLo",
+  "name": "JWW Accounting Office",
+  "address": "al. Wiśniowa 43, 53-137 Wrocław, Poland",
+  "lat": 51.084989699999994,
+  "lng": 17.0167038,
+  "category": "Accounting",
+  "rating": null,
+  "review_count": null,
+  "website": "http://www.jww.pl/",
+  "phone": "501 077 071",
+  "hours": [
+    "Monday: 8:00 AM – 4:00 PM",
+    "Tuesday: 8:00 AM – 4:00 PM",
+    "Wednesday: 8:00 AM – 4:00 PM",
+    "Thursday: 8:00 AM – 4:00 PM",
+    "Friday: 8:00 AM – 4:00 PM",
+    "Saturday: Closed",
+    "Sunday: Closed"
+  ],
+  "photos": []
+}

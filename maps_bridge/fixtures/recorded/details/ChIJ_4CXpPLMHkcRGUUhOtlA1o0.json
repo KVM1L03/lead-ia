@@ -1,0 +1,22 @@
+{
+  "id": "ChIJ_4CXpPLMHkcRGUUhOtlA1o0",
+  "name": "Dudkowiak Kopeć & Putyra Business Law Firm Poland, Warsaw",
+  "address": "1, Rondo ONZ, 00-124 Warszawa, Poland",
+  "lat": 52.232704299999995,
+  "lng": 20.999595499999998,
+  "category": "Lawyer",
+  "rating": null,
+  "review_count": null,
+  "website": "http://www.dudkowiak.com/",
+  "phone": "22 300 16 74",
+  "hours": [
+    "Monday: 9:00 AM – 5:00 PM",
+    "Tuesday: 9:00 AM – 5:00 PM",
+    "Wednesday: 9:00 AM – 5:00 PM",
+    "Thursday: 9:00 AM – 5:00 PM",
+    "Friday: 9:00 AM – 5:00 PM",
+    "Saturday: Closed",
+    "Sunday: Closed"
+  ],
+  "photos": []
+}

@@ -1,0 +1,52 @@
+[
+  {
+    "id": "ChIJ57c9p1hbFkcRS5KxquoHZPs",
+    "name": "JustIdea Agency",
+    "address": "Olszańska 7, 31-513 Kraków, Poland",
+    "lat": 50.072514399999996,
+    "lng": 19.9581351,
+    "category": "Service",
+    "rating": null,
+    "review_count": null
+  },
+  {
+    "id": "ChIJRZdyAKVbFkcR2nD3Pkt93BI",
+    "name": "Seosem24",
+    "address": "Rynek Główny 30/5, 31-010 Kraków, Poland",
+    "lat": 50.061864799999995,
+    "lng": 19.935834699999997,
+    "category": "Service",
+    "rating": null,
+    "review_count": null
+  },
+  {
+    "id": "ChIJI_CxustdFkcR3n3DKuEbvHs",
+    "name": "Coconut Agency",
+    "address": "Cegielniana 4a/10, 30-403 Kraków, Poland",
+    "lat": 50.0284297,
+    "lng": 19.9352883,
+    "category": "Service",
+    "rating": null,
+    "review_count": null
+  },
+  {
+    "id": "ChIJ_UQr7GvLFkcRiBwLkwBngjo",
+    "name": "Two Colours Agency - Tworzenie stron internetowych | Reklama w Social Media | SEO",
+    "address": "Kuźnicy Kołłątajowskiej 23g/48, 31-234 Kraków, Poland",
+    "lat": 50.0971987,
+    "lng": 19.9568622,
+    "category": "Service",
+    "rating": null,
+    "review_count": null
+  },
+  {
+    "id": "ChIJod5JHSxbFkcR_03LAEvSdko",
+    "name": "Shine On",
+    "address": "Walerego Eljasza-Radzikowskiego 100J/45, 31-315 Kraków, Poland",
+    "lat": 50.085878199999996,
+    "lng": 19.900025,
+    "category": "Service",
+    "rating": null,
+    "review_count": null
+  }
+]

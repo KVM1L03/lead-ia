@@ -1,0 +1,22 @@
+{
+  "id": "ChIJCZ_-hHfCD0cRvDotcojpkF8",
+  "name": "Biuro rachunkowe Tax4business",
+  "address": "Opoczyńska 31/4, 54-034 Wrocław, Poland",
+  "lat": 51.1420995,
+  "lng": 16.8908114,
+  "category": "Consultant",
+  "rating": null,
+  "review_count": null,
+  "website": "https://tax4business.pl/?utm_source=wizytowka&utm_medium=wizytowka&utm_campaign=wizytowka",
+  "phone": "798 718 935",
+  "hours": [
+    "Monday: 7:30 AM – 3:30 PM",
+    "Tuesday: 7:30 AM – 3:30 PM",
+    "Wednesday: 7:30 AM – 3:30 PM",
+    "Thursday: 7:30 AM – 3:30 PM",
+    "Friday: 7:30 AM – 3:30 PM",
+    "Saturday: Closed",
+    "Sunday: Closed"
+  ],
+  "photos": []
+}

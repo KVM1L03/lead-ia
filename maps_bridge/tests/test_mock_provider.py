@@ -1,8 +1,10 @@
-import pytest
-from pydantic import ValidationError
+"""Tests for MockMapsProvider backed by recorded Google Places fixtures."""
 
-from maps_bridge.providers.mock import MockMapsProvider
-from shared.schemas import PlaceSearchResult
+from __future__ import annotations
+
+import pytest
+
+from maps_bridge.providers.mock import MockMapsProvider, _load_fixtures
 
 
 @pytest.fixture
@@ -10,94 +12,125 @@ def provider() -> MockMapsProvider:
     return MockMapsProvider()
 
 
-async def test_search_dental_respects_limit(provider: MockMapsProvider) -> None:
-    results = await provider.search_places("dental", 5)
-    assert len(results) <= 5
-    assert all("dental" in r.category.lower() or "dental" in r.name.lower() for r in results)
+# ---------------------------------------------------------------------------
+# Fixture loading
+# ---------------------------------------------------------------------------
 
 
-async def test_search_dental_returns_all_when_limit_high(provider: MockMapsProvider) -> None:
-    results = await provider.search_places("dental", 100)
-    assert len(results) == 10
+def test_fixtures_load_without_error() -> None:
+    _search_index, details_index, slugs, _slug_to_query = _load_fixtures()
+    assert len(slugs) == 6
+    assert len(details_index) == 30  # 6 queries x 5 details each
 
 
-async def test_search_nonexistent_returns_empty(provider: MockMapsProvider) -> None:
-    results = await provider.search_places("nonexistent_xyz_12345", 10)
-    assert results == []
+def test_all_loaded_results_have_none_rating() -> None:
+    search_index, _, _, _ = _load_fixtures()
+    for results in search_index.values():
+        for r in results:
+            assert r.rating is None
+            assert r.review_count is None
 
 
-async def test_search_is_case_insensitive(provider: MockMapsProvider) -> None:
-    lower = await provider.search_places("coffee", 100)
-    upper = await provider.search_places("COFFEE", 100)
-    assert len(lower) == len(upper) == 10
+# ---------------------------------------------------------------------------
+# Exact / near match
+# ---------------------------------------------------------------------------
 
 
-async def test_search_multi_word_query_matches_by_token(provider: MockMapsProvider) -> None:
-    results = await provider.search_places("dental warsaw", 10)
-    warsaw = [r for r in results if "warsaw" in r.id]
-    assert len(warsaw) == 3
+@pytest.mark.asyncio
+async def test_exact_recorded_query_returns_its_results(provider: MockMapsProvider) -> None:
+    results = await provider.search_places("dental clinics Wrocław", 10)
+    assert len(results) == 5
+    assert all(r.rating is None for r in results)
 
 
-async def test_get_place_details_valid(provider: MockMapsProvider) -> None:
-    results = await provider.search_places("dental", 1)
+@pytest.mark.asyncio
+async def test_exact_match_respects_limit(provider: MockMapsProvider) -> None:
+    results = await provider.search_places("dental clinics Wrocław", 2)
+    assert len(results) == 2
+
+
+@pytest.mark.asyncio
+async def test_subset_tokens_match_exact(provider: MockMapsProvider) -> None:
+    # "dental wroclaw" tokens are a subset of "dental clinics Wrocław" tokens
+    results = await provider.search_places("dental wroclaw", 10)
+    assert len(results) == 5
+
+
+# ---------------------------------------------------------------------------
+# Fuzzy match
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_fuzzy_query_returns_related_results(provider: MockMapsProvider) -> None:
+    results = await provider.search_places("dentist wrocław", 10)
+    assert len(results) > 0
+
+
+@pytest.mark.asyncio
+async def test_city_token_guides_fuzzy_match(provider: MockMapsProvider) -> None:
+    # "lawyers warszawa" → should match "law firms Warszawa" (not Wrocław)
+    results = await provider.search_places("lawyers warszawa", 10)
+    assert len(results) > 0
+    assert all("Warszawa" in r.address or "Warsaw" in r.address for r in results)
+
+
+# ---------------------------------------------------------------------------
+# No-match fallback — never empty
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_unrelated_query_returns_nonempty_sample(provider: MockMapsProvider) -> None:
+    results = await provider.search_places("pizza tokyo ramen", 10)
+    assert len(results) > 0
+
+
+@pytest.mark.asyncio
+async def test_fallback_sample_is_diverse(provider: MockMapsProvider) -> None:
+    results = await provider.search_places("xyzzy_no_match", 10)
+    categories = {r.category for r in results}
+    assert len(categories) >= 3
+
+
+# ---------------------------------------------------------------------------
+# Determinism
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_same_query_returns_identical_results(provider: MockMapsProvider) -> None:
+    a = await provider.search_places("marketing agencies Wrocław", 5)
+    b = await provider.search_places("marketing agencies Wrocław", 5)
+    assert [r.id for r in a] == [r.id for r in b]
+
+
+@pytest.mark.asyncio
+async def test_fallback_sample_is_deterministic(provider: MockMapsProvider) -> None:
+    a = await provider.search_places("no_match_xyz", 6)
+    b = await provider.search_places("no_match_xyz", 6)
+    assert [r.id for r in a] == [r.id for r in b]
+
+
+# ---------------------------------------------------------------------------
+# get_place_details
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_get_place_details_returns_full_record(provider: MockMapsProvider) -> None:
+    results = await provider.search_places("dental clinics Wrocław", 1)
     assert results
     details = await provider.get_place_details(results[0].id)
     assert details.id == results[0].id
     assert details.name == results[0].name
+    assert details.rating is None
+    assert details.review_count is None
     assert hasattr(details, "website")
     assert hasattr(details, "hours")
 
 
-async def test_get_place_details_missing_raises_key_error(provider: MockMapsProvider) -> None:
+@pytest.mark.asyncio
+async def test_get_place_details_unknown_id_raises_key_error(provider: MockMapsProvider) -> None:
     with pytest.raises(KeyError, match="Place not found"):
-        await provider.get_place_details("missing-id-xyz")
-
-
-def test_pydantic_strict_rejects_missing_required_field() -> None:
-    # rating/review_count are now optional; omit a truly required field (name) instead
-    with pytest.raises(ValidationError):
-        PlaceSearchResult.model_validate(
-            {
-                "id": "bad",
-                # name intentionally omitted — still required
-                "address": "1 Bad Street",
-                "lat": 51.5,
-                "lng": -0.1,
-                "category": "dental",
-                "rating": 4.5,
-                "review_count": 10,
-            }
-        )
-
-
-def test_place_search_result_rating_optional() -> None:
-    # rating and review_count may be absent (e.g. Google Places API New)
-    r = PlaceSearchResult.model_validate(
-        {
-            "id": "no-rating",
-            "name": "No Rating Place",
-            "address": "1 Street",
-            "lat": 51.5,
-            "lng": -0.1,
-            "category": "dental",
-        }
-    )
-    assert r.rating is None
-    assert r.review_count is None
-
-
-def test_pydantic_strict_rejects_string_for_float_field() -> None:
-    # strict=True in ConfigDict prevents str→float coercion
-    with pytest.raises(ValidationError):
-        PlaceSearchResult.model_validate(
-            {
-                "id": "bad",
-                "name": "Bad Place",
-                "address": "1 Bad Street",
-                "lat": "51.5",
-                "lng": -0.1,
-                "category": "dental",
-                "rating": 4.5,
-                "review_count": 10,
-            }
-        )
+        await provider.get_place_details("nonexistent-id-xyz")

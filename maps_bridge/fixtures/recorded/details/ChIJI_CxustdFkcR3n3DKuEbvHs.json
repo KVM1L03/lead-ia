@@ -1,0 +1,22 @@
+{
+  "id": "ChIJI_CxustdFkcR3n3DKuEbvHs",
+  "name": "Coconut Agency",
+  "address": "Cegielniana 4a/10, 30-403 Kraków, Poland",
+  "lat": 50.0284297,
+  "lng": 19.9352883,
+  "category": "Service",
+  "rating": null,
+  "review_count": null,
+  "website": "https://coconutagency.pl/",
+  "phone": "537 776 282",
+  "hours": [
+    "Monday: 8:00 AM – 5:00 PM",
+    "Tuesday: 8:00 AM – 5:00 PM",
+    "Wednesday: 8:00 AM – 5:00 PM",
+    "Thursday: 8:00 AM – 5:00 PM",
+    "Friday: 8:00 AM – 5:00 PM",
+    "Saturday: Closed",
+    "Sunday: Closed"
+  ],
+  "photos": []
+}

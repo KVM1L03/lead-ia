@@ -1,0 +1,22 @@
+{
+  "id": "ChIJeaf5EJzpD0cRr_5vtH5fh5Y",
+  "name": "Klinika Stomatologiczna Dental Med",
+  "address": "Żmigrodzka 83, 51-130 Wrocław, Poland",
+  "lat": 51.141726399999996,
+  "lng": 17.032498,
+  "category": "Dentist",
+  "rating": null,
+  "review_count": null,
+  "website": "https://dental-med.eu/",
+  "phone": "604 609 012",
+  "hours": [
+    "Monday: 9:00 AM – 8:00 PM",
+    "Tuesday: 9:00 AM – 8:00 PM",
+    "Wednesday: 9:00 AM – 8:00 PM",
+    "Thursday: 9:00 AM – 8:00 PM",
+    "Friday: 9:00 AM – 8:00 PM",
+    "Saturday: 9:00 AM – 2:00 PM",
+    "Sunday: Closed"
+  ],
+  "photos": []
+}

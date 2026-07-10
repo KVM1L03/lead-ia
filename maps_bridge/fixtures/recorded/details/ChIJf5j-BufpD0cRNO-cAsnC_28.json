@@ -1,0 +1,22 @@
+{
+  "id": "ChIJf5j-BufpD0cRNO-cAsnC_28",
+  "name": "Pomorska Dental Clinic",
+  "address": "Pomorska 32, 50-218 Wrocław, Poland",
+  "lat": 51.1201212,
+  "lng": 17.030354199999998,
+  "category": "Dentist",
+  "rating": null,
+  "review_count": null,
+  "website": "http://pomorskadental.pl/",
+  "phone": "501 298 528",
+  "hours": [
+    "Monday: 8:30 AM – 8:30 PM",
+    "Tuesday: 8:30 AM – 8:30 PM",
+    "Wednesday: 8:30 AM – 8:30 PM",
+    "Thursday: 8:00 AM – 8:30 PM",
+    "Friday: 8:30 AM – 8:30 PM",
+    "Saturday: 8:00 AM – 2:00 PM",
+    "Sunday: Closed"
+  ],
+  "photos": []
+}

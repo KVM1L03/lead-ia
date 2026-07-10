@@ -1,0 +1,22 @@
+{
+  "id": "ChIJ57c9p1hbFkcRS5KxquoHZPs",
+  "name": "JustIdea Agency",
+  "address": "Olszańska 7, 31-513 Kraków, Poland",
+  "lat": 50.072514399999996,
+  "lng": 19.9581351,
+  "category": "Service",
+  "rating": null,
+  "review_count": null,
+  "website": "https://justidea.agency/pl/?utm_source=googlemaps",
+  "phone": "12 400 47 50",
+  "hours": [
+    "Monday: Open 24 hours",
+    "Tuesday: Open 24 hours",
+    "Wednesday: Open 24 hours",
+    "Thursday: Open 24 hours",
+    "Friday: Open 24 hours",
+    "Saturday: Open 24 hours",
+    "Sunday: Open 24 hours"
+  ],
+  "photos": []
+}

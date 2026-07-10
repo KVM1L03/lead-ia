@@ -1,0 +1,22 @@
+{
+  "id": "ChIJUTRZa6XDD0cRjrIXpPEykh0",
+  "name": "NATADENT DENTAL CLINIC",
+  "address": "Gen. Kazimierza Pułaskiego 16/U1A, 50-444 Wrocław, Poland",
+  "lat": 51.101397399999996,
+  "lng": 17.0464947,
+  "category": "Dental Clinic",
+  "rating": null,
+  "review_count": null,
+  "website": "https://www.natadent.pl/",
+  "phone": "578 555 528",
+  "hours": [
+    "Monday: 9:00 AM – 9:00 PM",
+    "Tuesday: 9:00 AM – 9:00 PM",
+    "Wednesday: 9:00 AM – 9:00 PM",
+    "Thursday: 9:00 AM – 9:00 PM",
+    "Friday: 9:00 AM – 9:00 PM",
+    "Saturday: 9:00 AM – 9:00 PM",
+    "Sunday: 9:00 AM – 9:00 PM"
+  ],
+  "photos": []
+}

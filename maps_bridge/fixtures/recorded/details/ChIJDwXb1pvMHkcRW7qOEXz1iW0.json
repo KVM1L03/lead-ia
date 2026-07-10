@@ -1,0 +1,22 @@
+{
+  "id": "ChIJDwXb1pvMHkcRW7qOEXz1iW0",
+  "name": "Avenue Dental Dental Clinic",
+  "address": "Kolejowa 45/U2, 01-210 Warszawa, Poland",
+  "lat": 52.2264911,
+  "lng": 20.9818505,
+  "category": "Dentist",
+  "rating": null,
+  "review_count": null,
+  "website": "https://dentalavenue.pl/",
+  "phone": "22 398 88 88",
+  "hours": [
+    "Monday: 9:30 AM – 8:00 PM",
+    "Tuesday: 9:30 AM – 8:00 PM",
+    "Wednesday: 9:30 AM – 8:00 PM",
+    "Thursday: 9:30 AM – 8:00 PM",
+    "Friday: 9:30 AM – 8:00 PM",
+    "Saturday: Closed",
+    "Sunday: Closed"
+  ],
+  "photos": []
+}

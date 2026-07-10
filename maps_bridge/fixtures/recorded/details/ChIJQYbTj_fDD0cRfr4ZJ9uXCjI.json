@@ -1,0 +1,22 @@
+{
+  "id": "ChIJQYbTj_fDD0cRfr4ZJ9uXCjI",
+  "name": "House of Tax",
+  "address": "plac Konstytucji 3 Maja 3/Piętro 12, 50-048 Wrocław, Poland",
+  "lat": 51.0993749,
+  "lng": 17.040139099999998,
+  "category": "Accounting",
+  "rating": null,
+  "review_count": null,
+  "website": "https://www.houseoftax.pl/",
+  "phone": "666 500 705",
+  "hours": [
+    "Monday: 8:00 AM – 4:00 PM",
+    "Tuesday: 8:00 AM – 4:00 PM",
+    "Wednesday: 8:00 AM – 4:00 PM",
+    "Thursday: 8:00 AM – 4:00 PM",
+    "Friday: 8:00 AM – 4:00 PM",
+    "Saturday: Closed",
+    "Sunday: Closed"
+  ],
+  "photos": []
+}

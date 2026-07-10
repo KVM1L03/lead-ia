@@ -1,0 +1,52 @@
+[
+  {
+    "id": "ChIJa4DdfXvNHkcRs7JL0-VYwAw",
+    "name": "Warsaw Dental Center",
+    "address": "Topiel 11, 00-342 Warszawa, Poland",
+    "lat": 52.2387485,
+    "lng": 21.0246285,
+    "category": "Dentist",
+    "rating": null,
+    "review_count": null
+  },
+  {
+    "id": "ChIJlQZ8qovNHkcRJGnBEXtQO7Q",
+    "name": "Dental Clinic International",
+    "address": "Wałuszewska 24/Lok. U1, 03-024 Warszawa, Poland",
+    "lat": 52.3383252,
+    "lng": 20.986488899999998,
+    "category": "Dental Clinic",
+    "rating": null,
+    "review_count": null
+  },
+  {
+    "id": "ChIJDwXb1pvMHkcRW7qOEXz1iW0",
+    "name": "Avenue Dental Dental Clinic",
+    "address": "Kolejowa 45/U2, 01-210 Warszawa, Poland",
+    "lat": 52.2264911,
+    "lng": 20.9818505,
+    "category": "Dentist",
+    "rating": null,
+    "review_count": null
+  },
+  {
+    "id": "ChIJ_XJwqYfMHkcRqI7gQMhLn4M",
+    "name": "Elektoralna Dental Clinic",
+    "address": "Elektoralna 28, 00-892 Warszawa, Poland",
+    "lat": 52.2385434,
+    "lng": 20.9923792,
+    "category": "Dental Clinic",
+    "rating": null,
+    "review_count": null
+  },
+  {
+    "id": "ChIJDcMgYIItGUcR6clcwygxeOs",
+    "name": "Dental Service Care",
+    "address": "Braci Wagów 4, 02-791 Warszawa, Poland",
+    "lat": 52.1394953,
+    "lng": 21.053805999999998,
+    "category": "Dentist",
+    "rating": null,
+    "review_count": null
+  }
+]

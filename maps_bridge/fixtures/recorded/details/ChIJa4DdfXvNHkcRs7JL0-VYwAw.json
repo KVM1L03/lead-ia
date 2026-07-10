@@ -1,0 +1,22 @@
+{
+  "id": "ChIJa4DdfXvNHkcRs7JL0-VYwAw",
+  "name": "Warsaw Dental Center",
+  "address": "Topiel 11, 00-342 Warszawa, Poland",
+  "lat": 52.2387485,
+  "lng": 21.0246285,
+  "category": "Dentist",
+  "rating": null,
+  "review_count": null,
+  "website": "https://warsawdentalcenter.pl/",
+  "phone": "22 542 18 04",
+  "hours": [
+    "Monday: 9:00 AM – 9:00 PM",
+    "Tuesday: 9:00 AM – 9:00 PM",
+    "Wednesday: 9:00 AM – 9:00 PM",
+    "Thursday: 9:00 AM – 9:00 PM",
+    "Friday: 9:00 AM – 9:00 PM",
+    "Saturday: Closed",
+    "Sunday: Closed"
+  ],
+  "photos": []
+}

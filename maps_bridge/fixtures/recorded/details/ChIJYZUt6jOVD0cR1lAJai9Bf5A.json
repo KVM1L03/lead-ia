@@ -1,0 +1,22 @@
+{
+  "id": "ChIJYZUt6jOVD0cR1lAJai9Bf5A",
+  "name": "Starlit Accounting",
+  "address": "Krupnicza 2/4, 50-075 Wrocław, Poland",
+  "lat": 51.108171899999995,
+  "lng": 17.027162900000004,
+  "category": "Accounting",
+  "rating": null,
+  "review_count": null,
+  "website": "https://starlit.pl/?utm_medium=organic&utm_source=google_maps&utm_campaign=google_maps&utm_content=web_url",
+  "phone": "733 066 252",
+  "hours": [
+    "Monday: 8:00 AM – 4:00 PM",
+    "Tuesday: 8:00 AM – 4:00 PM",
+    "Wednesday: 8:00 AM – 4:00 PM",
+    "Thursday: 8:00 AM – 4:00 PM",
+    "Friday: 8:00 AM – 4:00 PM",
+    "Saturday: Closed",
+    "Sunday: Closed"
+  ],
+  "photos": []
+}

@@ -1,0 +1,22 @@
+{
+  "id": "ChIJRZdyAKVbFkcR2nD3Pkt93BI",
+  "name": "Seosem24",
+  "address": "Rynek Główny 30/5, 31-010 Kraków, Poland",
+  "lat": 50.061864799999995,
+  "lng": 19.935834699999997,
+  "category": "Service",
+  "rating": null,
+  "review_count": null,
+  "website": "https://seosem24.pl/",
+  "phone": null,
+  "hours": [
+    "Monday: Open 24 hours",
+    "Tuesday: Open 24 hours",
+    "Wednesday: Open 24 hours",
+    "Thursday: Open 24 hours",
+    "Friday: Open 24 hours",
+    "Saturday: Open 24 hours",
+    "Sunday: Open 24 hours"
+  ],
+  "photos": []
+}
