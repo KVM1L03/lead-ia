@@ -116,11 +116,18 @@ def _make_mocks(
     qualify_call: list[int] = []
 
     @activity.defn(name="search_places_activity")
-    async def mock_search(query: str, limit: int) -> list[PlaceSearchResult]:
+    async def mock_search(
+        query: str,
+        limit: int,
+        maps_provider: str | None = None,
+    ) -> list[PlaceSearchResult]:
         return [_RESULT] * n_places
 
     @activity.defn(name="get_place_details_activity")
-    async def mock_details(place_id: str) -> PlaceDetails:
+    async def mock_details(
+        place_id: str,
+        maps_provider: str | None = None,
+    ) -> PlaceDetails:
         return _PLACE
 
     @activity.defn(name="qualify_lead_activity")
@@ -296,11 +303,18 @@ async def test_max_concurrency_respected(env: WorkflowEnvironment) -> None:
     peak: list[int] = []
 
     @activity.defn(name="search_places_activity")
-    async def _search(query: str, limit: int) -> list[PlaceSearchResult]:
+    async def _search(
+        query: str,
+        limit: int,
+        maps_provider: str | None = None,
+    ) -> list[PlaceSearchResult]:
         return [_RESULT] * 4
 
     @activity.defn(name="get_place_details_activity")
-    async def _details(place_id: str) -> PlaceDetails:
+    async def _details(
+        place_id: str,
+        maps_provider: str | None = None,
+    ) -> PlaceDetails:
         active.append(1)
         peak.append(sum(active))
         await asyncio.sleep(0)  # yield so other coroutines can start

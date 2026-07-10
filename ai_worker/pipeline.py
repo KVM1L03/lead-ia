@@ -31,12 +31,18 @@ from shared.schemas import Lead, PlaceDetails, PlaceSearchResult
 _MAPS_TRANSPORT: str = os.environ.get("MAPS_TRANSPORT", "stdio")
 
 _APP_ROOT = os.environ.get("PYTHONPATH", "/app").split(os.pathsep)[0] or "/app"
-_MAPS_SERVER = StdioServerParameters(
-    command=sys.executable,
-    args=["-m", "maps_bridge.server"],
-    env={**os.environ, "PYTHONPATH": _APP_ROOT},
-    cwd=_APP_ROOT,
-)
+
+
+def _stdio_server_params(maps_provider: str | None = None) -> StdioServerParameters:
+    env = {**os.environ, "PYTHONPATH": _APP_ROOT}
+    if maps_provider is not None:
+        env["MAPS_PROVIDER"] = maps_provider
+    return StdioServerParameters(
+        command=sys.executable,
+        args=["-m", "maps_bridge.server"],
+        env=env,
+        cwd=_APP_ROOT,
+    )
 
 
 def _extract_tool_payload(result: CallToolResult) -> Any:
@@ -56,9 +62,13 @@ def _extract_tool_payload(result: CallToolResult) -> Any:
     return structured
 
 
-async def _call_search_places_stdio(query: str, limit: int) -> list[PlaceSearchResult]:
+async def _call_search_places_stdio(
+    query: str,
+    limit: int,
+    maps_provider: str | None = None,
+) -> list[PlaceSearchResult]:
     """Spawn maps_bridge via stdio and call the search_places MCP tool."""
-    async with stdio_client(_MAPS_SERVER) as (read, write):
+    async with stdio_client(_stdio_server_params(maps_provider)) as (read, write):
         async with ClientSession(read, write) as session:
             await session.initialize()
             result = await session.call_tool("search_places", {"query": query, "limit": limit})
@@ -68,9 +78,12 @@ async def _call_search_places_stdio(query: str, limit: int) -> list[PlaceSearchR
     return [PlaceSearchResult.model_validate(item) for item in raw]
 
 
-async def _call_get_place_details_stdio(place_id: str) -> PlaceDetails:
+async def _call_get_place_details_stdio(
+    place_id: str,
+    maps_provider: str | None = None,
+) -> PlaceDetails:
     """Spawn maps_bridge via stdio and call the get_place_details MCP tool."""
-    async with stdio_client(_MAPS_SERVER) as (read, write):
+    async with stdio_client(_stdio_server_params(maps_provider)) as (read, write):
         async with ClientSession(read, write) as session:
             await session.initialize()
             result = await session.call_tool("get_place_details", {"place_id": place_id})
@@ -82,7 +95,11 @@ async def _call_get_place_details_stdio(place_id: str) -> PlaceDetails:
     return PlaceDetails.model_validate(raw)
 
 
-async def _call_search_places_inline(query: str, limit: int) -> list[PlaceSearchResult]:
+async def _call_search_places_inline(
+    query: str,
+    limit: int,
+    maps_provider: str | None = None,
+) -> list[PlaceSearchResult]:
     """Call maps_bridge provider in-process (Cloud Run inline mode).
 
     Lazy import keeps maps_bridge.providers.serpapi out of ai_worker's namespace —
@@ -90,31 +107,41 @@ async def _call_search_places_inline(query: str, limit: int) -> list[PlaceSearch
     """
     from maps_bridge.provider_factory import get_provider
 
-    return list(await get_provider().search_places(query, limit))
+    return list(await get_provider(maps_provider).search_places(query, limit))
 
 
-async def _call_get_place_details_inline(place_id: str) -> PlaceDetails:
+async def _call_get_place_details_inline(
+    place_id: str,
+    maps_provider: str | None = None,
+) -> PlaceDetails:
     """Call maps_bridge provider in-process (Cloud Run inline mode)."""
     from maps_bridge.provider_factory import get_provider
 
-    return await get_provider().get_place_details(place_id)
+    return await get_provider(maps_provider).get_place_details(place_id)
 
 
 # ── Public API — called by both activities and sync path ────────────────────────
 
 
-async def search_places(query: str, limit: int) -> list[PlaceSearchResult]:
+async def search_places(
+    query: str,
+    limit: int,
+    maps_provider: str | None = None,
+) -> list[PlaceSearchResult]:
     """Search Google Places via maps_bridge. Transport selected by MAPS_TRANSPORT."""
     if _MAPS_TRANSPORT == "inline":
-        return await _call_search_places_inline(query, limit)
-    return await _call_search_places_stdio(query, limit)
+        return await _call_search_places_inline(query, limit, maps_provider)
+    return await _call_search_places_stdio(query, limit, maps_provider)
 
 
-async def get_place_details(place_id: str) -> PlaceDetails:
+async def get_place_details(
+    place_id: str,
+    maps_provider: str | None = None,
+) -> PlaceDetails:
     """Fetch full place details via maps_bridge. Transport selected by MAPS_TRANSPORT."""
     if _MAPS_TRANSPORT == "inline":
-        return await _call_get_place_details_inline(place_id)
-    return await _call_get_place_details_stdio(place_id)
+        return await _call_get_place_details_inline(place_id, maps_provider)
+    return await _call_get_place_details_stdio(place_id, maps_provider)
 
 
 async def run_pipeline(
@@ -123,6 +150,7 @@ async def run_pipeline(
     limit: int,
     sender_context: str,
     max_concurrency: int = 10,
+    maps_provider: str | None = None,
 ) -> list[Lead]:
     """Sync execution path: search → enrich → qualify → email (EXECUTION_MODE=sync).
 
@@ -140,12 +168,12 @@ async def run_pipeline(
     sem = asyncio.Semaphore(max_concurrency)
 
     # 1. Search ─────────────────────────────────────────────────────────────────
-    results: list[PlaceSearchResult] = await search_places(target_query, limit)
+    results: list[PlaceSearchResult] = await search_places(target_query, limit, maps_provider)
 
     # 2. Enrich (parallel) ──────────────────────────────────────────────────────
     async def _fetch(r: PlaceSearchResult) -> PlaceDetails:
         async with sem:
-            return await get_place_details(r.id)
+            return await get_place_details(r.id, maps_provider)
 
     places: list[PlaceDetails] = list(await asyncio.gather(*[_fetch(r) for r in results]))
 

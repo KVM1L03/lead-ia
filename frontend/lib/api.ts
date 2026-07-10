@@ -1,6 +1,8 @@
 // Typed fetch wrappers for the LeadIA backend API.
 // All functions are async and throw on non-2xx responses.
 
+import type { MapsProvider } from "@/lib/mapsProviders";
+
 const API_BASE =
   process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
@@ -95,6 +97,7 @@ export async function searchLeads(
   prompt: string,
   limit: number,
   senderContext: string,
+  mapsProvider: MapsProvider,
 ): Promise<SearchResponse> {
   return apiFetch<SearchResponse>("/api/leads/search", {
     method: "POST",
@@ -102,6 +105,7 @@ export async function searchLeads(
       prompt,
       limit,
       sender_context: senderContext,
+      maps_provider: mapsProvider,
     }),
   });
 }

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Toast } from "@base-ui/react/toast";
 import { startSearch } from "@/app/actions";
 import type { Lead } from "@/lib/api";
+import { MAPS_PROVIDERS, MAPS_PROVIDER_LABELS } from "@/lib/mapsProviders";
 import { useProvider, setProvider } from "@/lib/useProvider";
 import { cn } from "@/lib/utils";
 import { LeadCohortTable } from "./LeadCohortTable";
@@ -43,7 +44,12 @@ export function LeadSearchForm({ demoMode = false }: { demoMode?: boolean }) {
     }
 
     startTransition(async () => {
-      const result = await startSearch(prompt.trim(), limit, senderContext.trim());
+      const result = await startSearch(
+        prompt.trim(),
+        limit,
+        senderContext.trim(),
+        provider,
+      );
       if (result.status === "success") {
         if (result.mode === "sync") {
           setSyncResults({ runId: result.runId, leads: result.results });
@@ -194,21 +200,21 @@ export function LeadSearchForm({ demoMode = false }: { demoMode?: boolean }) {
               <p className="font-sans font-medium text-[11px] uppercase tracking-[.14em] text-subtle mb-3">
                 Source
               </p>
-              <div className="inline-flex border border-edge-input rounded-[4px] overflow-hidden text-[11px] font-sans font-medium">
-                {(["serpapi", "mock"] as const).map((p) => (
+              <div className="inline-flex flex-wrap border border-edge-input rounded-[4px] overflow-hidden text-[11px] font-sans font-medium">
+                {MAPS_PROVIDERS.map((p) => (
                   <button
                     key={p}
                     type="button"
                     onClick={() => setProvider(p)}
                     disabled={disabled}
                     className={cn(
-                      "px-3 py-1.5 transition-colors",
+                      "px-2.5 py-1.5 transition-colors",
                       provider === p
                         ? "bg-brand text-white"
                         : "bg-background text-subtle hover:text-fg disabled:opacity-50",
                     )}
                   >
-                    {p === "serpapi" ? "SerpAPI" : "Mock"}
+                    {MAPS_PROVIDER_LABELS[p]}
                   </button>
                 ))}
               </div>

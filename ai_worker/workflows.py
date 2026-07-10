@@ -64,6 +64,7 @@ class LeadGenInput:
     limit: int = 20
     sender_context: str = ""
     max_concurrency: int = 10
+    maps_provider: str | None = None
 
 
 @dataclass
@@ -111,7 +112,7 @@ class LeadGenerationWorkflow:
         self._progress = WorkflowProgress(stage="scraping")
         results: list[PlaceSearchResult] = await workflow.execute_activity(
             search_places_activity,
-            args=[input.target_query, input.limit],
+            args=[input.target_query, input.limit, input.maps_provider],
             start_to_close_timeout=SEARCH_TIMEOUT,
             retry_policy=SEARCH_RETRY,
         )
@@ -122,7 +123,7 @@ class LeadGenerationWorkflow:
             async with sem:
                 return await workflow.execute_activity(
                     get_place_details_activity,
-                    r.id,
+                    args=[r.id, input.maps_provider],
                     start_to_close_timeout=GET_DETAILS_TIMEOUT,
                     retry_policy=GET_DETAILS_RETRY,
                 )

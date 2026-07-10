@@ -82,7 +82,7 @@ async def test_search_places_returns_place_list(monkeypatch: pytest.MonkeyPatch)
     result = await env.run(search_places_activity, "dental Warsaw", 5)
 
     assert result == [_RESULT]
-    mock.assert_called_once_with("dental Warsaw", 5)
+    mock.assert_called_once_with("dental Warsaw", 5, None)
 
 
 async def test_search_places_passes_limit_to_mcp(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -92,7 +92,7 @@ async def test_search_places_passes_limit_to_mcp(monkeypatch: pytest.MonkeyPatch
 
     await env.run(search_places_activity, "dentist", 10)
 
-    mock.assert_called_once_with("dentist", 10)
+    mock.assert_called_once_with("dentist", 10, None)
 
 
 async def test_search_places_propagates_mcp_error(monkeypatch: pytest.MonkeyPatch) -> None:

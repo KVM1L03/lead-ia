@@ -1,8 +1,9 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
+import { MAPS_PROVIDERS, type MapsProvider } from "@/lib/mapsProviders";
 
-export type Provider = "serpapi" | "mock";
+export type Provider = MapsProvider;
 
 const STORAGE_KEY = "lf_provider";
 
@@ -11,8 +12,15 @@ function subscribe(callback: () => void): () => void {
   return () => window.removeEventListener("storage", callback);
 }
 
+function parseProvider(value: string | null): Provider {
+  if (value !== null && (MAPS_PROVIDERS as readonly string[]).includes(value)) {
+    return value as Provider;
+  }
+  return "mock";
+}
+
 function getSnapshot(): Provider {
-  return localStorage.getItem(STORAGE_KEY) === "serpapi" ? "serpapi" : "mock";
+  return parseProvider(localStorage.getItem(STORAGE_KEY));
 }
 
 function getServerSnapshot(): Provider {

@@ -169,7 +169,7 @@ async def test_search_places_activity_calls_pipeline_search_places() -> None:
         env = ActivityEnvironment()
         await env.run(search_places_activity, "dental clinic", 10)
 
-    mock_sp.assert_called_once_with("dental clinic", 10)
+    mock_sp.assert_called_once_with("dental clinic", 10, None)
 
 
 @pytest.mark.asyncio
