@@ -131,6 +131,28 @@ def test_empty_approved_set_returns_header_only() -> None:
     assert list(reader) == []  # no data rows
 
 
+def test_leads_to_csv_null_rating_and_review_count_writes_empty_cells() -> None:
+    """None rating/review_count → empty CSV cell, not 'None' or crash."""
+    place = PlaceDetails(
+        id="p-no-rating",
+        name="No Rating Biz",
+        address="ul. Nowa 1, Warszawa",
+        lat=52.2,
+        lng=21.0,
+        category="services",
+        rating=None,
+        review_count=None,
+    )
+    verdict = QualifierVerdict(is_qualified=True, score=0.8, reasoning="Fits.", icp_fit={})
+    email = GeneratedEmail(subject="Hi", body="Body", personalization_hooks=[], model_used="haiku")
+    lead = Lead(place=place, verdict=verdict, email=email, decision="approved")
+    csv_text = leads_to_csv([lead])
+    rows = list(csv.DictReader(io.StringIO(csv_text)))
+    assert len(rows) == 1
+    assert rows[0]["rating"] == ""
+    assert rows[0]["review_count"] == ""
+
+
 # ── HTTP-level tests ──────────────────────────────────────────────────────────
 
 

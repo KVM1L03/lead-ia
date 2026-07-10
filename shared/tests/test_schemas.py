@@ -84,6 +84,20 @@ def test_place_search_result_rejects_string_for_int() -> None:
         PlaceSearchResult.model_validate({**_PLACE_SEARCH, "review_count": "187"})
 
 
+def test_place_search_result_rating_can_be_none() -> None:
+    data = {k: v for k, v in _PLACE_SEARCH.items() if k not in ("rating", "review_count")}
+    r = PlaceSearchResult.model_validate(data)
+    assert r.rating is None
+    assert r.review_count is None
+
+
+def test_place_details_rating_can_be_none() -> None:
+    data = {k: v for k, v in _PLACE_DETAILS.items() if k not in ("rating", "review_count")}
+    d = PlaceDetails.model_validate(data)
+    assert d.rating is None
+    assert d.review_count is None
+
+
 # ---------------------------------------------------------------------------
 # PlaceDetails
 # ---------------------------------------------------------------------------

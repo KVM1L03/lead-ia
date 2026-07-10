@@ -16,8 +16,8 @@ class PlaceSearchResult(BaseModel):
     lat: float
     lng: float
     category: str
-    rating: float
-    review_count: int
+    rating: float | None = None
+    review_count: int | None = None
 
 
 class PlaceDetails(PlaceSearchResult):
