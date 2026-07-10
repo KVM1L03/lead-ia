@@ -280,3 +280,37 @@ async def test_sync_mode_does_not_write_to_db(
 
     assert resp.status_code == 200
     assert resp.json()["mode"] == "sync"
+
+
+@pytest.mark.asyncio
+async def test_demo_mode_forces_mock_maps_provider(
+    http_sync: AsyncClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """DEMO_MODE=true ignores client maps_provider and always uses mock."""
+    monkeypatch.setattr("api_gateway.config.settings.DEMO_MODE", True)
+    monkeypatch.setattr("api_gateway.config.settings.RATE_LIMIT_BACKEND", "memory")
+    rate_limit._memory_store = None
+    captured: list[str | None] = []
+
+    async def _capture_pipeline(**kwargs: object) -> list[Lead]:
+        mp = kwargs.get("maps_provider")
+        captured.append(mp if isinstance(mp, str) else None)
+        return []
+
+    with (
+        patch("api_gateway.routes.leads.translate_prompt", return_value="dental warsaw"),
+        patch("ai_worker.pipeline.run_pipeline", new=_capture_pipeline),
+    ):
+        resp = await http_sync.post(
+            "/api/leads/search",
+            json={
+                "prompt": "dental clinics warsaw",
+                "limit": 20,
+                "sender_context": "",
+                "maps_provider": "serpapi",
+            },
+        )
+
+    assert resp.status_code == 200
+    assert captured == ["mock"]
