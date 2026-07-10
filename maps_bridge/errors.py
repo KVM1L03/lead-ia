@@ -2,4 +2,4 @@
 
 
 class RateLimitError(Exception):
-    """Raised when SerpAPI returns HTTP 429."""
+    """Raised when a Maps provider returns HTTP 429."""
