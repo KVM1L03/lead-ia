@@ -2,6 +2,8 @@
 
 Planned work in rough priority order. Items are independent unless noted.
 
+**Resolved:** SerpAPI free-tier cost (250 searches/month ≈ 10 runs/month) was a risk for sustained personal use. Resolved by adding `GooglePlacesProvider` (`MAPS_PROVIDER=google_places`) with 5,000 free Text Search calls/month. The tradeoff: `rating`/`review_count` are `None` on the google_places path (FieldMask must exclude them to stay at the Pro tier — see "Three maps providers, and SKU-tier cost engineering" in the README and `docs/cost-guardrails.md`).
+
 ---
 
 ## 1. Terraform / infrastructure (near-term)

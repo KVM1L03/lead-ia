@@ -133,6 +133,24 @@ Qualification runs on every scraped place. Email generation runs only on qualifi
 
 ---
 
+### Three maps providers, and SKU-tier cost engineering
+
+SerpAPI's free tier is 250 searches/month. Each LeadIA run makes 25–30 API calls (one Text Search + one Place Details per business). That's ~10 full runs/month free; 40 runs/month costs $25. Not viable for personal use of a portfolio tool.
+
+Google Places API (New) Text Search offers 5,000 free calls/month — enough for ~200 runs at $0. But Places API (New) has a billing mechanic that's easy to miss: **it charges at the highest SKU tier among all requested fields in the FieldMask**. Adding `places.rating` or `places.userRatingCount` escalates a Text Search call from the Pro tier (5,000 free/month) to the Enterprise tier (1,000 free/month) — a 5× smaller free quota, with no warning and no automatic spend cap. To stay at Pro tier, `GooglePlacesProvider` uses a tight FieldMask (`places.id`, `places.displayName`, `places.formattedAddress`, `places.location`, `places.primaryType`, `places.types`) that omits all rating and review fields. Two sync tests in `test_google_places_provider.py` assert the FieldMask never contains those fields — they're treated as a cost invariant, not a style preference.
+
+**Traded away:** `rating` and `review_count` are `None` on every result from the Google Places path. Rating-based personalization ("I notice you have 4.8 stars") is unavailable on this provider. Every consumer was checked before accepting this: the qualifier serializes the place with `model_dump_json(exclude_none=True)`, so `None` values are dropped before reaching the LLM prompt; the email generator does the same; the CSV export writes an empty cell. No qualification signal was lost — rating was a personalization hook, not an ICP criterion.
+
+**The abstraction paid off:** adding the third provider required zero changes to `ai_worker`, `pipeline.py`, or `workflows.py`. The `MapsProvider` Protocol held; the only code that changed was `maps_bridge/`.
+
+| Provider | Set via | Free tier | Returns rating? | Best for |
+|---|---|---|---|---|
+| `mock` | default | unlimited | yes (fixture) | local dev, CI, evals |
+| `serpapi` | `SERPAPI_API_KEY` | 250 calls/month | yes | small-scale live runs |
+| `google_places` | `GOOGLE_MAPS_API_KEY` | 5,000 calls/month | no (FieldMask) | sustained personal use |
+
+---
+
 ### Cost-aware deploy: scale-to-zero + layered rate limits
 
 Cloud Run (scale to zero), in-process rate limiter (`RATE_LIMIT_BACKEND=memory` in demo), hard cap of 25 leads per sync request.
@@ -192,10 +210,11 @@ make bootstrap          # uv sync + npm ci + copy .env.example → .env
 | Variable | Purpose |
 |---|---|
 | `ANTHROPIC_API_KEY` | LLM calls (required for a live pipeline run) |
-| `SERPAPI_API_KEY` | Google Maps via SerpAPI (skip if `MAPS_PROVIDER=mock`) |
+| `SERPAPI_API_KEY` | Maps via SerpAPI — set `MAPS_PROVIDER=serpapi` (skip if using `mock` or `google_places`) |
+| `GOOGLE_MAPS_API_KEY` | Maps via Google Places API (New) — set `MAPS_PROVIDER=google_places`; billing must be enabled on the GCP project |
 | `LANGFUSE_NEXTAUTH_SECRET`, `LANGFUSE_SALT`, `LANGFUSE_ENCRYPTION_KEY` | Langfuse container secrets — generate **before** first boot: `openssl rand -hex 32` (×3) |
 
-Full-stack defaults (already in `.env.example`): `EXECUTION_MODE=temporal`, `PERSISTENCE_ENABLED=true`, `DEMO_MODE=false`, `MAPS_TRANSPORT=stdio`.
+Full-stack defaults (already in `.env.example`): `EXECUTION_MODE=temporal`, `PERSISTENCE_ENABLED=true`, `DEMO_MODE=false`, `MAPS_TRANSPORT=stdio`, `MAPS_PROVIDER=mock`.
 
 **2. Start infra + backend**
 
@@ -253,7 +272,7 @@ The live demo runs on **Vercel** (frontend) + **Cloud Run** (backend). The backe
 |---|---|
 | **Backend** | Python 3.12, FastAPI, Pydantic v2 (strict mode), Temporal |
 | **AI / LLM** | DSPy, LiteLLM (multi-provider fallback router), Langfuse (OTel observability) |
-| **Scraping** | SerpAPI via MCP bridge (FastMCP), SQLite 24 h cache |
+| **Scraping** | SerpAPI or Google Places API (New) via MCP bridge (FastMCP), SQLite 24 h cache |
 | **Frontend** | Next.js 16, React 19, Tailwind v4, Prisma 7 |
 | **Data** | PostgreSQL 16 (SQLAlchemy async + Prisma read), SQLite |
 | **Infra** | Docker Compose (local), Cloud Run + Vercel (deployed), Terraform (GCP) |
