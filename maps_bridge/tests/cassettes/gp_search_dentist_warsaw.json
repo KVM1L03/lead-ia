@@ -1,0 +1,31 @@
+{
+  "status_code": 200,
+  "body": {
+    "places": [
+      {
+        "id": "ChIJgp001",
+        "displayName": {"text": "Medident Dental Clinic", "languageCode": "pl"},
+        "formattedAddress": "ul. Nowy Świat 10, 00-400 Warszawa, Poland",
+        "location": {"latitude": 52.2297, "longitude": 21.0122},
+        "primaryType": "dentist",
+        "types": ["dentist", "health", "point_of_interest", "establishment"]
+      },
+      {
+        "id": "ChIJgp002",
+        "displayName": {"text": "DentaMax Centrum", "languageCode": "pl"},
+        "formattedAddress": "ul. Marszałkowska 84, 00-514 Warszawa, Poland",
+        "location": {"latitude": 52.2290, "longitude": 21.0070},
+        "primaryType": "dentist",
+        "types": ["dentist", "health", "point_of_interest", "establishment"]
+      },
+      {
+        "id": "ChIJgp003",
+        "displayName": {"text": "Białe Uśmiechy Stomatologia", "languageCode": "pl"},
+        "formattedAddress": "ul. Pulańska 145, 02-515 Warszawa, Poland",
+        "location": {"latitude": 52.2100, "longitude": 21.0050},
+        "primaryType": "dentist",
+        "types": ["dentist", "health", "point_of_interest", "establishment"]
+      }
+    ]
+  }
+}

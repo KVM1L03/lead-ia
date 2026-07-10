@@ -1,0 +1,10 @@
+{
+  "status_code": 429,
+  "body": {
+    "error": {
+      "code": 429,
+      "message": "Quota exceeded for quota metric 'places.googleapis.com/search_text_requests'",
+      "status": "RESOURCE_EXHAUSTED"
+    }
+  }
+}
