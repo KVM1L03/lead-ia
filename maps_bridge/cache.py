@@ -10,9 +10,10 @@ from shared.schemas import PlaceDetails, PlaceSearchResult
 
 
 class SQLiteCache:
-    def __init__(self, db_path: str, ttl: int = 86400) -> None:
+    def __init__(self, db_path: str, ttl: int = 86400, prefix: str = "") -> None:
         self._db_path = db_path
         self._ttl = ttl
+        self._prefix = prefix
         self._init_db()
 
     def _connect(self) -> sqlite3.Connection:
@@ -29,9 +30,11 @@ class SQLiteCache:
                 "(key TEXT PRIMARY KEY, response TEXT NOT NULL, created_at INTEGER NOT NULL)"
             )
 
-    @staticmethod
-    def _search_key(query: str, limit: int) -> str:
-        return hashlib.sha256(f"{query}:{limit}".encode()).hexdigest()
+    def _search_key(self, query: str, limit: int) -> str:
+        return hashlib.sha256(f"{self._prefix}:{query}:{limit}".encode()).hexdigest()
+
+    def _details_key(self, place_id: str) -> str:
+        return f"{self._prefix}:{place_id}"
 
     # --- search ---
 
@@ -62,9 +65,10 @@ class SQLiteCache:
     # --- details ---
 
     def get_details(self, place_id: str) -> str | None:
+        key = self._details_key(place_id)
         with self._connect() as conn:
             row = conn.execute(
-                "SELECT response, created_at FROM details_cache WHERE key = ?", (place_id,)
+                "SELECT response, created_at FROM details_cache WHERE key = ?", (key,)
             ).fetchone()
         if row is None:
             return None
@@ -72,15 +76,16 @@ class SQLiteCache:
         created_at: int = row[1]
         if time.time() - created_at > self._ttl:
             with self._connect() as conn:
-                conn.execute("DELETE FROM details_cache WHERE key = ?", (place_id,))
+                conn.execute("DELETE FROM details_cache WHERE key = ?", (key,))
             return None
         return response
 
     def set_details(self, place_id: str, json_str: str) -> None:
+        key = self._details_key(place_id)
         with self._connect() as conn:
             conn.execute(
                 "INSERT OR REPLACE INTO details_cache (key, response, created_at) VALUES (?, ?, ?)",
-                (place_id, json_str, int(time.time())),
+                (key, json_str, int(time.time())),
             )
 
     # --- maintenance ---

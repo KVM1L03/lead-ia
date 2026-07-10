@@ -26,6 +26,6 @@ def get_provider() -> MapsProvider:
         from maps_bridge.providers.serpapi import SerpAPIMapsProvider
 
         inner = SerpAPIMapsProvider(api_key=settings.SERPAPI_API_KEY)
-        cache = SQLiteCache(db_path=settings.CACHE_DB_PATH)
+        cache = SQLiteCache(db_path=settings.CACHE_DB_PATH, prefix="serpapi")
         return CachingMapsProvider(inner, cache)
     raise NotImplementedError(f"Unknown provider: {settings.MAPS_PROVIDER!r}")
