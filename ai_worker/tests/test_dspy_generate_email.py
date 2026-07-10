@@ -211,3 +211,60 @@ def test_provided_lm_is_the_one_called() -> None:
         lm=lm,
     )
     assert len(lm.history) == 1
+
+
+# ---------------------------------------------------------------------------
+# Rating-less place
+# ---------------------------------------------------------------------------
+
+_PLACE_NO_RATING = PlaceDetails(
+    id="dental-warsaw-002",
+    name="Gabinet Bez Oceny",
+    address="ul. Marszałkowska 10, Warszawa",
+    lat=52.234,
+    lng=21.022,
+    category="dental",
+    rating=None,
+    review_count=None,
+    website="https://gabinet.pl",
+    phone="+48 22 111 2222",
+    hours=[],
+    photos=[],
+)
+
+_GOOD_ANSWER_NO_RATING = {
+    "subject": "Quick question for Gabinet Bez Oceny",
+    "body": (
+        "Hi, I noticed Gabinet Bez Oceny in Warsaw. "
+        "We help dental clinics automate patient recall. "
+        "Would a 15-minute call make sense?"
+    ),
+    "personalization_hooks": '["Warsaw location", "dental clinic"]',
+}
+
+
+def test_generate_email_rating_less_place_succeeds() -> None:
+    lm = DummyLM(answers=[_GOOD_ANSWER_NO_RATING])
+    result = generate_email(
+        "dental practice software",
+        _PLACE_NO_RATING,
+        "Dental clinic with website, fits ICP.",
+        "I run a SaaS that automates patient recalls for dental practices.",
+        lm=lm,
+    )
+    assert isinstance(result, GeneratedEmail)
+
+
+def test_generate_email_rating_less_place_no_null_in_prompt() -> None:
+    """exclude_none=True — 'rating' key must not appear in the serialized business JSON."""
+    lm = DummyLM(answers=[_GOOD_ANSWER_NO_RATING])
+    generate_email(
+        "dental practice software",
+        _PLACE_NO_RATING,
+        "Dental clinic with website, fits ICP.",
+        "I run a SaaS that automates patient recalls for dental practices.",
+        lm=lm,
+    )
+    prompt_text = str(lm.history[0]["messages"])
+    assert '"rating"' not in prompt_text
+    assert '"review_count"' not in prompt_text

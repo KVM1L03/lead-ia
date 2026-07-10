@@ -72,7 +72,7 @@ def qualify_lead(
     with dspy.context(lm=lm):
         prediction = _qualify_predictor(
             outreach_goal=outreach_goal,
-            business=place.model_dump_json(),
+            business=place.model_dump_json(exclude_none=True),
         )
     return QualifierVerdict(
         is_qualified=prediction.is_qualified,
@@ -98,7 +98,7 @@ def generate_email(
     with dspy.context(lm=lm):
         prediction = _email_predictor(
             outreach_goal=outreach_goal,
-            business=place.model_dump_json(),
+            business=place.model_dump_json(exclude_none=True),
             qualifier_reasoning=qualifier_reasoning,
             sender_context=sender_context,
         )
