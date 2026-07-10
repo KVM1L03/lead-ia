@@ -14,7 +14,7 @@ from httpx import ASGITransport, AsyncClient
 from pydantic import TypeAdapter
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from api_gateway.db import RunRow, get_session
+from api_gateway.db import RunRow, get_session_maybe
 from api_gateway.main import app
 from shared.schemas import GeneratedEmail, Lead, PlaceDetails
 
@@ -70,11 +70,11 @@ def _make_row(leads: list[Lead]) -> RunRow:
 # ── Fixtures ───────────────────────────────────────────────────────────────────
 
 
-def _make_http(mock_session: AsyncMock) -> AsyncClient:
-    async def _session_override() -> AsyncGenerator[AsyncSession, None]:
+def _make_http(mock_session: AsyncMock | None) -> AsyncClient:
+    async def _session_override() -> AsyncGenerator[AsyncSession | None, None]:
         yield mock_session
 
-    app.dependency_overrides[get_session] = _session_override
+    app.dependency_overrides[get_session_maybe] = _session_override
     return AsyncClient(transport=ASGITransport(app=app), base_url="http://test")
 
 
@@ -187,6 +187,25 @@ async def test_run_not_found_returns_404() -> None:
         )
 
     assert resp.status_code == 404
+
+    app.dependency_overrides.clear()
+
+
+@pytest.mark.asyncio
+async def test_demo_mode_no_session_returns_updated_count() -> None:
+    """PERSISTENCE_ENABLED=false: no DB session → 200 with updated=len(lead_ids)."""
+    async with _make_http(None) as client:
+        resp = await client.post(
+            "/api/leads/approve",
+            json={
+                "run_id": "demo-run-id",
+                "lead_ids": ["place-001", "place-002", "place-003"],
+                "action": "approved",
+            },
+        )
+
+    assert resp.status_code == 200
+    assert resp.json() == {"updated": 3}
 
     app.dependency_overrides.clear()
 

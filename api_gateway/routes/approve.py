@@ -20,7 +20,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints, TypeAdapter
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from api_gateway.db import RunRow, get_session
+from api_gateway.db import RunRow, get_session_maybe
 from shared.schemas import GeneratedEmail, Lead
 
 router = APIRouter(prefix="/api/leads")
@@ -57,9 +57,16 @@ class ApproveResponse(BaseModel):
 @router.post("/approve", response_model=ApproveResponse)
 async def approve_leads(
     body: ApproveRequest,
-    session: Annotated[AsyncSession, Depends(get_session)],
+    session: Annotated[AsyncSession | None, Depends(get_session_maybe)],
 ) -> ApproveResponse:
-    """Bulk approve or reject leads. Optionally overwrite email content."""
+    """Bulk approve or reject leads. Optionally overwrite email content.
+
+    In demo/sync mode (PERSISTENCE_ENABLED=false) decisions are client-side only;
+    the backend acknowledges without touching the DB.
+    """
+    if session is None:
+        return ApproveResponse(updated=len(body.lead_ids))
+
     row: RunRow | None = await session.get(RunRow, body.run_id)
     if row is None:
         raise HTTPException(status_code=404, detail="Run not found")
