@@ -144,9 +144,7 @@ def test_leads_to_csv_null_rating_and_review_count_writes_empty_cells() -> None:
         review_count=None,
     )
     verdict = QualifierVerdict(is_qualified=True, score=0.8, reasoning="Fits.", icp_fit={})
-    email = GeneratedEmail(
-        subject="Hi", body="Body", personalization_hooks=[], model_used="haiku"
-    )
+    email = GeneratedEmail(subject="Hi", body="Body", personalization_hooks=[], model_used="haiku")
     lead = Lead(place=place, verdict=verdict, email=email, decision="approved")
     csv_text = leads_to_csv([lead])
     rows = list(csv.DictReader(io.StringIO(csv_text)))

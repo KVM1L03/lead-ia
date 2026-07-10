@@ -61,7 +61,9 @@ def leads_to_csv(leads: list[Lead]) -> str:
                 "phone": lead.place.phone or "",
                 "category": lead.place.category,
                 "rating": f"{lead.place.rating:g}" if lead.place.rating is not None else "",
-                "review_count": str(lead.place.review_count) if lead.place.review_count is not None else "",
+                "review_count": str(lead.place.review_count)
+                if lead.place.review_count is not None
+                else "",
                 "qualifier_score": f"{lead.verdict.score:g}" if lead.verdict else "",
                 "qualifier_reasoning": lead.verdict.reasoning if lead.verdict else "",
                 "email_subject": lead.email.subject if lead.email else "",
