@@ -71,7 +71,7 @@ export function Sidebar({ demoMode = false }: { demoMode?: boolean }) {
           Provider
         </p>
         {demoMode ? (
-          <p className="font-mono text-[12px] text-fg">SerpAPI</p>
+          <p className="font-mono text-[12px] text-fg">Mock (demo mode)</p>
         ) : (
           <div className="flex flex-col gap-1 rounded-[3px] border border-edge-input overflow-hidden text-[11px] font-sans font-medium">
             {MAPS_PROVIDERS.map((p) => (

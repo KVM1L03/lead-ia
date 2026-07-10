@@ -74,6 +74,19 @@ def translate_prompt(prompt: str) -> str:
     return str(result.target_query).strip()
 
 
+def _effective_maps_provider(
+    requested: Literal["mock", "serpapi", "google_places"] | None,
+) -> Literal["mock", "serpapi", "google_places"] | None:
+    """Return the maps provider for this request.
+
+    Public demo deployments force mock so stale browser localStorage cannot
+    trigger billable SerpAPI / Google Places calls without configured keys.
+    """
+    if settings.DEMO_MODE:
+        return "mock"
+    return requested
+
+
 # ── Request / Response schemas ────────────────────────────────────────────────
 
 
@@ -106,6 +119,7 @@ async def search_leads(
     """Kick off a lead-generation workflow or run inline (depending on EXECUTION_MODE)."""
     run_id = str(uuid.uuid4())
     target_query = translate_prompt(body.prompt)
+    maps_provider = _effective_maps_provider(body.maps_provider)
 
     if settings.EXECUTION_MODE == "sync":
         from ai_worker.pipeline import run_pipeline
@@ -116,7 +130,7 @@ async def search_leads(
             target_query=target_query,
             limit=effective_limit,
             sender_context=body.sender_context,
-            maps_provider=body.maps_provider,
+            maps_provider=maps_provider,
         )
         return SearchResponse(workflow_id=run_id, run_id=run_id, mode="sync", results=leads)
 
@@ -144,7 +158,7 @@ async def search_leads(
                 target_query=target_query,
                 limit=body.limit,
                 sender_context=body.sender_context,
-                maps_provider=body.maps_provider,
+                maps_provider=maps_provider,
             ),
             id=run_id,
             task_queue=_TASK_QUEUE,

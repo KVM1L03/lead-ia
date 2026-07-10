@@ -94,6 +94,29 @@ describe("LeadSearchForm", () => {
     });
   });
 
+  it("calls startSearch with mock in demo mode even when localStorage prefers serpapi", async () => {
+    localStorage.setItem("lf_provider", "serpapi");
+    mockStartSearch.mockResolvedValueOnce(_TEMPORAL_SUCCESS);
+
+    renderForm(true);
+
+    await userEvent.type(
+      screen.getByRole("textbox", { name: /describe the leads/i }),
+      "dental clinics in Warsaw",
+    );
+
+    await userEvent.click(screen.getByRole("button", { name: /start search/i }));
+
+    await waitFor(() => {
+      expect(mockStartSearch).toHaveBeenCalledWith(
+        "dental clinics in Warsaw",
+        10,
+        "",
+        "mock",
+      );
+    });
+  });
+
   it("shows the progress overlay in demo mode while submission is pending", async () => {
     let resolve!: (v: StartSearchResult) => void;
     mockStartSearch.mockReturnValueOnce(

@@ -28,6 +28,7 @@ export function LeadSearchForm({ demoMode = false }: { demoMode?: boolean }) {
   const router = useRouter();
   const { add: addToast } = Toast.useToastManager();
   const provider = useProvider();
+  const mapsProvider = demoMode ? "mock" : provider;
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -48,7 +49,7 @@ export function LeadSearchForm({ demoMode = false }: { demoMode?: boolean }) {
         prompt.trim(),
         limit,
         senderContext.trim(),
-        provider,
+        mapsProvider,
       );
       if (result.status === "success") {
         if (result.mode === "sync") {
@@ -194,7 +195,7 @@ export function LeadSearchForm({ demoMode = false }: { demoMode?: boolean }) {
             </div>
           </div>
 
-          {/* Provider toggle — hidden in demo mode (SerpAPI only) */}
+          {/* Provider toggle — hidden in demo mode (maps forced to mock) */}
           {!demoMode && (
             <div>
               <p className="font-sans font-medium text-[11px] uppercase tracking-[.14em] text-subtle mb-3">
