@@ -246,6 +246,22 @@ export function LeadSearchForm({ demoMode = false }: { demoMode?: boolean }) {
           )}
         </div>
       </form>
+
+      {demoMode && (
+        <p className="mt-10 font-mono text-[10px] leading-[1.6] text-subtle">
+          ⓘ Results are real Google Places responses, recorded and cached — the demo is
+          always available and free to run.{" "}
+          <a
+            href="https://github.com/KVM1L03/lead-ia"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline underline-offset-2 hover:text-muted-fg transition-colors"
+          >
+            Clone and run locally
+          </a>{" "}
+          with your own API key for live search.
+        </p>
+      )}
     </section>
   );
 }
