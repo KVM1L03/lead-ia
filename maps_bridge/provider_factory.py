@@ -12,10 +12,14 @@ from maps_bridge.config import settings
 from maps_bridge.providers import MapsProvider
 
 
-@lru_cache(maxsize=1)
-def get_provider() -> MapsProvider:
-    """Return the configured MapsProvider singleton (mock, serpapi, or google_places)."""
-    if settings.MAPS_PROVIDER == "mock":
+@lru_cache(maxsize=4)
+def get_provider(provider_name: str | None = None) -> MapsProvider:
+    """Return a MapsProvider (mock, serpapi, or google_places).
+
+    When *provider_name* is omitted, falls back to ``settings.MAPS_PROVIDER``.
+    """
+    active = provider_name or settings.MAPS_PROVIDER
+    if active == "mock":
         from maps_bridge.providers.mock import MockMapsProvider
 
         return MockMapsProvider()
@@ -28,7 +32,7 @@ def get_provider() -> MapsProvider:
         inner = SerpAPIMapsProvider(api_key=settings.SERPAPI_API_KEY)
         cache = SQLiteCache(db_path=settings.CACHE_DB_PATH, prefix="serpapi")
         return CachingMapsProvider(inner, cache)
-    if settings.MAPS_PROVIDER == "google_places":
+    if active == "google_places":
         if not settings.GOOGLE_MAPS_API_KEY:
             raise ValueError("GOOGLE_MAPS_API_KEY must be set when MAPS_PROVIDER=google_places")
         from maps_bridge.cache import CachingMapsProvider, SQLiteCache
@@ -37,4 +41,4 @@ def get_provider() -> MapsProvider:
         gp_inner = GooglePlacesProvider(api_key=settings.GOOGLE_MAPS_API_KEY)
         gp_cache = SQLiteCache(db_path=settings.CACHE_DB_PATH, prefix="google_places")
         return CachingMapsProvider(gp_inner, gp_cache)
-    raise NotImplementedError(f"Unknown provider: {settings.MAPS_PROVIDER!r}")
+    raise NotImplementedError(f"Unknown provider: {active!r}")

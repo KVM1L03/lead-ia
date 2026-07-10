@@ -89,6 +89,7 @@ describe("LeadSearchForm", () => {
         "dental clinics in Warsaw",
         50,
         "I sell dental SaaS",
+        "mock",
       );
     });
   });

@@ -60,19 +60,26 @@ PERSIST_RETRY = RetryPolicy(maximum_attempts=5, non_retryable_error_types=[])
 
 
 @activity.defn
-async def search_places_activity(query: str, limit: int) -> list[PlaceSearchResult]:
+async def search_places_activity(
+    query: str,
+    limit: int,
+    maps_provider: str | None = None,
+) -> list[PlaceSearchResult]:
     """Call maps_bridge MCP server to search Google Places."""
     info = activity.info()
     with activity_span("search_places", workflow_id=info.workflow_id or ""):
-        return await search_places(query, limit)
+        return await search_places(query, limit, maps_provider)
 
 
 @activity.defn
-async def get_place_details_activity(place_id: str) -> PlaceDetails:
+async def get_place_details_activity(
+    place_id: str,
+    maps_provider: str | None = None,
+) -> PlaceDetails:
     """Fetch full place details from maps_bridge MCP server."""
     info = activity.info()
     with activity_span("get_place_details", workflow_id=info.workflow_id or "", lead_id=place_id):
-        return await get_place_details(place_id)
+        return await get_place_details(place_id, maps_provider)
 
 
 @activity.defn

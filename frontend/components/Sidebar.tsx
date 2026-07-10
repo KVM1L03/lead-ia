@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useProvider, setProvider } from "@/lib/useProvider";
+import { MAPS_PROVIDERS, MAPS_PROVIDER_LABELS } from "@/lib/mapsProviders";
 
 const NAV_LINKS = [
   { href: "/search", label: "New search" },
@@ -72,20 +73,20 @@ export function Sidebar({ demoMode = false }: { demoMode?: boolean }) {
         {demoMode ? (
           <p className="font-mono text-[12px] text-fg">SerpAPI</p>
         ) : (
-          <div className="flex rounded-[3px] border border-edge-input overflow-hidden text-[11px] font-sans font-medium">
-            {(["serpapi", "mock"] as const).map((p) => (
+          <div className="flex flex-col gap-1 rounded-[3px] border border-edge-input overflow-hidden text-[11px] font-sans font-medium">
+            {MAPS_PROVIDERS.map((p) => (
               <button
                 key={p}
                 type="button"
                 onClick={() => setProvider(p)}
                 className={[
-                  "flex-1 py-1.5 transition-colors",
+                  "py-1.5 px-2 text-left transition-colors",
                   provider === p
                     ? "bg-brand text-white"
                     : "bg-background text-subtle hover:text-fg",
                 ].join(" ")}
               >
-                {p === "serpapi" ? "SerpAPI" : "Mock"}
+                {MAPS_PROVIDER_LABELS[p]}
               </button>
             ))}
           </div>

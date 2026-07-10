@@ -83,6 +83,7 @@ class SearchRequest(BaseModel):
     prompt: Annotated[str, Field(min_length=1, max_length=500)]
     limit: Annotated[int, Field(ge=10, le=200)] = 20
     sender_context: Annotated[str, Field(max_length=1000)] = ""
+    maps_provider: Literal["mock", "serpapi", "google_places"] | None = None
 
 
 class SearchResponse(BaseModel):
@@ -115,6 +116,7 @@ async def search_leads(
             target_query=target_query,
             limit=effective_limit,
             sender_context=body.sender_context,
+            maps_provider=body.maps_provider,
         )
         return SearchResponse(workflow_id=run_id, run_id=run_id, mode="sync", results=leads)
 
@@ -142,6 +144,7 @@ async def search_leads(
                 target_query=target_query,
                 limit=body.limit,
                 sender_context=body.sender_context,
+                maps_provider=body.maps_provider,
             ),
             id=run_id,
             task_queue=_TASK_QUEUE,

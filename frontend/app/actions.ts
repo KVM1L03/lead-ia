@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { approveLeads, exportLeadsCsv, searchLeads, type EditedEmail, type Lead } from "@/lib/api";
+import type { MapsProvider } from "@/lib/mapsProviders";
 import { prisma } from "@/lib/prisma";
 
 export type StartSearchResult =
@@ -12,9 +13,10 @@ export async function startSearch(
   prompt: string,
   limit: number,
   senderContext: string,
+  mapsProvider: MapsProvider,
 ): Promise<StartSearchResult> {
   try {
-    const response = await searchLeads(prompt, limit, senderContext);
+    const response = await searchLeads(prompt, limit, senderContext, mapsProvider);
     return {
       status: "success",
       runId: response.run_id,
