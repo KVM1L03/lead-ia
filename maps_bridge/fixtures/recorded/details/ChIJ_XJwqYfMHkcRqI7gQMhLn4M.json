@@ -1,0 +1,22 @@
+{
+  "id": "ChIJ_XJwqYfMHkcRqI7gQMhLn4M",
+  "name": "Elektoralna Dental Clinic",
+  "address": "Elektoralna 28, 00-892 Warszawa, Poland",
+  "lat": 52.2385434,
+  "lng": 20.9923792,
+  "category": "Dental Clinic",
+  "rating": null,
+  "review_count": null,
+  "website": "http://elektoralna.pl/",
+  "phone": "22 620 21 40",
+  "hours": [
+    "Monday: 9:00 AM – 9:00 PM",
+    "Tuesday: 9:00 AM – 9:00 PM",
+    "Wednesday: 9:00 AM – 9:00 PM",
+    "Thursday: 9:00 AM – 9:00 PM",
+    "Friday: 9:00 AM – 9:00 PM",
+    "Saturday: 9:00 AM – 3:00 PM",
+    "Sunday: Closed"
+  ],
+  "photos": []
+}

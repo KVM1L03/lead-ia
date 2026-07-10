@@ -1,0 +1,22 @@
+{
+  "id": "ChIJ8Wub9VnNHkcRRVQllxyMMRs",
+  "name": "Legal Wings",
+  "address": "Żurawia 32/pokój 56, 00-515 office:, Poland",
+  "lat": 52.228300399999995,
+  "lng": 21.013814300000003,
+  "category": "Consultant",
+  "rating": null,
+  "review_count": null,
+  "website": "https://www.legalwings.pl/",
+  "phone": "538 328 975",
+  "hours": [
+    "Monday: 10:00 AM – 6:00 PM",
+    "Tuesday: 10:00 AM – 6:00 PM",
+    "Wednesday: 10:00 AM – 6:00 PM",
+    "Thursday: 10:00 AM – 6:00 PM",
+    "Friday: 10:00 AM – 6:00 PM",
+    "Saturday: 10:00 AM – 3:00 PM",
+    "Sunday: Closed"
+  ],
+  "photos": []
+}

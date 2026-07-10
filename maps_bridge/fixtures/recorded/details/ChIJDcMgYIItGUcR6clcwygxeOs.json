@@ -1,0 +1,22 @@
+{
+  "id": "ChIJDcMgYIItGUcR6clcwygxeOs",
+  "name": "Dental Service Care",
+  "address": "Braci Wagów 4, 02-791 Warszawa, Poland",
+  "lat": 52.1394953,
+  "lng": 21.053805999999998,
+  "category": "Dentist",
+  "rating": null,
+  "review_count": null,
+  "website": "https://dentalservice.pl/",
+  "phone": "22 123 42 23",
+  "hours": [
+    "Monday: 9:00 AM – 8:00 PM",
+    "Tuesday: 9:00 AM – 8:00 PM",
+    "Wednesday: 9:00 AM – 8:00 PM",
+    "Thursday: 9:00 AM – 8:00 PM",
+    "Friday: 9:00 AM – 8:00 PM",
+    "Saturday: Closed",
+    "Sunday: Closed"
+  ],
+  "photos": []
+}

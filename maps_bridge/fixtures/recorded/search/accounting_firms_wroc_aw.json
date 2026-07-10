@@ -1,0 +1,52 @@
+[
+  {
+    "id": "ChIJhzjm5EDCD0cRVLx4ONDZCLo",
+    "name": "JWW Accounting Office",
+    "address": "al. Wiśniowa 43, 53-137 Wrocław, Poland",
+    "lat": 51.084989699999994,
+    "lng": 17.0167038,
+    "category": "Accounting",
+    "rating": null,
+    "review_count": null
+  },
+  {
+    "id": "ChIJ6ZMCL4vBD0cRCbj0SFvexdw",
+    "name": "Power Media SA",
+    "address": "Grabiszyńska 241G, 53-234 Wrocław, Poland",
+    "lat": 51.097319999999996,
+    "lng": 16.982887,
+    "category": "Consultant",
+    "rating": null,
+    "review_count": null
+  },
+  {
+    "id": "ChIJQYbTj_fDD0cRfr4ZJ9uXCjI",
+    "name": "House of Tax",
+    "address": "plac Konstytucji 3 Maja 3/Piętro 12, 50-048 Wrocław, Poland",
+    "lat": 51.0993749,
+    "lng": 17.040139099999998,
+    "category": "Accounting",
+    "rating": null,
+    "review_count": null
+  },
+  {
+    "id": "ChIJYZUt6jOVD0cR1lAJai9Bf5A",
+    "name": "Starlit Accounting",
+    "address": "Krupnicza 2/4, 50-075 Wrocław, Poland",
+    "lat": 51.108171899999995,
+    "lng": 17.027162900000004,
+    "category": "Accounting",
+    "rating": null,
+    "review_count": null
+  },
+  {
+    "id": "ChIJCZ_-hHfCD0cRvDotcojpkF8",
+    "name": "Biuro rachunkowe Tax4business",
+    "address": "Opoczyńska 31/4, 54-034 Wrocław, Poland",
+    "lat": 51.1420995,
+    "lng": 16.8908114,
+    "category": "Consultant",
+    "rating": null,
+    "review_count": null
+  }
+]

@@ -1,0 +1,52 @@
+[
+  {
+    "id": "ChIJ_4CXpPLMHkcRGUUhOtlA1o0",
+    "name": "Dudkowiak Kopeć & Putyra Business Law Firm Poland, Warsaw",
+    "address": "1, Rondo ONZ, 00-124 Warszawa, Poland",
+    "lat": 52.232704299999995,
+    "lng": 20.999595499999998,
+    "category": "Lawyer",
+    "rating": null,
+    "review_count": null
+  },
+  {
+    "id": "ChIJZ-1RAIzMHkcRklUfRAe7sRQ",
+    "name": "CMS Warsaw",
+    "address": "Varso, Chmielna 69, 00-801 Warszawa, Poland",
+    "lat": 52.2293276,
+    "lng": 21.0002857,
+    "category": "Consultant",
+    "rating": null,
+    "review_count": null
+  },
+  {
+    "id": "ChIJR6-x-_XMHkcRrY-J1JL2iXM",
+    "name": "Woloszański & Partners Law Firm",
+    "address": "Spectrum Tower, XIX p, Twarda 18, 00-105 Warszawa, Poland",
+    "lat": 52.2344308,
+    "lng": 20.999343,
+    "category": "Consultant",
+    "rating": null,
+    "review_count": null
+  },
+  {
+    "id": "ChIJp0MOrO3MHkcRSBaXFQlxhtk",
+    "name": "Kopeć Zaborowski Adwokaci i Radcowie Prawni Spółka Partnerska (KKZ)",
+    "address": "Hoża 59 A/lok. 1 B, 00-681 Warszawa, Poland",
+    "lat": 52.2247906,
+    "lng": 21.008035,
+    "category": "Lawyer",
+    "rating": null,
+    "review_count": null
+  },
+  {
+    "id": "ChIJ8Wub9VnNHkcRRVQllxyMMRs",
+    "name": "Legal Wings",
+    "address": "Żurawia 32/pokój 56, 00-515 office:, Poland",
+    "lat": 52.228300399999995,
+    "lng": 21.013814300000003,
+    "category": "Consultant",
+    "rating": null,
+    "review_count": null
+  }
+]

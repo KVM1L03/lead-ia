@@ -1,0 +1,52 @@
+[
+  {
+    "id": "ChIJIzcRfHDqD0cRZ9YugAK02ZE",
+    "name": "Dental Center DentalCover",
+    "address": "Szybowcowa 31, 54-130 Wrocław, Poland",
+    "lat": 51.131477800000006,
+    "lng": 16.9615327,
+    "category": "Dental Clinic",
+    "rating": null,
+    "review_count": null
+  },
+  {
+    "id": "ChIJf5j-BufpD0cRNO-cAsnC_28",
+    "name": "Pomorska Dental Clinic",
+    "address": "Pomorska 32, 50-218 Wrocław, Poland",
+    "lat": 51.1201212,
+    "lng": 17.030354199999998,
+    "category": "Dentist",
+    "rating": null,
+    "review_count": null
+  },
+  {
+    "id": "ChIJp0AdS0XCD0cRyGqnfQ_YpXk",
+    "name": "Idental Clinique Dental Clinic Wroclaw",
+    "address": "Ślężna 112/U4, 53-111 Wrocław, Poland",
+    "lat": 51.0818407,
+    "lng": 17.0251251,
+    "category": "Dental Clinic",
+    "rating": null,
+    "review_count": null
+  },
+  {
+    "id": "ChIJUTRZa6XDD0cRjrIXpPEykh0",
+    "name": "NATADENT DENTAL CLINIC",
+    "address": "Gen. Kazimierza Pułaskiego 16/U1A, 50-444 Wrocław, Poland",
+    "lat": 51.101397399999996,
+    "lng": 17.0464947,
+    "category": "Dental Clinic",
+    "rating": null,
+    "review_count": null
+  },
+  {
+    "id": "ChIJeaf5EJzpD0cRr_5vtH5fh5Y",
+    "name": "Klinika Stomatologiczna Dental Med",
+    "address": "Żmigrodzka 83, 51-130 Wrocław, Poland",
+    "lat": 51.141726399999996,
+    "lng": 17.032498,
+    "category": "Dentist",
+    "rating": null,
+    "review_count": null
+  }
+]

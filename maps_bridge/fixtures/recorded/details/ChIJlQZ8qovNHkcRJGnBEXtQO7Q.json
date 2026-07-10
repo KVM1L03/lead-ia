@@ -1,0 +1,22 @@
+{
+  "id": "ChIJlQZ8qovNHkcRJGnBEXtQO7Q",
+  "name": "Dental Clinic International",
+  "address": "Wałuszewska 24/Lok. U1, 03-024 Warszawa, Poland",
+  "lat": 52.3383252,
+  "lng": 20.986488899999998,
+  "category": "Dental Clinic",
+  "rating": null,
+  "review_count": null,
+  "website": "https://dci.waw.pl/",
+  "phone": "664 232 959",
+  "hours": [
+    "Monday: 9:00 AM – 8:00 PM",
+    "Tuesday: 9:00 AM – 8:00 PM",
+    "Wednesday: 9:00 AM – 8:00 PM",
+    "Thursday: 9:00 AM – 8:00 PM",
+    "Friday: 9:00 AM – 8:00 PM",
+    "Saturday: 9:00 AM – 4:00 PM",
+    "Sunday: Closed"
+  ],
+  "photos": []
+}

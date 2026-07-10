@@ -1,0 +1,22 @@
+{
+  "id": "ChIJIzcRfHDqD0cRZ9YugAK02ZE",
+  "name": "Dental Center DentalCover",
+  "address": "Szybowcowa 31, 54-130 Wrocław, Poland",
+  "lat": 51.131477800000006,
+  "lng": 16.9615327,
+  "category": "Dental Clinic",
+  "rating": null,
+  "review_count": null,
+  "website": "https://www.dentalcover.com.pl/",
+  "phone": "695 857 788",
+  "hours": [
+    "Monday: 8:00 AM – 8:00 PM",
+    "Tuesday: 8:00 AM – 8:00 PM",
+    "Wednesday: 8:00 AM – 8:00 PM",
+    "Thursday: 8:00 AM – 8:00 PM",
+    "Friday: 8:00 AM – 8:00 PM",
+    "Saturday: Closed",
+    "Sunday: Closed"
+  ],
+  "photos": []
+}

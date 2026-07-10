@@ -1,0 +1,22 @@
+{
+  "id": "ChIJIYNF9MrDD0cRaVS63p90-Mc",
+  "name": "Local Marketing",
+  "address": "Dyrekcyjna 1/142, 50-528 Wrocław, Poland",
+  "lat": 51.0948018,
+  "lng": 17.0333288,
+  "category": "Service",
+  "rating": null,
+  "review_count": null,
+  "website": "https://local-marketing.pl/",
+  "phone": "508 870 200",
+  "hours": [
+    "Monday: 9:00 AM – 4:00 PM",
+    "Tuesday: 9:00 AM – 4:00 PM",
+    "Wednesday: 9:00 AM – 4:00 PM",
+    "Thursday: 9:00 AM – 4:00 PM",
+    "Friday: 9:00 AM – 4:00 PM",
+    "Saturday: Closed",
+    "Sunday: Closed"
+  ],
+  "photos": []
+}

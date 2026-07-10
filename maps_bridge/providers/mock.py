@@ -81,7 +81,9 @@ def _best_match(
             score = 1.0
         elif recorded and recorded <= query_tokens:
             score = 1.0
-        if score > best_score or (score == best_score and best_slug is not None and slug < best_slug):
+        if score > best_score or (
+            score == best_score and best_slug is not None and slug < best_slug
+        ):
             best_score = score
             best_slug = slug
     return best_slug, best_score

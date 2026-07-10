@@ -1,0 +1,84 @@
+{
+  "recorded_at": "2026-07-10T09:51:17.193902+00:00",
+  "total_calls": 36,
+  "queries": [
+    {
+      "query": "dental clinics Wrocław",
+      "slug": "dental_clinics_wroc_aw",
+      "limit": 5,
+      "result_count": 5,
+      "detail_ids": [
+        "ChIJIzcRfHDqD0cRZ9YugAK02ZE",
+        "ChIJf5j-BufpD0cRNO-cAsnC_28",
+        "ChIJp0AdS0XCD0cRyGqnfQ_YpXk",
+        "ChIJUTRZa6XDD0cRjrIXpPEykh0",
+        "ChIJeaf5EJzpD0cRr_5vtH5fh5Y"
+      ]
+    },
+    {
+      "query": "marketing agencies Wrocław",
+      "slug": "marketing_agencies_wroc_aw",
+      "limit": 5,
+      "result_count": 5,
+      "detail_ids": [
+        "ChIJQXMsLHLCD0cRkwdrwcD6J7k",
+        "ChIJe-GxKwjqD0cRwKBmxcatcpY",
+        "ChIJ29lyOAnqD0cRCBvW9kDw8jM",
+        "ChIJr0hrutnpD0cRJ0qwbp6ydiA",
+        "ChIJIYNF9MrDD0cRaVS63p90-Mc"
+      ]
+    },
+    {
+      "query": "dental clinics Warszawa",
+      "slug": "dental_clinics_warszawa",
+      "limit": 5,
+      "result_count": 5,
+      "detail_ids": [
+        "ChIJa4DdfXvNHkcRs7JL0-VYwAw",
+        "ChIJlQZ8qovNHkcRJGnBEXtQO7Q",
+        "ChIJDwXb1pvMHkcRW7qOEXz1iW0",
+        "ChIJ_XJwqYfMHkcRqI7gQMhLn4M",
+        "ChIJDcMgYIItGUcR6clcwygxeOs"
+      ]
+    },
+    {
+      "query": "marketing agencies Kraków",
+      "slug": "marketing_agencies_krak_w",
+      "limit": 5,
+      "result_count": 5,
+      "detail_ids": [
+        "ChIJ57c9p1hbFkcRS5KxquoHZPs",
+        "ChIJRZdyAKVbFkcR2nD3Pkt93BI",
+        "ChIJI_CxustdFkcR3n3DKuEbvHs",
+        "ChIJ_UQr7GvLFkcRiBwLkwBngjo",
+        "ChIJod5JHSxbFkcR_03LAEvSdko"
+      ]
+    },
+    {
+      "query": "accounting firms Wrocław",
+      "slug": "accounting_firms_wroc_aw",
+      "limit": 5,
+      "result_count": 5,
+      "detail_ids": [
+        "ChIJhzjm5EDCD0cRVLx4ONDZCLo",
+        "ChIJ6ZMCL4vBD0cRCbj0SFvexdw",
+        "ChIJQYbTj_fDD0cRfr4ZJ9uXCjI",
+        "ChIJYZUt6jOVD0cR1lAJai9Bf5A",
+        "ChIJCZ_-hHfCD0cRvDotcojpkF8"
+      ]
+    },
+    {
+      "query": "law firms Warszawa",
+      "slug": "law_firms_warszawa",
+      "limit": 5,
+      "result_count": 5,
+      "detail_ids": [
+        "ChIJ_4CXpPLMHkcRGUUhOtlA1o0",
+        "ChIJZ-1RAIzMHkcRklUfRAe7sRQ",
+        "ChIJR6-x-_XMHkcRrY-J1JL2iXM",
+        "ChIJp0MOrO3MHkcRSBaXFQlxhtk",
+        "ChIJ8Wub9VnNHkcRRVQllxyMMRs"
+      ]
+    }
+  ]
+}

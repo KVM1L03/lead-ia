@@ -1,0 +1,22 @@
+{
+  "id": "ChIJZ-1RAIzMHkcRklUfRAe7sRQ",
+  "name": "CMS Warsaw",
+  "address": "Varso, Chmielna 69, 00-801 Warszawa, Poland",
+  "lat": 52.2293276,
+  "lng": 21.0002857,
+  "category": "Consultant",
+  "rating": null,
+  "review_count": null,
+  "website": "https://cms.law/en/pol/office/warsaw",
+  "phone": "22 520 55 55",
+  "hours": [
+    "Monday: 8:00 AM – 9:00 PM",
+    "Tuesday: 8:00 AM – 9:00 PM",
+    "Wednesday: 8:00 AM – 9:00 PM",
+    "Thursday: 8:00 AM – 9:00 PM",
+    "Friday: 8:00 AM – 9:00 PM",
+    "Saturday: Closed",
+    "Sunday: Closed"
+  ],
+  "photos": []
+}

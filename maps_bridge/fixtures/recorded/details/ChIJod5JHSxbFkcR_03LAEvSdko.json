@@ -1,0 +1,22 @@
+{
+  "id": "ChIJod5JHSxbFkcR_03LAEvSdko",
+  "name": "Shine On",
+  "address": "Walerego Eljasza-Radzikowskiego 100J/45, 31-315 Kraków, Poland",
+  "lat": 50.085878199999996,
+  "lng": 19.900025,
+  "category": "Service",
+  "rating": null,
+  "review_count": null,
+  "website": "https://shineonagency.pl/?utm_source=google&utm_medium=wizytowka&utm_campaign=radzikowskiego_100",
+  "phone": "692 411 242",
+  "hours": [
+    "Monday: 8:30 AM – 5:00 PM",
+    "Tuesday: 8:30 AM – 4:30 PM",
+    "Wednesday: 8:30 AM – 4:30 PM",
+    "Thursday: 8:30 AM – 4:30 PM",
+    "Friday: 8:30 AM – 4:00 PM",
+    "Saturday: Closed",
+    "Sunday: Closed"
+  ],
+  "photos": []
+}

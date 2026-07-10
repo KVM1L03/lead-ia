@@ -1,0 +1,22 @@
+{
+  "id": "ChIJ29lyOAnqD0cRCBvW9kDw8jM",
+  "name": "LTB Marketing & Branding",
+  "address": "CITY SPACE MIDPOINT 71, Powstańców Śląskich 9, 53-332 Wrocław, Poland",
+  "lat": 51.0970284,
+  "lng": 17.0236248,
+  "category": "Service",
+  "rating": null,
+  "review_count": null,
+  "website": "https://www.ltb.pl/",
+  "phone": "577 100 210",
+  "hours": [
+    "Monday: 8:30 AM – 3:30 PM",
+    "Tuesday: 8:30 AM – 3:30 PM",
+    "Wednesday: 8:30 AM – 3:30 PM",
+    "Thursday: 8:30 AM – 3:30 PM",
+    "Friday: 8:30 AM – 3:30 PM",
+    "Saturday: Closed",
+    "Sunday: Closed"
+  ],
+  "photos": []
+}

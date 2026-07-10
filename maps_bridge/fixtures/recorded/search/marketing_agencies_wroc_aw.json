@@ -1,0 +1,52 @@
+[
+  {
+    "id": "ChIJQXMsLHLCD0cRkwdrwcD6J7k",
+    "name": "Laboratorium Strategii Marketingowych 360 (Lab360) - Agencja Kreatywna Wrocław - Specjalizacja: Strategia marki, Branding",
+    "address": "Ul. Pasterska 2b, 50-226 Wrocław, Poland",
+    "lat": 51.1307043,
+    "lng": 17.0325648,
+    "category": "Service",
+    "rating": null,
+    "review_count": null
+  },
+  {
+    "id": "ChIJe-GxKwjqD0cRwKBmxcatcpY",
+    "name": "SOCIAL ELITE - Agencja Digital & Performance",
+    "address": "Sky Tower, Gwiaździsta 66, 53-413 Wrocław, Poland",
+    "lat": 51.0946243,
+    "lng": 17.018926699999998,
+    "category": "Service",
+    "rating": null,
+    "review_count": null
+  },
+  {
+    "id": "ChIJ29lyOAnqD0cRCBvW9kDw8jM",
+    "name": "LTB Marketing & Branding",
+    "address": "CITY SPACE MIDPOINT 71, Powstańców Śląskich 9, 53-332 Wrocław, Poland",
+    "lat": 51.0970284,
+    "lng": 17.0236248,
+    "category": "Service",
+    "rating": null,
+    "review_count": null
+  },
+  {
+    "id": "ChIJr0hrutnpD0cRJ0qwbp6ydiA",
+    "name": "Agencja marketingowa Social Target Wrocław",
+    "address": "Księcia Witolda 49, 50-206 Wrocław, Poland",
+    "lat": 51.115545,
+    "lng": 17.025478,
+    "category": "Service",
+    "rating": null,
+    "review_count": null
+  },
+  {
+    "id": "ChIJIYNF9MrDD0cRaVS63p90-Mc",
+    "name": "Local Marketing",
+    "address": "Dyrekcyjna 1/142, 50-528 Wrocław, Poland",
+    "lat": 51.0948018,
+    "lng": 17.0333288,
+    "category": "Service",
+    "rating": null,
+    "review_count": null
+  }
+]
