@@ -1,0 +1,22 @@
+{
+  "status_code": 200,
+  "body": {
+    "id": "ChIJgp001",
+    "displayName": {"text": "Medident Dental Clinic", "languageCode": "pl"},
+    "formattedAddress": "ul. Nowy Świat 10, 00-400 Warszawa, Poland",
+    "location": {"latitude": 52.2297, "longitude": 21.0122},
+    "primaryType": "dentist",
+    "types": ["dentist", "health", "point_of_interest", "establishment"],
+    "websiteUri": "https://medident.pl",
+    "nationalPhoneNumber": "+48 22 826 1234",
+    "regularOpeningHours": {
+      "weekdayDescriptions": [
+        "Monday: 8:00 AM – 8:00 PM",
+        "Tuesday: 8:00 AM – 8:00 PM",
+        "Wednesday: 8:00 AM – 8:00 PM",
+        "Thursday: 8:00 AM – 8:00 PM",
+        "Friday: 8:00 AM – 6:00 PM"
+      ]
+    }
+  }
+}
