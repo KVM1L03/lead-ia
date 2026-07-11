@@ -133,6 +133,14 @@ def test_details_mask_excludes_rating_and_reviews() -> None:
     assert not overlap, f"Details FieldMask contains excluded fields: {overlap}."
 
 
+def test_search_mask_requests_next_page_token() -> None:
+    """PAGINATION INVARIANT: without this, Google omits nextPageToken from every
+    response (FieldMask-driven API), so pagination silently stops after page 1
+    regardless of `limit` — confirmed against the live API, not just cassettes."""
+    mask_fields = set(_SEARCH_MASK.split(","))
+    assert "nextPageToken" in mask_fields
+
+
 # ---------------------------------------------------------------------------
 # GooglePlacesProvider — search
 # ---------------------------------------------------------------------------

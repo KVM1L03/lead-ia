@@ -38,6 +38,13 @@ _logger = logging.getLogger(__name__)
 # every search call to Enterprise — 5x smaller free quota with no warning.
 # test_google_places_provider.py::test_search_mask_excludes_rating_and_reviews
 # enforces this invariant automatically.
+#
+# nextPageToken is a top-level (non-"places.") field. Like every field in this
+# FieldMask-driven API, Google omits it from the response unless it is
+# explicitly requested — WITHOUT it, every response looks like "no more
+# pages" even when more results exist, silently capping every search at one
+# page (≤20 results) regardless of `limit`. It carries no per-place data, so
+# requesting it does not affect the Pro/Enterprise SKU tier above.
 # ---------------------------------------------------------------------------
 _SEARCH_MASK = (
     "places.id,"
@@ -45,7 +52,8 @@ _SEARCH_MASK = (
     "places.formattedAddress,"
     "places.location,"
     "places.primaryType,"
-    "places.types"
+    "places.types,"
+    "nextPageToken"
 )
 
 # Place Details tiers (per call):
