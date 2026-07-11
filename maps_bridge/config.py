@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     SERPAPI_API_KEY: str | None = None
     GOOGLE_MAPS_API_KEY: str | None = None
     CACHE_DB_PATH: str = "/tmp/cache.db"
+    MAPS_MAX_PAGES: int = 5
 
 
 settings = Settings()

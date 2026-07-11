@@ -29,7 +29,9 @@ def get_provider(provider_name: str | None = None) -> MapsProvider:
         from maps_bridge.cache import CachingMapsProvider, SQLiteCache
         from maps_bridge.providers.serpapi import SerpAPIMapsProvider
 
-        inner = SerpAPIMapsProvider(api_key=settings.SERPAPI_API_KEY)
+        inner = SerpAPIMapsProvider(
+            api_key=settings.SERPAPI_API_KEY, max_pages=settings.MAPS_MAX_PAGES
+        )
         cache = SQLiteCache(db_path=settings.CACHE_DB_PATH, prefix="serpapi")
         return CachingMapsProvider(inner, cache)
     if active == "google_places":
@@ -38,7 +40,9 @@ def get_provider(provider_name: str | None = None) -> MapsProvider:
         from maps_bridge.cache import CachingMapsProvider, SQLiteCache
         from maps_bridge.providers.google_places import GooglePlacesProvider
 
-        gp_inner = GooglePlacesProvider(api_key=settings.GOOGLE_MAPS_API_KEY)
+        gp_inner = GooglePlacesProvider(
+            api_key=settings.GOOGLE_MAPS_API_KEY, max_pages=settings.MAPS_MAX_PAGES
+        )
         gp_cache = SQLiteCache(db_path=settings.CACHE_DB_PATH, prefix="google_places")
         return CachingMapsProvider(gp_inner, gp_cache)
     raise NotImplementedError(f"Unknown provider: {active!r}")
