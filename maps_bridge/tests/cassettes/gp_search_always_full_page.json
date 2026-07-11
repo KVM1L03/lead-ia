@@ -1,0 +1,13 @@
+{
+  "status_code": 200,
+  "body": {
+    "places": [
+      {"id": "ChIJpgF01", "displayName": {"text": "Forever Clinic A", "languageCode": "en"}, "formattedAddress": "1 Loop Ave", "location": {"latitude": 52.0, "longitude": 21.0}, "primaryType": "dentist", "types": ["dentist"]},
+      {"id": "ChIJpgF02", "displayName": {"text": "Forever Clinic B", "languageCode": "en"}, "formattedAddress": "2 Loop Ave", "location": {"latitude": 52.0, "longitude": 21.0}, "primaryType": "dentist", "types": ["dentist"]},
+      {"id": "ChIJpgF03", "displayName": {"text": "Forever Clinic C", "languageCode": "en"}, "formattedAddress": "3 Loop Ave", "location": {"latitude": 52.0, "longitude": 21.0}, "primaryType": "dentist", "types": ["dentist"]},
+      {"id": "ChIJpgF04", "displayName": {"text": "Forever Clinic D", "languageCode": "en"}, "formattedAddress": "4 Loop Ave", "location": {"latitude": 52.0, "longitude": 21.0}, "primaryType": "dentist", "types": ["dentist"]},
+      {"id": "ChIJpgF05", "displayName": {"text": "Forever Clinic E", "languageCode": "en"}, "formattedAddress": "5 Loop Ave", "location": {"latitude": 52.0, "longitude": 21.0}, "primaryType": "dentist", "types": ["dentist"]}
+    ],
+    "nextPageToken": "tok-forever"
+  }
+}

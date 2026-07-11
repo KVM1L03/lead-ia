@@ -1,0 +1,9 @@
+{
+  "status_code": 200,
+  "body": {
+    "places": [
+      {"id": "ChIJpg301", "displayName": {"text": "Page3 Clinic A", "languageCode": "en"}, "formattedAddress": "7 Test St, Warsaw", "location": {"latitude": 52.26, "longitude": 21.06}, "primaryType": "dentist", "types": ["dentist"]},
+      {"id": "ChIJpg302", "displayName": {"text": "Page3 Clinic B", "languageCode": "en"}, "formattedAddress": "8 Test St, Warsaw", "location": {"latitude": 52.27, "longitude": 21.07}, "primaryType": "dentist", "types": ["dentist"]}
+    ]
+  }
+}
