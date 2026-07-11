@@ -1,0 +1,11 @@
+{
+  "status_code": 200,
+  "body": {
+    "search_metadata": {"status": "Success"},
+    "local_results": [
+      {"position": 1, "data_id": "0xserp201", "place_id": "ChIJserp201", "title": "Page2 Clinic A", "address": "4 Test St", "type": "Dentist", "rating": 4.2, "reviews": 9, "gps_coordinates": {"latitude": 52.23, "longitude": 21.03}},
+      {"position": 2, "data_id": "0xserp202", "place_id": "ChIJserp202", "title": "Page2 Clinic B", "address": "5 Test St", "type": "Dentist", "rating": 4.1, "reviews": 7, "gps_coordinates": {"latitude": 52.24, "longitude": 21.04}},
+      {"position": 3, "data_id": "0xserp203", "place_id": "ChIJserp203", "title": "Page2 Clinic C", "address": "6 Test St", "type": "Dentist", "rating": 4.0, "reviews": 6, "gps_coordinates": {"latitude": 52.25, "longitude": 21.05}}
+    ]
+  }
+}

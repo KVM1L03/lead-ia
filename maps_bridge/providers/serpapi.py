@@ -1,5 +1,7 @@
 """SerpAPI MapsProvider — Google Maps search via the SerpAPI HTTP API."""
 
+import logging
+
 import httpx
 from pydantic import BaseModel, Field
 from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential
@@ -8,6 +10,8 @@ from maps_bridge.errors import RateLimitError
 from shared.schemas import PlaceDetails, PlaceSearchResult
 
 _SERPAPI_URL = "https://serpapi.com/search"
+
+_logger = logging.getLogger(__name__)
 
 
 def _looks_like_data_id(place_id: str) -> bool:
@@ -109,9 +113,17 @@ class _DetailsResponse(BaseModel):
 
 
 class SerpAPIMapsProvider:
-    def __init__(self, api_key: str, client: httpx.AsyncClient | None = None) -> None:
+    def __init__(
+        self,
+        api_key: str,
+        client: httpx.AsyncClient | None = None,
+        max_pages: int = 5,
+        page_size: int = 20,
+    ) -> None:
         self._api_key = api_key
         self._client = client or httpx.AsyncClient(timeout=10.0)
+        self._max_pages = max_pages
+        self._page_size = page_size
 
     @retry(
         stop=stop_after_attempt(3),
@@ -127,16 +139,34 @@ class SerpAPIMapsProvider:
         return response.content
 
     async def search_places(self, query: str, limit: int) -> list[PlaceSearchResult]:
-        params = {
-            "engine": "google_maps",
-            "q": query,
-            "type": "search",
-            "hl": "en",
-            "gl": "us",
-            "api_key": self._api_key,
-        }
-        raw = await self._get(params)
-        data = _SearchResponse.model_validate_json(raw)
+        collected: list[_LocalResult] = []
+        start = 0
+        pages_fetched = 0
+        while True:
+            params = {
+                "engine": "google_maps",
+                "q": query,
+                "type": "search",
+                "hl": "en",
+                "gl": "us",
+                "api_key": self._api_key,
+                "start": str(start),
+            }
+            raw = await self._get(params)
+            data = _SearchResponse.model_validate_json(raw)
+            collected.extend(data.local_results)
+            pages_fetched += 1
+            start += self._page_size
+            got_full_page = len(data.local_results) >= self._page_size
+            if len(collected) >= limit or not got_full_page or pages_fetched >= self._max_pages:
+                break
+        _logger.info(
+            "serpapi search: pages=%d results=%d query=%r limit=%d",
+            pages_fetched,
+            len(collected),
+            query,
+            limit,
+        )
         return [
             PlaceSearchResult(
                 id=item.place_id or item.data_id or "",
@@ -148,7 +178,7 @@ class SerpAPIMapsProvider:
                 rating=item.rating,
                 review_count=item.reviews,
             )
-            for item in data.local_results[:limit]
+            for item in collected[:limit]
         ]
 
     async def get_place_details(
