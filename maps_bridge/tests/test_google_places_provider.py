@@ -298,11 +298,13 @@ async def test_details_cache_hit_skips_http(tmp_path: Path) -> None:
 
 
 async def test_search_paginates_to_reach_limit() -> None:
-    transport = _SequentialCassetteTransport([
-        _page("gp_search_page1_of_3.json"),
-        _page("gp_search_page2_of_3.json"),
-        _page("gp_search_page3_of_3.json"),
-    ])
+    transport = _SequentialCassetteTransport(
+        [
+            _page("gp_search_page1_of_3.json"),
+            _page("gp_search_page2_of_3.json"),
+            _page("gp_search_page3_of_3.json"),
+        ]
+    )
     provider = _provider(transport)
     results = await provider.search_places("dentist warsaw", 8)
     assert transport.call_count == 3
@@ -321,11 +323,13 @@ async def test_search_one_page_when_limit_fits() -> None:
 
 
 async def test_search_truncates_to_limit_exactly() -> None:
-    transport = _SequentialCassetteTransport([
-        _page("gp_search_page1_of_3.json"),
-        _page("gp_search_page2_of_3.json"),
-        _page("gp_search_page3_of_3.json"),
-    ])
+    transport = _SequentialCassetteTransport(
+        [
+            _page("gp_search_page1_of_3.json"),
+            _page("gp_search_page2_of_3.json"),
+            _page("gp_search_page3_of_3.json"),
+        ]
+    )
     provider = _provider(transport)
     results = await provider.search_places("dentist warsaw", 7)
     assert transport.call_count == 3  # 3+3=6 < 7, needs the 3rd page
@@ -341,11 +345,15 @@ async def test_search_max_pages_guard_stops_pagination() -> None:
 
 
 async def test_page_token_not_ready_retries_with_backoff() -> None:
-    transport = _SequentialCassetteTransport([
-        _page("gp_search_page1_of_3.json"),  # page 1 succeeds, returns a token
-        _page("gp_page_token_not_ready_400.json"),  # first attempt to use the token: not ready yet
-        _page("gp_search_page3_of_3.json"),  # retry succeeds
-    ])
+    transport = _SequentialCassetteTransport(
+        [
+            _page("gp_search_page1_of_3.json"),  # page 1 succeeds, returns a token
+            _page(
+                "gp_page_token_not_ready_400.json"
+            ),  # first attempt to use the token: not ready yet
+            _page("gp_search_page3_of_3.json"),  # retry succeeds
+        ]
+    )
     provider = _provider(transport)
     results = await provider.search_places("dentist warsaw", 5)
     assert transport.call_count == 3
@@ -354,10 +362,12 @@ async def test_page_token_not_ready_retries_with_backoff() -> None:
 
 async def test_search_never_requests_more_than_remaining_count() -> None:
     """COST INVARIANT: maxResultCount must equal exactly what's still needed — never over-request."""
-    transport = _SequentialCassetteTransport([
-        _page("gp_search_page1_of_3.json"),
-        _page("gp_search_page3_of_3.json"),
-    ])
+    transport = _SequentialCassetteTransport(
+        [
+            _page("gp_search_page1_of_3.json"),
+            _page("gp_search_page3_of_3.json"),
+        ]
+    )
     provider = _provider(transport)
     await provider.search_places("dentist warsaw", 7)
     assert transport.request_bodies[0]["maxResultCount"] == 7  # min(7 - 0, 20)
@@ -365,11 +375,13 @@ async def test_search_never_requests_more_than_remaining_count() -> None:
 
 
 async def test_search_logs_pages_and_results(caplog: pytest.LogCaptureFixture) -> None:
-    transport = _SequentialCassetteTransport([
-        _page("gp_search_page1_of_3.json"),
-        _page("gp_search_page2_of_3.json"),
-        _page("gp_search_page3_of_3.json"),
-    ])
+    transport = _SequentialCassetteTransport(
+        [
+            _page("gp_search_page1_of_3.json"),
+            _page("gp_search_page2_of_3.json"),
+            _page("gp_search_page3_of_3.json"),
+        ]
+    )
     provider = _provider(transport)
     with caplog.at_level(logging.INFO, logger="maps_bridge.providers.google_places"):
         await provider.search_places("dentist warsaw", 8)

@@ -280,11 +280,13 @@ def test_cache_evict_expired_removes_stale_entry(tmp_path: Path) -> None:
 
 
 async def test_search_paginates_to_reach_limit() -> None:
-    transport = _SequentialCassetteTransport([
-        _page("serp_search_page1_full.json"),
-        _page("serp_search_page2_full.json"),
-        _page("serp_search_page3_partial.json"),
-    ])
+    transport = _SequentialCassetteTransport(
+        [
+            _page("serp_search_page1_full.json"),
+            _page("serp_search_page2_full.json"),
+            _page("serp_search_page3_partial.json"),
+        ]
+    )
     provider = _provider(transport, page_size=3)
     results = await provider.search_places("dentist warsaw", 8)
     assert transport.call_count == 3
@@ -300,11 +302,13 @@ async def test_search_one_page_when_limit_fits() -> None:
 
 
 async def test_search_truncates_to_limit_exactly() -> None:
-    transport = _SequentialCassetteTransport([
-        _page("serp_search_page1_full.json"),
-        _page("serp_search_page2_full.json"),
-        _page("serp_search_page3_partial.json"),
-    ])
+    transport = _SequentialCassetteTransport(
+        [
+            _page("serp_search_page1_full.json"),
+            _page("serp_search_page2_full.json"),
+            _page("serp_search_page3_partial.json"),
+        ]
+    )
     provider = _provider(transport, page_size=3)
     results = await provider.search_places("dentist warsaw", 7)
     assert transport.call_count == 3
@@ -313,10 +317,12 @@ async def test_search_truncates_to_limit_exactly() -> None:
 
 async def test_search_stops_when_page_not_full() -> None:
     """A page returning fewer than page_size results signals exhaustion — stop early."""
-    transport = _SequentialCassetteTransport([
-        _page("serp_search_page1_full.json"),
-        _page("serp_search_page3_partial.json"),  # only 2 results — last page
-    ])
+    transport = _SequentialCassetteTransport(
+        [
+            _page("serp_search_page1_full.json"),
+            _page("serp_search_page3_partial.json"),  # only 2 results — last page
+        ]
+    )
     provider = _provider(transport, page_size=3)
     results = await provider.search_places("dentist warsaw", 100)
     assert transport.call_count == 2  # stops early — doesn't chase a 3rd page that won't exist
@@ -332,22 +338,26 @@ async def test_search_max_pages_guard_stops_pagination() -> None:
 
 
 async def test_search_uses_start_offset_for_pagination() -> None:
-    transport = _SequentialCassetteTransport([
-        _page("serp_search_page1_full.json"),
-        _page("serp_search_page2_full.json"),
-        _page("serp_search_page3_partial.json"),
-    ])
+    transport = _SequentialCassetteTransport(
+        [
+            _page("serp_search_page1_full.json"),
+            _page("serp_search_page2_full.json"),
+            _page("serp_search_page3_partial.json"),
+        ]
+    )
     provider = _provider(transport, page_size=3)
     await provider.search_places("dentist warsaw", 8)
     assert transport.starts == ["0", "3", "6"]
 
 
 async def test_search_logs_pages_and_results(caplog: pytest.LogCaptureFixture) -> None:
-    transport = _SequentialCassetteTransport([
-        _page("serp_search_page1_full.json"),
-        _page("serp_search_page2_full.json"),
-        _page("serp_search_page3_partial.json"),
-    ])
+    transport = _SequentialCassetteTransport(
+        [
+            _page("serp_search_page1_full.json"),
+            _page("serp_search_page2_full.json"),
+            _page("serp_search_page3_partial.json"),
+        ]
+    )
     provider = _provider(transport, page_size=3)
     with caplog.at_level(logging.INFO, logger="maps_bridge.providers.serpapi"):
         await provider.search_places("dentist warsaw", 8)
