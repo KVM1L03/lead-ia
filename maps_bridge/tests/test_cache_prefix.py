@@ -38,3 +38,11 @@ def test_empty_prefix_is_backward_compatible(tmp_path: Path) -> None:
     c = SQLiteCache(db_path=db)
     c.set_search("q", 1, '"old"')
     assert c.get_search("q", 1) == '"old"'
+
+
+def test_different_limits_do_not_share_entries(tmp_path: Path) -> None:
+    """A limit=100 request must never be served the truncated limit=20 cache entry."""
+    db = str(tmp_path / "shared.db")
+    cache = SQLiteCache(db_path=db, prefix="google_places")
+    cache.set_search("dentist warsaw", 20, '[{"id": "capped-at-20"}]')
+    assert cache.get_search("dentist warsaw", 100) is None
