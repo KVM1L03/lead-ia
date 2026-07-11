@@ -6,6 +6,7 @@ header that is not persisted to cassette files).
 """
 
 import json
+import logging
 from pathlib import Path
 
 import httpx
@@ -58,9 +59,50 @@ def _cassette(name: str, *, status_code: int | None = None) -> _CassetteTranspor
     return _CassetteTransport(content=body, status_code=code)
 
 
-def _provider(transport: httpx.AsyncBaseTransport) -> GooglePlacesProvider:
+def _page(name: str) -> tuple[int, bytes]:
+    """Load a cassette file as a (status_code, body_bytes) tuple for sequential replay."""
+    raw = json.loads((CASSETTES_DIR / name).read_text())
+    status_code: int = raw["status_code"]
+    body: bytes = json.dumps(raw["body"]).encode()
+    return status_code, body
+
+
+class _SequentialCassetteTransport(httpx.AsyncBaseTransport):
+    """Replays canned (status_code, body) responses in order; repeats the last
+    one if called more times than there are responses. Records each request's
+    JSON body for assertions about what was actually sent (e.g. maxResultCount)."""
+
+    def __init__(self, responses: list[tuple[int, bytes]]) -> None:
+        self.call_count = 0
+        self.request_bodies: list[dict[str, object]] = []
+        self._responses = responses
+
+    async def handle_async_request(self, request: httpx.Request) -> httpx.Response:
+        if request.content:
+            self.request_bodies.append(json.loads(request.content))
+        index = min(self.call_count, len(self._responses) - 1)
+        status_code, content = self._responses[index]
+        self.call_count += 1
+        return httpx.Response(
+            status_code=status_code,
+            content=content,
+            headers={"content-type": "application/json"},
+        )
+
+
+def _provider(
+    transport: httpx.AsyncBaseTransport,
+    *,
+    max_pages: int = 5,
+    page_token_delay: float = 0.0,
+) -> GooglePlacesProvider:
     client = httpx.AsyncClient(transport=transport)
-    return GooglePlacesProvider(api_key="test_key", client=client)
+    return GooglePlacesProvider(
+        api_key="test_key",
+        client=client,
+        max_pages=max_pages,
+        page_token_delay=page_token_delay,
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -89,6 +131,14 @@ def test_details_mask_excludes_rating_and_reviews() -> None:
     mask_fields = set(_DETAILS_MASK.split(","))
     overlap = mask_fields & forbidden
     assert not overlap, f"Details FieldMask contains excluded fields: {overlap}."
+
+
+def test_search_mask_requests_next_page_token() -> None:
+    """PAGINATION INVARIANT: without this, Google omits nextPageToken from every
+    response (FieldMask-driven API), so pagination silently stops after page 1
+    regardless of `limit` — confirmed against the live API, not just cassettes."""
+    mask_fields = set(_SEARCH_MASK.split(","))
+    assert "nextPageToken" in mask_fields
 
 
 # ---------------------------------------------------------------------------
@@ -248,3 +298,117 @@ async def test_details_cache_hit_skips_http(tmp_path: Path) -> None:
     d2 = await provider.get_place_details("ChIJgp001")
     assert transport.call_count == 1
     assert d1.name == d2.name
+
+
+# ---------------------------------------------------------------------------
+# Pagination
+# ---------------------------------------------------------------------------
+
+
+async def test_search_paginates_to_reach_limit() -> None:
+    transport = _SequentialCassetteTransport(
+        [
+            _page("gp_search_page1_of_3.json"),
+            _page("gp_search_page2_of_3.json"),
+            _page("gp_search_page3_of_3.json"),
+        ]
+    )
+    provider = _provider(transport)
+    results = await provider.search_places("dentist warsaw", 8)
+    assert transport.call_count == 3
+    assert len(results) == 8
+    assert results[0].id == "ChIJpg101"
+    assert results[-1].id == "ChIJpg302"
+
+
+async def test_search_one_page_when_limit_fits() -> None:
+    transport = _SequentialCassetteTransport([_page("gp_search_page1_of_3.json")])
+    provider = _provider(transport)
+    results = await provider.search_places("dentist warsaw", 3)
+    # page1 has a nextPageToken, but the limit is already satisfied — must not fetch page 2
+    assert transport.call_count == 1
+    assert len(results) == 3
+
+
+async def test_search_truncates_to_limit_exactly() -> None:
+    transport = _SequentialCassetteTransport(
+        [
+            _page("gp_search_page1_of_3.json"),
+            _page("gp_search_page2_of_3.json"),
+            _page("gp_search_page3_of_3.json"),
+        ]
+    )
+    provider = _provider(transport)
+    results = await provider.search_places("dentist warsaw", 7)
+    assert transport.call_count == 3  # 3+3=6 < 7, needs the 3rd page
+    assert len(results) == 7  # 8 collected across 3 pages, truncated to 7 — never 8
+
+
+async def test_search_max_pages_guard_stops_pagination() -> None:
+    transport = _SequentialCassetteTransport([_page("gp_search_always_full_page.json")])
+    provider = _provider(transport, max_pages=3)
+    results = await provider.search_places("dentist warsaw", 1000)
+    assert transport.call_count == 3  # guard stops it even though nextPageToken never runs out
+    assert len(results) == 15  # 3 pages * 5 places/page — nowhere near the requested 1000
+
+
+async def test_page_token_not_ready_retries_with_backoff() -> None:
+    transport = _SequentialCassetteTransport(
+        [
+            _page("gp_search_page1_of_3.json"),  # page 1 succeeds, returns a token
+            _page(
+                "gp_page_token_not_ready_400.json"
+            ),  # first attempt to use the token: not ready yet
+            _page("gp_search_page3_of_3.json"),  # retry succeeds
+        ]
+    )
+    provider = _provider(transport)
+    results = await provider.search_places("dentist warsaw", 5)
+    assert transport.call_count == 3
+    assert len(results) == 5  # 3 (page1) + 2 (page3, after the retried page2 attempt)
+
+
+async def test_search_never_requests_more_than_remaining_count() -> None:
+    """COST INVARIANT: maxResultCount must equal exactly what's still needed — never over-request."""
+    transport = _SequentialCassetteTransport(
+        [
+            _page("gp_search_page1_of_3.json"),
+            _page("gp_search_page3_of_3.json"),
+        ]
+    )
+    provider = _provider(transport)
+    await provider.search_places("dentist warsaw", 7)
+    assert transport.request_bodies[0]["maxResultCount"] == 7  # min(7 - 0, 20)
+    assert transport.request_bodies[1]["maxResultCount"] == 4  # min(7 - 3, 20)
+
+
+async def test_search_logs_pages_and_results(caplog: pytest.LogCaptureFixture) -> None:
+    transport = _SequentialCassetteTransport(
+        [
+            _page("gp_search_page1_of_3.json"),
+            _page("gp_search_page2_of_3.json"),
+            _page("gp_search_page3_of_3.json"),
+        ]
+    )
+    provider = _provider(transport)
+    with caplog.at_level(logging.INFO, logger="maps_bridge.providers.google_places"):
+        await provider.search_places("dentist warsaw", 8)
+    assert any(
+        "pages=3" in record.message and "results=8" in record.message for record in caplog.records
+    )
+
+
+async def test_cache_does_not_collide_across_limits(tmp_path: Path) -> None:
+    """A limit=20 cache entry must never be served for a limit=3 (or vice versa) request."""
+    transport = _cassette("gp_search_dentist_warsaw.json")  # single-page, no nextPageToken
+    inner = _provider(transport)
+    cache = SQLiteCache(str(tmp_path / "cache.db"), prefix="google_places")
+    provider = CachingMapsProvider(inner, cache)
+
+    small = await provider.search_places("dentist warsaw", 2)
+    assert transport.call_count == 1
+    assert len(small) == 2
+
+    big = await provider.search_places("dentist warsaw", 3)
+    assert transport.call_count == 2  # different limit → cache miss → a fresh HTTP call
+    assert len(big) == 3

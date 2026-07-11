@@ -6,6 +6,7 @@ live key run the provider manually and update the JSON files.
 """
 
 import json
+import logging
 from pathlib import Path
 
 import httpx
@@ -42,9 +43,46 @@ def _cassette(name: str, *, status_code: int | None = None) -> _CassetteTranspor
     return _CassetteTransport(content=body, status_code=code)
 
 
-def _provider(transport: _CassetteTransport) -> SerpAPIMapsProvider:
+def _page(name: str) -> tuple[int, bytes]:
+    """Load a cassette file as a (status_code, body_bytes) tuple for sequential replay."""
+    raw = json.loads((CASSETTES_DIR / name).read_text())
+    status_code: int = raw["status_code"]
+    body: bytes = json.dumps(raw["body"]).encode()
+    return status_code, body
+
+
+class _SequentialCassetteTransport(httpx.AsyncBaseTransport):
+    """Replays canned (status_code, body) responses in order; repeats the last
+    one if called more times than there are responses. Records each request's
+    `start` query param for pagination-offset assertions."""
+
+    def __init__(self, responses: list[tuple[int, bytes]]) -> None:
+        self.call_count = 0
+        self.starts: list[str | None] = []
+        self._responses = responses
+
+    async def handle_async_request(self, request: httpx.Request) -> httpx.Response:
+        self.starts.append(request.url.params.get("start"))
+        index = min(self.call_count, len(self._responses) - 1)
+        status_code, content = self._responses[index]
+        self.call_count += 1
+        return httpx.Response(
+            status_code=status_code,
+            content=content,
+            headers={"content-type": "application/json"},
+        )
+
+
+def _provider(
+    transport: httpx.AsyncBaseTransport,
+    *,
+    max_pages: int = 5,
+    page_size: int = 20,
+) -> SerpAPIMapsProvider:
     client = httpx.AsyncClient(transport=transport)
-    return SerpAPIMapsProvider(api_key="test_key", client=client)
+    return SerpAPIMapsProvider(
+        api_key="test_key", client=client, max_pages=max_pages, page_size=page_size
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -234,3 +272,111 @@ def test_cache_evict_expired_removes_stale_entry(tmp_path: Path) -> None:
     cache.set_search("q", 5, '["stub"]')
     cache.evict_expired()
     assert cache.get_search("q", 5) is None
+
+
+# ---------------------------------------------------------------------------
+# Pagination
+# ---------------------------------------------------------------------------
+
+
+async def test_search_paginates_to_reach_limit() -> None:
+    transport = _SequentialCassetteTransport(
+        [
+            _page("serp_search_page1_full.json"),
+            _page("serp_search_page2_full.json"),
+            _page("serp_search_page3_partial.json"),
+        ]
+    )
+    provider = _provider(transport, page_size=3)
+    results = await provider.search_places("dentist warsaw", 8)
+    assert transport.call_count == 3
+    assert len(results) == 8
+
+
+async def test_search_one_page_when_limit_fits() -> None:
+    transport = _SequentialCassetteTransport([_page("serp_search_page1_full.json")])
+    provider = _provider(transport, page_size=3)
+    results = await provider.search_places("dentist warsaw", 3)
+    assert transport.call_count == 1
+    assert len(results) == 3
+
+
+async def test_search_truncates_to_limit_exactly() -> None:
+    transport = _SequentialCassetteTransport(
+        [
+            _page("serp_search_page1_full.json"),
+            _page("serp_search_page2_full.json"),
+            _page("serp_search_page3_partial.json"),
+        ]
+    )
+    provider = _provider(transport, page_size=3)
+    results = await provider.search_places("dentist warsaw", 7)
+    assert transport.call_count == 3
+    assert len(results) == 7  # 8 collected across 3 pages, truncated to 7 — never 8
+
+
+async def test_search_stops_when_page_not_full() -> None:
+    """A page returning fewer than page_size results signals exhaustion — stop early."""
+    transport = _SequentialCassetteTransport(
+        [
+            _page("serp_search_page1_full.json"),
+            _page("serp_search_page3_partial.json"),  # only 2 results — last page
+        ]
+    )
+    provider = _provider(transport, page_size=3)
+    results = await provider.search_places("dentist warsaw", 100)
+    assert transport.call_count == 2  # stops early — doesn't chase a 3rd page that won't exist
+    assert len(results) == 5
+
+
+async def test_search_max_pages_guard_stops_pagination() -> None:
+    transport = _SequentialCassetteTransport([_page("serp_search_page1_full.json")])
+    provider = _provider(transport, max_pages=3, page_size=3)
+    results = await provider.search_places("dentist warsaw", 1000)
+    assert transport.call_count == 3
+    assert len(results) == 9  # 3 pages * 3 results/page — nowhere near the requested 1000
+
+
+async def test_search_uses_start_offset_for_pagination() -> None:
+    transport = _SequentialCassetteTransport(
+        [
+            _page("serp_search_page1_full.json"),
+            _page("serp_search_page2_full.json"),
+            _page("serp_search_page3_partial.json"),
+        ]
+    )
+    provider = _provider(transport, page_size=3)
+    await provider.search_places("dentist warsaw", 8)
+    assert transport.starts == ["0", "3", "6"]
+
+
+async def test_search_logs_pages_and_results(caplog: pytest.LogCaptureFixture) -> None:
+    transport = _SequentialCassetteTransport(
+        [
+            _page("serp_search_page1_full.json"),
+            _page("serp_search_page2_full.json"),
+            _page("serp_search_page3_partial.json"),
+        ]
+    )
+    provider = _provider(transport, page_size=3)
+    with caplog.at_level(logging.INFO, logger="maps_bridge.providers.serpapi"):
+        await provider.search_places("dentist warsaw", 8)
+    assert any(
+        "pages=3" in record.message and "results=8" in record.message for record in caplog.records
+    )
+
+
+async def test_cache_does_not_collide_across_limits(tmp_path: Path) -> None:
+    """A limit=2 cache entry must never be served for a limit=3 (or vice versa) request."""
+    transport = _cassette("search_dentist_warsaw.json")  # 3 results — always a "partial" page
+    inner = _provider(transport)
+    cache = SQLiteCache(str(tmp_path / "cache.db"), prefix="serpapi")
+    provider = CachingMapsProvider(inner, cache)
+
+    small = await provider.search_places("dentist warsaw", 2)
+    assert transport.call_count == 1
+    assert len(small) == 2
+
+    big = await provider.search_places("dentist warsaw", 3)
+    assert transport.call_count == 2  # different limit → cache miss → a fresh HTTP call
+    assert len(big) == 3

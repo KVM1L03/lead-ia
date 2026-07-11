@@ -1,0 +1,11 @@
+{
+  "status_code": 200,
+  "body": {
+    "places": [
+      {"id": "ChIJpg101", "displayName": {"text": "Page1 Clinic A", "languageCode": "en"}, "formattedAddress": "1 Test St, Warsaw", "location": {"latitude": 52.20, "longitude": 21.00}, "primaryType": "dentist", "types": ["dentist"]},
+      {"id": "ChIJpg102", "displayName": {"text": "Page1 Clinic B", "languageCode": "en"}, "formattedAddress": "2 Test St, Warsaw", "location": {"latitude": 52.21, "longitude": 21.01}, "primaryType": "dentist", "types": ["dentist"]},
+      {"id": "ChIJpg103", "displayName": {"text": "Page1 Clinic C", "languageCode": "en"}, "formattedAddress": "3 Test St, Warsaw", "location": {"latitude": 52.22, "longitude": 21.02}, "primaryType": "dentist", "types": ["dentist"]}
+    ],
+    "nextPageToken": "tok-page-2"
+  }
+}

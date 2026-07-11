@@ -15,6 +15,7 @@ Controlled by env vars; applies to every maps provider.
 | Daily run cap | `DEMO_MAX_RUNS_PER_DAY` | 20 | Redis atomic INCR (or in-process counter when `RATE_LIMIT_BACKEND=memory`). Returns HTTP 429 before any LLM or Maps API calls are made. |
 | Per-request lead cap | `DEMO_MAX_LEADS_SYNC` | 25 | Enforced in `pipeline.py` before the fan-out loop — limits Maps + LLM calls per run. |
 | Per-IP rate limit | `DEMO_MAX_REQUESTS_PER_MINUTE` | 30 | Fixed-window middleware; only active when `DEMO_MODE=true`. |
+| Search pagination ceiling | `MAPS_MAX_PAGES` | 5 | Hard cap on pages fetched per search call (5 × 20 = 100 results max), enforced inside both `GooglePlacesProvider` and `SerpAPIMapsProvider` regardless of the requested `limit`. Active in all modes, not just `DEMO_MODE`. |
 
 These are active only when `DEMO_MODE=true`. In local development (`DEMO_MODE=false`) there are no application-level caps — the assumption is that you control the session.
 
@@ -102,6 +103,42 @@ quota.
 The combination of quota + alert provides defense in depth: the quota stops
 spend mechanically; the alert gives you advance warning before the quota is
 reached.
+
+---
+
+## Pagination cost multiplier
+
+Both Maps providers used to return at most one page (~20 results) regardless
+of the requested `limit`. Pagination removes that ceiling — which also
+removes the accidental cost cap it provided. `MAPS_MAX_PAGES` (default 5) is
+the replacement hard ceiling: 5 pages × 20 results/page = 100 results max per
+search call, no matter what `limit` a caller passes.
+
+Worst case for a single `limit=100` run, after pagination:
+
+| | Search calls | Details calls | Total |
+|---|---|---|---|
+| Before pagination | 1 | 20 (hard-capped) | 21 — but never actually delivered 100 leads |
+| Google Places, after | 5 (⌈100/20⌉, Pro tier) | 100 (Advanced tier) | 105 |
+| SerpAPI, after | 5 | 100 | 105 |
+
+Details calls scale 1:1 with the number of leads actually returned — that's
+the real cost driver, not Search. Checked against this doc's free tiers
+(Layer 2, above):
+
+- **Google Places Details (Advanced tier, 1,000 free/month):** a single
+  `limit=100` run spends 100 of that 1,000 — only **10 such runs/month**
+  before Details calls start billing. Search (5,000 free/month, Pro tier) is
+  not the constraint.
+- **SerpAPI (250 free searches/month, shared across search + details):** a
+  single `limit=100` run spends 105 of 250 — **fewer than 2.5 runs/month**
+  before the entire free tier (not just Details) is exhausted.
+
+`DEMO_MAX_LEADS_SYNC=25` (Layer 1) already keeps demo-mode runs well under
+this — 25 leads needs only 2 Google Places search pages and ≤25 Details
+calls. The 105-call worst case only applies to manual/non-demo invocations
+that pass a high `limit` directly. Don't raise `MAPS_MAX_PAGES` above 5
+without re-checking this math against current provider pricing pages first.
 
 ---
 

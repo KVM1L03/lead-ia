@@ -1,0 +1,10 @@
+{
+  "status_code": 200,
+  "body": {
+    "search_metadata": {"status": "Success"},
+    "local_results": [
+      {"position": 1, "data_id": "0xserp301", "place_id": "ChIJserp301", "title": "Page3 Clinic A", "address": "7 Test St", "type": "Dentist", "rating": 3.9, "reviews": 5, "gps_coordinates": {"latitude": 52.26, "longitude": 21.06}},
+      {"position": 2, "data_id": "0xserp302", "place_id": "ChIJserp302", "title": "Page3 Clinic B", "address": "8 Test St", "type": "Dentist", "rating": 3.8, "reviews": 4, "gps_coordinates": {"latitude": 52.27, "longitude": 21.07}}
+    ]
+  }
+}
