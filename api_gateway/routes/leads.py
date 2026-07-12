@@ -19,6 +19,7 @@ Two execution modes (controlled by EXECUTION_MODE env var):
 
 from __future__ import annotations
 
+import asyncio
 import uuid
 from typing import Annotated, Literal
 
@@ -118,7 +119,7 @@ async def search_leads(
 ) -> SearchResponse:
     """Kick off a lead-generation workflow or run inline (depending on EXECUTION_MODE)."""
     run_id = str(uuid.uuid4())
-    target_query = translate_prompt(body.prompt)
+    target_query = await asyncio.to_thread(translate_prompt, body.prompt)
     maps_provider = _effective_maps_provider(body.maps_provider)
 
     if settings.EXECUTION_MODE == "sync":
@@ -149,8 +150,13 @@ async def search_leads(
         session.add(row)
         await session.commit()
 
+    if temporal is None:
+        if session is not None:
+            row.status = "failed"
+            await session.commit()
+        raise HTTPException(status_code=503, detail="Workflow service unavailable")
+
     try:
-        assert temporal is not None, "temporal client must exist in Temporal execution mode"
         await temporal.start_workflow(
             LeadGenerationWorkflow.run,
             LeadGenInput(
