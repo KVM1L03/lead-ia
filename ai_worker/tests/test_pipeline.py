@@ -12,6 +12,7 @@ Error model for process_one_lead:
 
 from __future__ import annotations
 
+from types import SimpleNamespace
 from typing import Any
 from unittest.mock import AsyncMock, patch
 
@@ -40,6 +41,48 @@ _PLACE_DETAILS = PlaceDetails(
     review_count=100,
     website="https://acme.pl",
 )
+_PLACE_SEARCH_2 = PlaceSearchResult(
+    id="p2",
+    name="Broken Dental",
+    address="Warsaw 2",
+    lat=52.1,
+    lng=21.1,
+    category="dentist",
+    rating=4.2,
+    review_count=50,
+)
+_PLACE_DETAILS_2 = PlaceDetails(
+    id="p2",
+    name="Broken Dental",
+    address="Warsaw 2",
+    lat=52.1,
+    lng=21.1,
+    category="dentist",
+    rating=4.2,
+    review_count=50,
+    website="https://broken.pl",
+)
+_PLACE_SEARCH_3 = PlaceSearchResult(
+    id="p3",
+    name="Third Dental",
+    address="Warsaw 3",
+    lat=52.2,
+    lng=21.2,
+    category="dentist",
+    rating=4.8,
+    review_count=75,
+)
+_PLACE_DETAILS_3 = PlaceDetails(
+    id="p3",
+    name="Third Dental",
+    address="Warsaw 3",
+    lat=52.2,
+    lng=21.2,
+    category="dentist",
+    rating=4.8,
+    review_count=75,
+    website="https://third.pl",
+)
 _VERDICT_YES = QualifierVerdict(
     is_qualified=True, score=0.9, reasoning="good fit", icp_fit={"ok": True}
 )
@@ -56,6 +99,14 @@ _EMAIL = GeneratedEmail(
 _LEAD_YES = Lead(place=_PLACE_DETAILS, verdict=_VERDICT_YES, email=_EMAIL)
 _LEAD_NO = Lead(place=_PLACE_DETAILS, verdict=_VERDICT_NO)
 _LEAD_ERROR = Lead(place=_PLACE_DETAILS, error="LLM timeout")
+
+
+@pytest.fixture(autouse=True)
+def inline_maps_transport(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Most pipeline tests patch public maps functions; keep them off stdio by default."""
+    from ai_worker import pipeline
+
+    monkeypatch.setattr(pipeline, "_MAPS_TRANSPORT", "inline")
 
 
 @pytest.mark.asyncio
@@ -156,6 +207,124 @@ async def test_run_pipeline_process_one_lead_exception_produces_lead_with_error(
     assert leads[0].error == "schema mismatch"
     assert leads[0].verdict is None
     assert leads[0].email is None
+
+
+@pytest.mark.asyncio
+async def test_run_pipeline_get_place_details_exception_produces_lead_with_error() -> None:
+    """A single enrich failure returns an error lead and does not abort the run."""
+
+    async def _details(place_id: str, maps_provider: str | None = None) -> PlaceDetails:
+        assert maps_provider is None
+        if place_id == "p2":
+            raise RuntimeError("details timeout")
+        return _PLACE_DETAILS
+
+    with (
+        patch(
+            "ai_worker.pipeline.search_places",
+            new=AsyncMock(return_value=[_PLACE_SEARCH, _PLACE_SEARCH_2]),
+        ),
+        patch("ai_worker.pipeline.get_place_details", new=_details),
+        patch("ai_worker.pipeline.process_one_lead", return_value=_LEAD_YES),
+    ):
+        from ai_worker.pipeline import run_pipeline
+
+        leads = await run_pipeline(
+            prompt="find dental clinics",
+            target_query="dental clinic warsaw",
+            limit=10,
+            sender_context="",
+        )
+
+    assert len(leads) == 2
+    assert leads[0].place.id == "p1"
+    assert leads[0].error is None
+    assert leads[1].place.id == "p2"
+    assert leads[1].error == "details timeout"
+    assert leads[1].verdict is None
+    assert leads[1].email is None
+
+
+@pytest.mark.asyncio
+async def test_run_pipeline_reuses_one_stdio_session(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Sync stdio mode should spawn maps_bridge once for search + all details."""
+    from ai_worker import pipeline
+
+    stdio_calls: list[object] = []
+    details_by_id = {
+        "p1": _PLACE_DETAILS,
+        "p2": _PLACE_DETAILS_2,
+        "p3": _PLACE_DETAILS_3,
+    }
+
+    class FakeStdioClient:
+        async def __aenter__(self) -> tuple[object, object]:
+            return object(), object()
+
+        async def __aexit__(self, *args: object) -> None:
+            return None
+
+    class FakeClientSession:
+        def __init__(self, read: object, write: object) -> None:
+            self.read = read
+            self.write = write
+
+        async def __aenter__(self) -> FakeClientSession:
+            return self
+
+        async def __aexit__(self, *args: object) -> None:
+            return None
+
+        async def initialize(self) -> None:
+            return None
+
+        async def call_tool(self, name: str, args: dict[str, object]) -> SimpleNamespace:
+            if name == "search_places":
+                return SimpleNamespace(
+                    isError=False,
+                    content=[],
+                    structuredContent={
+                        "result": [
+                            _PLACE_SEARCH.model_dump(),
+                            _PLACE_SEARCH_2.model_dump(),
+                            _PLACE_SEARCH_3.model_dump(),
+                        ]
+                    },
+                )
+            if name == "get_place_details":
+                place_id = args["place_id"]
+                assert isinstance(place_id, str)
+                return SimpleNamespace(
+                    isError=False,
+                    content=[],
+                    structuredContent={"result": details_by_id[place_id].model_dump()},
+                )
+            raise AssertionError(f"unexpected MCP tool: {name}")
+
+    def _stdio_client(params: object) -> FakeStdioClient:
+        stdio_calls.append(params)
+        return FakeStdioClient()
+
+    def _process(state: dict[str, object]) -> Lead:
+        place = state["place"]
+        assert isinstance(place, PlaceDetails)
+        return Lead(place=place, verdict=_VERDICT_NO)
+
+    monkeypatch.setattr(pipeline, "_MAPS_TRANSPORT", "stdio")
+    monkeypatch.setattr(pipeline, "stdio_client", _stdio_client)
+    monkeypatch.setattr(pipeline, "ClientSession", FakeClientSession)
+    monkeypatch.setattr(pipeline, "process_one_lead", _process)
+
+    leads = await pipeline.run_pipeline(
+        prompt="find dental clinics",
+        target_query="dental clinic warsaw",
+        limit=3,
+        sender_context="",
+    )
+
+    assert len(leads) == 3
+    assert [lead.place.id for lead in leads] == ["p1", "p2", "p3"]
+    assert len(stdio_calls) == 1
 
 
 @pytest.mark.asyncio

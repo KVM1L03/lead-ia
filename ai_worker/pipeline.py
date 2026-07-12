@@ -13,6 +13,9 @@ import asyncio
 import json
 import os
 import sys
+from collections.abc import Awaitable, Callable
+from contextlib import AsyncExitStack
+from types import TracebackType
 from typing import Any
 
 from mcp import ClientSession
@@ -31,6 +34,12 @@ from shared.schemas import Lead, PlaceDetails, PlaceSearchResult
 _MAPS_TRANSPORT: str = os.environ.get("MAPS_TRANSPORT", "stdio")
 
 _APP_ROOT = os.environ.get("PYTHONPATH", "/app").split(os.pathsep)[0] or "/app"
+
+SearchPlacesFn = Callable[
+    [str, int, str | None],
+    Awaitable[list[PlaceSearchResult]],
+]
+GetPlaceDetailsFn = Callable[[str, str | None], Awaitable[PlaceDetails]]
 
 
 def _stdio_server_params(maps_provider: str | None = None) -> StdioServerParameters:
@@ -62,20 +71,80 @@ def _extract_tool_payload(result: CallToolResult) -> Any:
     return structured
 
 
+def _parse_search_places_result(result: CallToolResult) -> list[PlaceSearchResult]:
+    raw = _extract_tool_payload(result)
+    if not isinstance(raw, list):
+        raise RuntimeError(f"MCP search_places returned unexpected payload: {type(raw).__name__}")
+    return [PlaceSearchResult.model_validate(item) for item in raw]
+
+
+def _parse_place_details_result(result: CallToolResult) -> PlaceDetails:
+    raw = _extract_tool_payload(result)
+    if not isinstance(raw, dict):
+        raise RuntimeError(
+            f"MCP get_place_details returned unexpected payload: {type(raw).__name__}"
+        )
+    return PlaceDetails.model_validate(raw)
+
+
+class MapsMcpSession:
+    """Reusable stdio MCP session for one sync pipeline run."""
+
+    def __init__(self, maps_provider: str | None = None) -> None:
+        self._maps_provider = maps_provider
+        self._stack = AsyncExitStack()
+        self._session: ClientSession | None = None
+
+    async def __aenter__(self) -> MapsMcpSession:
+        read, write = await self._stack.enter_async_context(
+            stdio_client(_stdio_server_params(self._maps_provider))
+        )
+        session = await self._stack.enter_async_context(ClientSession(read, write))
+        await session.initialize()
+        self._session = session
+        return self
+
+    async def __aexit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc: BaseException | None,
+        tb: TracebackType | None,
+    ) -> bool | None:
+        self._session = None
+        return await self._stack.__aexit__(exc_type, exc, tb)
+
+    @property
+    def session(self) -> ClientSession:
+        if self._session is None:
+            raise RuntimeError("MCP session is not initialized")
+        return self._session
+
+    async def search_places(
+        self,
+        query: str,
+        limit: int,
+        maps_provider: str | None = None,
+    ) -> list[PlaceSearchResult]:
+        result = await self.session.call_tool("search_places", {"query": query, "limit": limit})
+        return _parse_search_places_result(result)
+
+    async def get_place_details(
+        self,
+        place_id: str,
+        maps_provider: str | None = None,
+    ) -> PlaceDetails:
+        result = await self.session.call_tool("get_place_details", {"place_id": place_id})
+        return _parse_place_details_result(result)
+
+
 async def _call_search_places_stdio(
     query: str,
     limit: int,
     maps_provider: str | None = None,
 ) -> list[PlaceSearchResult]:
     """Spawn maps_bridge via stdio and call the search_places MCP tool."""
-    async with stdio_client(_stdio_server_params(maps_provider)) as (read, write):
-        async with ClientSession(read, write) as session:
-            await session.initialize()
-            result = await session.call_tool("search_places", {"query": query, "limit": limit})
-    raw = _extract_tool_payload(result)
-    if not isinstance(raw, list):
-        raise RuntimeError(f"MCP search_places returned unexpected payload: {type(raw).__name__}")
-    return [PlaceSearchResult.model_validate(item) for item in raw]
+    async with MapsMcpSession(maps_provider) as session:
+        return await session.search_places(query, limit)
 
 
 async def _call_get_place_details_stdio(
@@ -83,16 +152,8 @@ async def _call_get_place_details_stdio(
     maps_provider: str | None = None,
 ) -> PlaceDetails:
     """Spawn maps_bridge via stdio and call the get_place_details MCP tool."""
-    async with stdio_client(_stdio_server_params(maps_provider)) as (read, write):
-        async with ClientSession(read, write) as session:
-            await session.initialize()
-            result = await session.call_tool("get_place_details", {"place_id": place_id})
-    raw = _extract_tool_payload(result)
-    if not isinstance(raw, dict):
-        raise RuntimeError(
-            f"MCP get_place_details returned unexpected payload: {type(raw).__name__}"
-        )
-    return PlaceDetails.model_validate(raw)
+    async with MapsMcpSession(maps_provider) as session:
+        return await session.get_place_details(place_id)
 
 
 async def _call_search_places_inline(
@@ -165,17 +226,57 @@ async def run_pipeline(
     Uses asyncio.gather for per-lead fan-out; max_concurrency limits simultaneous MCP +
     LLM calls via a semaphore.
     """
+    if _MAPS_TRANSPORT == "stdio":
+        async with MapsMcpSession(maps_provider) as session:
+            return await _run_pipeline_with_maps(
+                prompt=prompt,
+                target_query=target_query,
+                limit=limit,
+                sender_context=sender_context,
+                max_concurrency=max_concurrency,
+                maps_provider=maps_provider,
+                search_places_fn=session.search_places,
+                get_place_details_fn=session.get_place_details,
+            )
+
+    return await _run_pipeline_with_maps(
+        prompt=prompt,
+        target_query=target_query,
+        limit=limit,
+        sender_context=sender_context,
+        max_concurrency=max_concurrency,
+        maps_provider=maps_provider,
+        search_places_fn=search_places,
+        get_place_details_fn=get_place_details,
+    )
+
+
+async def _run_pipeline_with_maps(
+    prompt: str,
+    target_query: str,
+    limit: int,
+    sender_context: str,
+    max_concurrency: int,
+    maps_provider: str | None,
+    search_places_fn: SearchPlacesFn,
+    get_place_details_fn: GetPlaceDetailsFn,
+) -> list[Lead]:
     sem = asyncio.Semaphore(max_concurrency)
 
     # 1. Search ─────────────────────────────────────────────────────────────────
-    results: list[PlaceSearchResult] = await search_places(target_query, limit, maps_provider)
+    results: list[PlaceSearchResult] = await search_places_fn(target_query, limit, maps_provider)
 
     # 2. Enrich (parallel) ──────────────────────────────────────────────────────
-    async def _fetch(r: PlaceSearchResult) -> PlaceDetails:
+    async def _fetch(r: PlaceSearchResult) -> PlaceDetails | Lead:
         async with sem:
-            return await get_place_details(r.id, maps_provider)
+            try:
+                return await get_place_details_fn(r.id, maps_provider)
+            except Exception as exc:
+                root = exc.__cause__ if exc.__cause__ is not None else exc
+                fallback_place = PlaceDetails.model_validate(r.model_dump())
+                return Lead(place=fallback_place, error=str(root))
 
-    places: list[PlaceDetails] = list(await asyncio.gather(*[_fetch(r) for r in results]))
+    enriched: list[PlaceDetails | Lead] = list(await asyncio.gather(*[_fetch(r) for r in results]))
 
     # 3. Per-lead: qualify → decide → email via LangGraph graph (partial failure OK)
     async def _process(place: PlaceDetails) -> Lead:
@@ -194,4 +295,9 @@ async def run_pipeline(
                 root = exc.__cause__ if exc.__cause__ is not None else exc
                 return Lead(place=place, error=str(root))
 
-    return list(await asyncio.gather(*[_process(p) for p in places]))
+    async def _process_enriched(item: PlaceDetails | Lead) -> Lead:
+        if isinstance(item, Lead):
+            return item
+        return await _process(item)
+
+    return list(await asyncio.gather(*[_process_enriched(item) for item in enriched]))
