@@ -1,3 +1,5 @@
+@AGENTS.md
+
 # LeadForge — Claude Code project memory
 
 > Production-grade, AI-powered lead generation pipeline.
@@ -11,56 +13,38 @@
 
 **IS NOT:** Multi-tenant SaaS. No auth, no payments, no email-sending, no warming, no CRM. Resist scope creep — if a feature isn't on the milestone board, it doesn't exist.
 
----
-
-## 2. Stack (don't add new frameworks without explicit ask)
-
-- **Backend:** Python 3.12, FastAPI, Pydantic v2 (`ConfigDict(strict=True)`), Temporal, DSPy, LangGraph
-- **Frontend:** Next.js 16, React 19, Tailwind v4, Prisma 7, Server Actions
-- **Data:** Postgres 16 (shared container, dedicated `app` schema), SQLite for SerpAPI cache
-- **LLMs:** Anthropic (Haiku 4.5 for qualify, Sonnet 4.6 for email). OpenAI/Gemini behind a router for fallback only.
-- **Observability:** Langfuse (self-hosted, port 3030)
-- **Tool boundary:** MCP bridge for Google Places — agent never calls SerpAPI directly
-- **Package mgmt:** `uv` for Python, `npm` for Node
-- **Dev infra:** Docker Compose for the full stack, `Makefile` for shortcuts
-
-**AI flow (post-PR1):** LangGraph is the per-lead state machine (`qualify → decide → email`), wired on both the sync and Temporal hot paths. Temporal is the outer batch orchestrator (search, fan-out, per-step retry, persistence, replay). Each graph node maps to one Temporal activity for step-level retry granularity. DSPy typed signatures handle all LLM extraction — no raw prompt strings.
-
-When editing the frontend, also read `frontend/CLAUDE.md` and `frontend/AGENTS.md` (Next.js 16 breaking changes).
+Stack, repo layout, architecture invariants, env vars, and anti-patterns are
+in `AGENTS.md` (imported above) — this file covers Claude-Code-specific
+process only. When editing the frontend, also read `frontend/CLAUDE.md` and
+`frontend/AGENTS.md` (Next.js 16 breaking changes).
 
 ---
 
-## 3. Repo layout
+## 2. Spec-driven workflow (read before implementing)
 
-```
-api_gateway/     FastAPI HTTP entry, health, workflow triggers
-maps_bridge/     MCP server — the ONLY process that calls SerpAPI
-ai_worker/       Temporal worker + LangGraph per-lead graph (qualify→decide→email).
-                 Temporal activities delegate to graph nodes for step-level retry.
-frontend/        Next.js approval UI (Prisma, Server Actions)
-shared/          Pydantic schemas consumed by all backend services
-tests/           pytest (backend)
-evals/           Promptfoo eval configs + results
-docs/            model choices, deployment audit, roadmap
-.github/         CI workflows, LLM review prompt, PR template
-```
+This project builds via the Superpowers Claude Code plugin's spec-driven
+cycle, not ad hoc edits. For anything touching more than one file:
 
----
+1. Read `context/project-overview.md` → `architecture.md` → `ui-context.md`
+   (frontend changes only) → `code-standards.md` → `ai-workflow-rules.md` →
+   `progress-tracker.md`, in that order. These are the project's
+   "constitution" — product scope, architecture narrative, UI tokens, code
+   standards, and workflow rules that don't change per feature.
+2. Invoke the `superpowers:brainstorming` skill. It explores intent through
+   dialogue and writes a design doc to
+   `docs/superpowers/specs/YYYY-MM-DD-<topic>-design.md`.
+3. Once approved, invoke `superpowers:writing-plans` to produce an
+   implementation plan in `docs/superpowers/plans/YYYY-MM-DD-<topic>.md`,
+   then execute it.
+4. Update `context/progress-tracker.md` after each meaningful change — it's
+   a rolling index into `docs/superpowers/plans/`, not a duplicate log.
 
-## 4. Architecture invariants (NEVER violate)
-
-These are checked by the automated LLM diff review (`.github/prompts/llm-review-prompt.txt`) and must be listed in every PR template checklist.
-
-1. **Microservices only.** `api_gateway/`, `maps_bridge/`, `ai_worker/`, `frontend/` are separate processes. Never collapse them.
-2. **Durable execution.** All business logic lives in Temporal workflows + activities. Workflows are 100% deterministic — no `datetime.now()`, no raw HTTP, no random.
-3. **No raw prompt strings for extraction/qualification.** Use DSPy signatures. Email generation may use templated prompts but must be traced in Langfuse.
-4. **Strict typing.** Pydantic v2 strict mode on Python. `strict: true` on TypeScript. Zero `Any`, zero `as unknown as X`.
-5. **Zero trust.** MCP bridge is the only thing that talks to SerpAPI. The agent calls MCP tools, never the network directly.
-6. **Schemas live in `shared/`.** Both backend and frontend (via codegen or hand-mirror) consume the same Pydantic contracts.
+Full scoping rules, protected files, and "when to split work" live in
+`context/ai-workflow-rules.md` — don't restate them here.
 
 ---
 
-## 5. Commands (source of truth — don't re-state style rules elsewhere)
+## 3. Commands (source of truth — don't re-state style rules elsewhere)
 
 This section is canonical. If a `Makefile` target is missing, implement it to match — don't document a different command set elsewhere.
 
@@ -94,26 +78,7 @@ Lint is enforced in CI. Don't lecture me about style — run `make lint` and let
 
 ---
 
-## 6. Environment variables
-
-Copy `.env.example` → `.env` on first clone (`make bootstrap` does this). Never commit `.env`.
-
-| Variable | Purpose | Local default | CI |
-|---|---|---|---|
-| `ANTHROPIC_API_KEY` | Haiku/Sonnet calls, LLM review workflow | required for real LLM | GitHub secret (evals + LLM review) |
-| `SERPAPI_API_KEY` | Google Places via maps_bridge | required for live maps | not used (mock) |
-| `LANGFUSE_*` | Tracing | optional locally | not used |
-| `TEMPORAL_ADDRESS` | Worker connection | `localhost:7233` | not used in unit CI |
-| `DATABASE_URL` | App + cache DB | `sqlite:///./lead-forge.db` | not used in unit CI |
-| `MAPS_PROVIDER` | Maps adapter | `mock` | `mock` (set in CI) |
-| `QUALIFIER_MODEL` | Override qualifier LM (optional) | unset → uses `llm_router` default | — |
-| `EMAIL_MODEL` | Override email LM (optional) | unset → uses `llm_router` default | — |
-
-Use `MAPS_PROVIDER=mock` locally to skip SerpAPI calls (fixtures from `maps_bridge` mock adapter). LLM mock is test-level via `DummyLM`/`monkeypatch` — there is no `LLM_PROVIDER` env var in production code.
-
----
-
-## 7. Testing
+## 4. Testing
 
 - **Backend unit/integration:** `tests/` — run with `uv run pytest` or `make test`. CI sets `MAPS_PROVIDER=mock` — no real Maps API calls. LLM calls are mocked at test level via `DummyLM` / `monkeypatch` (no `LLM_PROVIDER` env var; that var is not read by production code).
 - **Frontend unit:** `frontend/` — vitest, run via `make test` or `cd frontend && npm test -- --run`.
@@ -123,7 +88,7 @@ Use `MAPS_PROVIDER=mock` locally to skip SerpAPI calls (fixtures from `maps_brid
 
 ---
 
-## 8. Workflow rules (how to behave)
+## 5. Workflow rules (how to behave)
 
 ### Git: branch → PR → review (default for real work)
 
@@ -153,16 +118,16 @@ Use `MAPS_PROVIDER=mock` locally to skip SerpAPI calls (fixtures from `maps_brid
 
 ### General
 
-- **Plan before writing code** for any change touching >1 file. Use plan mode (`Shift+Tab` twice in Claude Code).
+- **Brainstorm + plan before writing code** for any change touching >1 file — see §2 above.
 - **PR size:** aim for ≤200–400 LOC per PR. Hard limit: automated LLM review skips backend diffs >400 lines — split before you hit that ceiling.
 - **Run `make lint` and `make test` before saying "done".** "Done" = lint clean + tests green + the new behavior demonstrated.
 - **Fill the PR template** (`.github/pull_request_template.md`): one-sentence summary, invariants checked, verification checklist.
 - **Never commit secrets.** `.env` is git-ignored; use `.env.example` for shape.
-- **Use the MCP bridge** for any SerpAPI call. If you find yourself importing `requests` in the worker, stop — you're about to violate invariant #5.
+- **Use the MCP bridge** for any SerpAPI call. If you find yourself importing `requests` in the worker, stop — you're about to violate invariant #5 in `AGENTS.md`.
 
 ---
 
-## 9. Git & CI pipeline
+## 6. Git & CI pipeline
 
 Every change merges to `main` through a pull request. Nothing runs on push until a PR is opened (except post-merge CI on `main`).
 
@@ -218,11 +183,12 @@ Add label `run-evals` **before** opening the PR, or push a new commit after addi
 
 ---
 
-## 10. When you're confused
+## 7. When you're confused
 
+- Product scope, architecture narrative, UI tokens, code standards → `context/*.md` (§2 above)
 - Architecture overview → README §Architecture and §Engineering decisions
 - Why a model was picked, eval backlog, migration plan → `docs/model-choices.md`
-- Branch protection / merge gates → §9 above ("Merge requirements" table)
+- Branch protection / merge gates → §6 above ("Merge requirements" table)
 - Deployment + twelve-factor audit → `docs/twelve-factor-audit.md`
 - Project roadmap → `docs/roadmap.md`
 - Eval results → `evals/results/`
@@ -231,14 +197,3 @@ Add label `run-evals` **before** opening the PR, or push a new commit after addi
 - What the LLM reviewer checks → `.github/prompts/llm-review-prompt.txt`
 
 If those don't answer it, ask me before guessing. Don't invent a function, library, or env var.
-
----
-
-## 11. Anti-patterns (I've made these mistakes — don't repeat)
-
-- ❌ Calling `dspy.configure(lm=...)` inside an activity (race condition under parallel execution). Use `dspy.context(lm=...)` per-call.
-- ❌ `datetime.now()` inside a workflow (breaks replay). Use `workflow.now()`.
-- ❌ Wrapping the whole LangGraph call inside one Temporal activity (no retry granularity). One activity per graph node.
-- ❌ Adding a new ORM. Prisma + SQLAlchemy already split the load.
-- ❌ Re-explaining style rules here. The linter is the source of truth.
-- ❌ Pushing directly to `main` or opening a 1000-line PR. CI will pass (maybe), but LLM review won't run and human review becomes painful.
