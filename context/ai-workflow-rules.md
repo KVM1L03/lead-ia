@@ -21,8 +21,8 @@ in these context files, `docs/roadmap.md`, and `docs/model-choices.md`.
 
 - Work on one feature unit at a time
 - Prefer small, verifiable increments — PR target ≤200–400 LOC (root
-  `CLAUDE.md` §8); hard limit: backend diffs >400 lines skip the automated
-  LLM review entirely
+  `CLAUDE.md` §5 "Workflow rules"); hard limit: backend diffs >400 lines
+  skip the automated LLM review entirely
 - Do not combine unrelated system boundaries (e.g. `maps_bridge` +
   `frontend`) in a single implementation step
 
@@ -73,4 +73,4 @@ Update the relevant context file whenever implementation changes:
 2. No invariant defined in root `AGENTS.md` was violated
 3. `progress-tracker.md` reflects the completed work (or points at the new
    plan file that documents it)
-4. `make lint && make test` passes (root `CLAUDE.md` §5)
+4. `make lint && make test` passes (root `CLAUDE.md` §3 "Commands")
