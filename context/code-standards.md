@@ -27,6 +27,52 @@ already cover, and points to them rather than repeating them.
 - ruff + mypy are the source of truth for style — `make lint` is the only
   place style rules are enforced; don't hand-enforce beyond what it checks
 
+## Async / Concurrency (Python)
+
+The event loop is shared by every in-flight request/activity — a single
+blocking call inside a coroutine stalls all of them, not just the caller.
+This bit the project once (`fix(pipeline): avoid blocking and reuse MCP
+sessions`, `ai_worker/pipeline.py`) — these rules exist to stop it recurring.
+
+- **Never call a blocking/sync function directly inside an `async def`.**
+  DSPy calls (`qualify_node`, `email_node`, `translate_prompt`,
+  `process_one_lead`) are synchronous under the hood — offload them with
+  `await asyncio.to_thread(fn, ...)`, the pattern already used in
+  `activities.py`, `pipeline.py`, and `api_gateway/routes/leads.py`. Never
+  reach for a raw `ThreadPoolExecutor`/`run_in_executor` unless
+  `asyncio.to_thread` genuinely doesn't fit.
+- **`asyncio.to_thread` propagates contextvars** — this is why Langfuse/OTel
+  spans created inside the thread nest correctly under the parent activity
+  span (see `observability.py`). Don't work around it by manually passing
+  context; let propagation do it.
+- **Reuse expensive resources instead of recreating them per call.** Spawning
+  a new stdio MCP subprocess (or DB connection, or HTTP client) per request
+  is the mistake `MapsMcpSession` was introduced to fix — one session per
+  pipeline run, entered once via `AsyncExitStack`, not per tool call.
+- **Bound fan-out concurrency with `asyncio.Semaphore`.** Per-lead
+  enrich/qualify/email work runs via `asyncio.gather`, gated by a semaphore
+  sized from `max_concurrency` — never fan out unbounded concurrent MCP or
+  LLM calls.
+- **Don't let one failed task cancel the whole batch.** `asyncio.gather`
+  cancels sibling tasks on the first unhandled exception; this project wraps
+  each per-item coroutine in its own `try/except` and returns a `Lead` with
+  an `error` field instead, so one bad place/lead doesn't sink the run. Keep
+  following that convention rather than relying on `return_exceptions=True`
+  and post-hoc filtering.
+- **Never `time.sleep()` in async code** — it blocks the whole event loop.
+  Use `await asyncio.sleep(...)`.
+- **Never call `asyncio.run()` from inside code that's already running in an
+  event loop** (e.g. inside a FastAPI route or Temporal activity) — it will
+  raise. If you need to bridge sync code that itself needs an event loop,
+  that's a sign the call belongs behind `asyncio.to_thread`, not a nested
+  `asyncio.run()`.
+- **This rule does not apply inside Temporal workflow code.** Workflows run
+  single-threaded and must stay deterministic and replay-safe — no
+  `asyncio.to_thread`, no real threads, no raw `asyncio.Semaphore` (use the
+  workflow-safe primitives Temporal provides). `asyncio.to_thread` is an
+  **activity-only** pattern; see `AGENTS.md` invariant #2 ("Durable
+  execution") for the workflow-side rules.
+
 ## TypeScript (frontend)
 
 - `strict: true`, zero `any`, zero `as unknown as X`
