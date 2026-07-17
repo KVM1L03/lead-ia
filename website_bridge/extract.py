@@ -13,6 +13,7 @@ _BOOKING_KEYWORDS = [
     "booking",
     "umów",
     "rezerwacja",
+    "zarezerwuj",
     "calendly",
     "booksy",
     "appointment",
