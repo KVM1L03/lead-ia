@@ -332,3 +332,43 @@ def test_run_rejects_string_for_datetime() -> None:
                 "status": "scraping",
             }
         )
+
+
+# ---------------------------------------------------------------------------
+# WebsiteFacts
+# ---------------------------------------------------------------------------
+
+
+def test_website_facts_roundtrips_and_enforces_excerpt_limit() -> None:
+    from shared.schemas import WebsiteFacts
+
+    facts = WebsiteFacts(
+        has_ssl=True,
+        has_viewport_meta=True,
+        generator_meta=None,
+        page_size_kb=12.5,
+        has_contact_form=True,
+        booking_keywords_found=["booksy"],
+        has_phone_in_markup=True,
+        social_links=["https://facebook.com/x"],
+        has_schema_org=True,
+        copyright_year=2026,
+        visible_text_excerpt="hello",
+    )
+    assert facts.model_dump()["copyright_year"] == 2026
+    assert WebsiteFacts.model_validate_json(facts.model_dump_json()).has_ssl is True
+
+    with pytest.raises(ValidationError):
+        WebsiteFacts(
+            has_ssl=True,
+            has_viewport_meta=False,
+            generator_meta=None,
+            page_size_kb=1.0,
+            has_contact_form=False,
+            booking_keywords_found=[],
+            has_phone_in_markup=False,
+            social_links=[],
+            has_schema_org=False,
+            copyright_year=None,
+            visible_text_excerpt="x" * 3001,
+        )

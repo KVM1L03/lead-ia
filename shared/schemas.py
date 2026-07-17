@@ -68,3 +68,19 @@ class Run(BaseModel):
     leads: list[Lead]
     created_at: datetime
     status: Literal["scraping", "qualifying", "generating", "completed", "failed"]
+
+
+class WebsiteFacts(BaseModel):
+    model_config = ConfigDict(strict=True, extra="forbid")
+
+    has_ssl: bool
+    has_viewport_meta: bool
+    generator_meta: str | None = None
+    page_size_kb: float
+    has_contact_form: bool
+    booking_keywords_found: list[str]
+    has_phone_in_markup: bool
+    social_links: list[str]
+    has_schema_org: bool
+    copyright_year: int | None = None
+    visible_text_excerpt: Annotated[str, StringConstraints(max_length=3000)]
