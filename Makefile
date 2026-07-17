@@ -25,7 +25,7 @@ frontend:
 lint:
 	uv run ruff check .
 	uv run ruff format --check .
-	uv run mypy api_gateway ai_worker maps_bridge shared
+	uv run mypy api_gateway ai_worker maps_bridge website_bridge shared
 	cd frontend && npm run lint
 
 format:

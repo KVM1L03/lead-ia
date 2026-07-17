@@ -281,6 +281,15 @@ services:
     networks:
       - lead-forge
 
+  website-bridge:
+    build:
+      context: .
+      dockerfile: website_bridge/Dockerfile
+    ports:
+      - "8100:8100"
+    networks:
+      - lead-forge
+
 volumes:
   postgres_data:
   langfuse_clickhouse_data:
