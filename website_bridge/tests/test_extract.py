@@ -16,7 +16,13 @@ def test_booking_fixture_full_field_extraction() -> None:
     assert facts.generator_meta is None
     assert facts.page_size_kb > 0
     assert facts.has_contact_form is True
-    assert facts.booking_keywords_found == ["umów", "rezerwacja", "zarezerwuj", "calendly", "booksy"]
+    assert facts.booking_keywords_found == [
+        "umów",
+        "rezerwacja",
+        "zarezerwuj",
+        "calendly",
+        "booksy",
+    ]
     assert facts.has_phone_in_markup is True
     assert len(facts.social_links) == 2
     assert all("facebook" in s or "instagram" in s for s in facts.social_links)
