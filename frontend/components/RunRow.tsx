@@ -131,7 +131,7 @@ export function RunRow({ run }: Props) {
         <dialog
           ref={dialogRef}
           onClick={(e) => { if (e.target === dialogRef.current) dialogRef.current?.close(); }}
-          className="rounded-2xl border border-edge bg-surface p-0 shadow-xl backdrop:bg-black/30 w-[360px] open:flex open:flex-col"
+          className="m-auto rounded-2xl border border-edge bg-surface p-0 shadow-xl backdrop:bg-black/30 w-[360px] open:flex open:flex-col"
         >
           <div className="px-6 pt-6 pb-4">
             <p className="font-sans text-[15px] font-semibold text-fg mb-2">
