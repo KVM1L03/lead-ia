@@ -12,23 +12,38 @@
   --font-mono: var(--font-ibm-plex-mono), "Courier New", Courier, monospace;
 
   /* Monochrome + amber accent palette */
-  --color-bg: #fafaf7;
-  --color-fg: #0a0a0a;
+  --color-bg: #f7f7f5;
+  --color-fg: #1d1d1f;
   --color-brand: #c8742e;
   --color-brand-soft: rgba(200, 116, 46, 0.1);
-  --color-muted-fg: #a6a49b;
-  --color-subtle: #6a6a62;
+  --color-muted-fg: #9b9ba1;
+  --color-subtle: #6e6e73;
   --color-edge: #e7e5dd;
   --color-edge-input: #d6d3c9;
   --color-surface: #fcfcfa;
   --color-skeleton: #efede6;
+
+  /* Glass surfaces (LeadForge design refresh) */
+  --color-glass: rgba(255, 255, 255, 0.86);
+  --color-glass-strong: rgba(255, 255, 255, 0.72);
+  --color-glass-edge: rgba(10, 10, 10, 0.06);
+
+  /* Status accents (LeadForge design refresh) */
+  --color-success: #2cb67d;
+  --color-success-fg: #1f9d66;
+  --color-success-soft: rgba(44, 182, 125, 0.12);
+  --color-warning: #f4a261;
+  --color-warning-fg: #b9790a;
+  --color-warning-soft: rgba(244, 162, 97, 0.2);
+  --color-reject: #e76f51;
+  --color-reject-soft: rgba(231, 111, 81, 0.06);
 }
 
 /* ── Semantic tokens for @base-ui/react and cva components ─────────────── */
 
 :root {
-  --background: #fafaf7;
-  --foreground: #0a0a0a;
+  --background: #f7f7f5;
+  --foreground: #1d1d1f;
   --card: #fcfcfa;
   --card-foreground: #0a0a0a;
   --popover: #fcfcfa;
@@ -38,14 +53,14 @@
   --secondary: #f0efe9;
   --secondary-foreground: #0a0a0a;
   --muted: #f5f4ef;
-  --muted-foreground: #a6a49b;
+  --muted-foreground: #9b9ba1;
   --accent: #f0efe9;
   --accent-foreground: #0a0a0a;
   --destructive: oklch(0.577 0.245 27.325);
   --border: #e7e5dd;
   --input: #d6d3c9;
   --ring: #c8742e;
-  --radius: 0.1875rem;
+  --radius: 0.875rem;
 }
 
 @theme inline {
@@ -83,6 +98,10 @@
 
   body {
     @apply bg-background text-foreground;
+    background-image:
+      radial-gradient(circle at 6% -4%, rgba(200, 116, 46, 0.08), transparent 42%),
+      radial-gradient(circle at 102% 104%, rgba(44, 182, 125, 0.06), transparent 40%);
+    background-attachment: fixed;
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
   }
