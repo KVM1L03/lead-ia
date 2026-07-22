@@ -76,40 +76,40 @@ describe("approvalRate", () => {
 // ── statusConfig ──────────────────────────────────────────────────────────────
 
 describe("statusConfig", () => {
-  it("completed → green label", () => {
+  it("completed → success label", () => {
     const cfg = statusConfig("completed");
     expect(cfg.label).toBe("Completed");
-    expect(cfg.className).toContain("emerald");
+    expect(cfg.className).toContain("success");
   });
 
-  it("failed → red label", () => {
+  it("failed → reject label", () => {
     const cfg = statusConfig("failed");
     expect(cfg.label).toBe("Failed");
-    expect(cfg.className).toContain("red");
+    expect(cfg.className).toContain("reject");
   });
 
-  it("scraping → amber in-progress label", () => {
+  it("scraping → warning in-progress label", () => {
     const cfg = statusConfig("scraping");
     expect(cfg.label).toBe("Scraping");
-    expect(cfg.className).toContain("amber");
+    expect(cfg.className).toContain("warning");
   });
 
-  it("qualifying → amber in-progress label", () => {
+  it("qualifying → warning in-progress label", () => {
     const cfg = statusConfig("qualifying");
     expect(cfg.label).toBe("Qualifying");
-    expect(cfg.className).toContain("amber");
+    expect(cfg.className).toContain("warning");
   });
 
-  it("generating → amber in-progress label", () => {
+  it("generating → warning in-progress label", () => {
     const cfg = statusConfig("generating");
     expect(cfg.label).toBe("Generating");
-    expect(cfg.className).toContain("amber");
+    expect(cfg.className).toContain("warning");
   });
 
   it("unknown status → falls back gracefully", () => {
     const cfg = statusConfig("pending");
     expect(cfg.label).toBe("pending");
-    expect(cfg.className).toContain("slate");
+    expect(cfg.className).toContain("skeleton");
   });
 });
 

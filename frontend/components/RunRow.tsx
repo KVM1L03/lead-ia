@@ -85,7 +85,7 @@ export function RunRow({ run }: Props) {
         <td className="px-5 py-3">
           <span
             className={[
-              "inline-flex items-center rounded-[3px] border px-2 py-0.5 font-mono text-[10px]",
+              "inline-flex items-center rounded-full border px-2.5 py-0.5 font-mono text-[10px]",
               cfg.className,
             ].join(" ")}
           >
@@ -114,7 +114,7 @@ export function RunRow({ run }: Props) {
                 className="fixed inset-0 z-10"
                 onClick={() => setMenuOpen(false)}
               />
-              <div className="absolute right-4 top-full z-20 mt-1 min-w-[140px] rounded-[3px] border border-edge bg-surface shadow-lg py-1">
+              <div className="absolute right-4 top-full z-20 mt-1 min-w-[140px] rounded-xl border border-edge bg-surface shadow-lg py-1">
                 <button
                   onClick={openDialog}
                   className="flex w-full items-center gap-2 px-3 py-2 font-sans text-[12px] text-red-600 hover:bg-red-50"
@@ -131,7 +131,7 @@ export function RunRow({ run }: Props) {
         <dialog
           ref={dialogRef}
           onClick={(e) => { if (e.target === dialogRef.current) dialogRef.current?.close(); }}
-          className="rounded-[3px] border border-edge bg-surface p-0 shadow-xl backdrop:bg-black/30 w-[360px] open:flex open:flex-col"
+          className="rounded-2xl border border-edge bg-surface p-0 shadow-xl backdrop:bg-black/30 w-[360px] open:flex open:flex-col"
         >
           <div className="px-6 pt-6 pb-4">
             <p className="font-sans text-[15px] font-semibold text-fg mb-2">

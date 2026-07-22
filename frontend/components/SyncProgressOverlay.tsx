@@ -52,7 +52,7 @@ export function SyncProgressOverlay({ prompt, limit }: Props) {
       aria-label="Pipeline in progress"
       aria-busy="true"
     >
-      <div className="w-full max-w-xl rounded-[3px] border border-edge bg-surface px-8 py-10 shadow-[0_8px_40px_rgba(10,10,10,0.08)]">
+      <div className="w-full max-w-xl rounded-3xl border border-glass-edge bg-glass backdrop-blur-2xl px-8 py-10 shadow-[0_10px_36px_rgba(0,0,0,.06)]">
         <p className="mb-1 font-mono text-[11px] font-medium uppercase tracking-[.18em] text-muted-fg">
           Running pipeline
         </p>
@@ -70,7 +70,7 @@ export function SyncProgressOverlay({ prompt, limit }: Props) {
         />
 
         {events.length > 0 && (
-          <div className="mt-8 rounded-[3px] border border-edge bg-background p-4">
+          <div className="mt-8 rounded-2xl border border-glass-edge bg-glass-strong backdrop-blur-md p-4">
             <p className="mb-2 font-mono text-[9.5px] uppercase tracking-[.18em] text-muted-fg">
               Activity
             </p>
