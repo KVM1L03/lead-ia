@@ -11,14 +11,14 @@ import { cn } from "@/lib/utils";
 type Props = { leads: Lead[]; runId: string };
 
 const BUCKET_COLORS: Record<string, string> = {
-  high: "text-emerald-700 bg-emerald-50 border-emerald-200",
-  mid: "text-amber-700 bg-amber-50 border-amber-200",
-  low: "text-slate-600 bg-slate-50 border-slate-200",
+  high: "text-success-fg bg-success-soft border-success/30",
+  mid: "text-warning-fg bg-warning-soft border-warning/40",
+  low: "text-subtle bg-skeleton border-edge",
 };
 
 function ScoreBadge({ score }: { score: number }) {
   const pct = Math.round(score * 100);
-  const col = pct > 80 ? "text-emerald-700" : pct >= 50 ? "text-amber-700" : "text-slate-500";
+  const col = pct > 80 ? "text-success-fg" : pct >= 50 ? "text-warning-fg" : "text-subtle";
   return <span className={cn("font-mono text-[11px] tabular-nums", col)}>{pct}%</span>;
 }
 
@@ -32,7 +32,7 @@ function FiltersBar({
   industries: string[];
 }) {
   return (
-    <div className="mb-5 flex flex-wrap items-center gap-4 rounded-[3px] border border-edge bg-surface px-4 py-2.5">
+    <div className="mb-5 flex flex-wrap items-center gap-4 rounded-2xl border border-glass-edge bg-glass backdrop-blur-md shadow-[0_6px_24px_rgba(0,0,0,.04)] px-4 py-2.5">
       <div className="flex items-center gap-2">
         <span className="font-mono text-[9.5px] uppercase tracking-[.18em] text-muted-fg">Score</span>
         <input
@@ -74,7 +74,7 @@ function FiltersBar({
                   onChange({ ...filters, industries: next });
                 }}
                 className={cn(
-                  "rounded-[3px] border px-2 py-0.5 font-sans text-[11px] transition-colors",
+                  "rounded-full border px-2.5 py-0.5 font-sans text-[11px] transition-colors",
                   active
                     ? "border-brand bg-brand-soft text-brand"
                     : "border-edge bg-white text-muted-fg hover:text-fg",
@@ -104,7 +104,7 @@ function CohortCard({
   const allApproved = cohort.leads.every((l) => l.decision === "approved");
 
   return (
-    <div className="rounded-[3px] border border-edge">
+    <div className="rounded-2xl border border-glass-edge bg-glass backdrop-blur-md shadow-[0_6px_24px_rgba(0,0,0,.04)] overflow-hidden">
       <div className="flex items-center justify-between gap-4 px-4 py-3">
         <button
           onClick={() => setExpanded((v) => !v)}
@@ -124,7 +124,7 @@ function CohortCard({
         <button
           onClick={() => onApproveCohort(placeIds)}
           disabled={allApproved}
-          className="shrink-0 rounded-[3px] bg-brand px-3 py-1.5 font-sans text-[11px] font-medium text-white hover:opacity-90 disabled:opacity-40"
+          className="shrink-0 rounded-xl bg-brand px-3 py-1.5 font-sans text-[11px] font-medium text-white hover:opacity-90 disabled:opacity-40"
         >
           {allApproved ? "Approved" : "Approve all"}
         </button>
@@ -160,7 +160,7 @@ function CohortCard({
                 <td className="px-4 py-2 text-right">
                   <span className={cn(
                     "font-mono text-[10px]",
-                    lead.decision === "approved" ? "text-emerald-700" : lead.decision === "rejected" ? "text-red-600" : "text-muted-fg",
+                    lead.decision === "approved" ? "text-success-fg" : lead.decision === "rejected" ? "text-reject" : "text-muted-fg",
                   )}>
                     {lead.decision}
                   </span>
@@ -283,7 +283,7 @@ export function LeadCohortTable({ leads: initialLeads, runId }: Props) {
             disabled={isApproveExporting || totalQualified === 0}
             title={totalQualified === 0 ? "No qualified leads to export" : "Approve all leads and download CSV"}
             className={cn(
-              "inline-flex items-center gap-1.5 rounded-[3px] px-3 py-1.5",
+              "inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5",
               "font-sans text-[12px] font-medium transition-colors",
               "bg-brand text-white hover:opacity-90",
               (isApproveExporting || totalQualified === 0) && "cursor-not-allowed opacity-50",
@@ -311,7 +311,7 @@ export function LeadCohortTable({ leads: initialLeads, runId }: Props) {
       <FiltersBar filters={filters} onChange={setFilters} industries={industries} />
 
       {cohorts.length === 0 ? (
-        <div className="rounded-[3px] border border-edge px-6 py-8 text-center font-sans text-[13px] text-muted-fg">
+        <div className="rounded-2xl border border-glass-edge bg-glass backdrop-blur-md px-6 py-8 text-center font-sans text-[13px] text-muted-fg">
           No leads match the current filters.
         </div>
       ) : (
@@ -328,7 +328,7 @@ export function LeadCohortTable({ leads: initialLeads, runId }: Props) {
       )}
 
       {toast && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 rounded-[3px] border border-edge bg-surface px-4 py-2 font-sans text-[12px] text-fg shadow-lg">
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 rounded-xl border border-glass-edge bg-glass backdrop-blur-md px-4 py-2 font-sans text-[12px] text-fg shadow-lg">
           {toast}
         </div>
       )}
