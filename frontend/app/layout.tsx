@@ -48,7 +48,7 @@ export default function RootLayout({
       <body className="h-full bg-background text-foreground font-sans antialiased">
         <Toast.Provider>
           <Sidebar demoMode={demoMode} />
-          <div className="ml-[220px] flex flex-col min-h-screen">
+          <div className="ml-[244px] flex flex-col min-h-screen">
             <Topbar demoMode={demoMode} />
             <main className="flex-1">{children}</main>
           </div>

@@ -20,7 +20,7 @@ export function Sidebar({ demoMode = false }: { demoMode?: boolean }) {
   }
 
   return (
-    <aside className="fixed left-0 top-0 bottom-0 w-[220px] bg-background border-r border-edge flex flex-col z-40">
+    <aside className="fixed left-3 top-3 bottom-3 w-[220px] bg-glass backdrop-blur-xl border border-glass-edge rounded-2xl shadow-[0_4px_28px_rgba(0,0,0,.045)] flex flex-col z-40 overflow-hidden">
       {/* Brand */}
       <div className="px-6 pt-8 pb-6 border-b border-edge">
         <div className="flex items-center gap-2 mb-1">
@@ -29,7 +29,7 @@ export function Sidebar({ demoMode = false }: { demoMode?: boolean }) {
             alt="LeadIA"
             width={24}
             height={24}
-            className="flex-none rounded-sm"
+            className="flex-none rounded-md"
             priority
           />
           <span className="font-serif font-semibold text-[17px] leading-none text-fg tracking-[-0.01em]">
@@ -51,10 +51,10 @@ export function Sidebar({ demoMode = false }: { demoMode?: boolean }) {
                 <Link
                   href={href}
                   className={[
-                    "flex items-center py-2 rounded-[3px] text-[13px] font-sans font-medium leading-none transition-colors border-l-2 pl-[10px] pr-3",
+                    "flex items-center h-[38px] px-2.5 rounded-xl text-[13.5px] font-sans font-medium leading-none transition-colors",
                     active
-                      ? "text-fg bg-brand-soft border-brand"
-                      : "text-subtle hover:text-fg hover:bg-skeleton border-transparent",
+                      ? "text-brand bg-brand-soft"
+                      : "text-subtle hover:text-fg hover:bg-skeleton",
                   ].join(" ")}
                 >
                   {label}
@@ -73,7 +73,7 @@ export function Sidebar({ demoMode = false }: { demoMode?: boolean }) {
         {demoMode ? (
           <p className="font-mono text-[12px] text-fg">Mock (demo mode)</p>
         ) : (
-          <div className="flex flex-col gap-1 rounded-[3px] border border-edge-input overflow-hidden text-[11px] font-sans font-medium">
+          <div className="flex flex-col gap-1 rounded-xl border border-edge-input overflow-hidden text-[11px] font-sans font-medium">
             {MAPS_PROVIDERS.map((p) => (
               <button
                 key={p}
