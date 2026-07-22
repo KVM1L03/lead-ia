@@ -57,11 +57,11 @@ export function EmailDrawer({ lead, runId, onClose, onDecide }: Props) {
   return (
     <>
       <div
-        className="fixed inset-0 z-20 bg-black/20"
+        className="fixed inset-0 z-20 bg-black/25 backdrop-blur-[1px]"
         onClick={onClose}
         aria-hidden="true"
       />
-      <aside className="fixed right-0 top-0 z-30 flex h-full w-[480px] flex-col border-l border-edge bg-surface shadow-xl">
+      <aside className="fixed right-3 top-3 bottom-3 z-30 flex w-[420px] flex-col rounded-3xl border border-glass-edge bg-glass backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,.06)] overflow-hidden">
         {/* Header */}
         <div className="flex items-start justify-between gap-4 border-b border-edge px-6 py-4">
           <div className="min-w-0">
@@ -100,7 +100,7 @@ export function EmailDrawer({ lead, runId, onClose, onDecide }: Props) {
               Subject
             </label>
             <input
-              className="rounded-[3px] border border-edge bg-white px-3 py-2 font-sans text-[13px] text-fg outline-none focus:border-brand"
+              className="rounded-xl border border-edge-input bg-white/70 px-3 py-2 font-sans text-[13px] text-fg outline-none focus:border-brand/50"
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
             />
@@ -111,7 +111,7 @@ export function EmailDrawer({ lead, runId, onClose, onDecide }: Props) {
               Body
             </label>
             <textarea
-              className="h-full min-h-[240px] flex-1 resize-none rounded-[3px] border border-edge bg-white px-3 py-2 font-sans text-[13px] text-fg outline-none focus:border-brand"
+              className="h-full min-h-[240px] flex-1 resize-none rounded-2xl border border-edge-input bg-white/70 px-3 py-2 font-sans text-[13px] text-fg outline-none focus:border-brand/50"
               value={body}
               onChange={(e) => setBody(e.target.value)}
             />
@@ -127,7 +127,7 @@ export function EmailDrawer({ lead, runId, onClose, onDecide }: Props) {
                 {lead.email.personalization_hooks.map((h) => (
                   <span
                     key={h}
-                    className="rounded-[3px] border border-edge bg-white px-2 py-0.5 font-mono text-[10px] text-muted-fg"
+                    className="rounded-full border border-edge bg-white/70 px-2.5 py-0.5 font-mono text-[10px] text-muted-fg"
                   >
                     {h}
                   </span>
@@ -142,20 +142,20 @@ export function EmailDrawer({ lead, runId, onClose, onDecide }: Props) {
           <button
             onClick={saveDraft}
             disabled={!isDirty}
-            className="rounded-[3px] border border-edge px-3 py-1.5 font-sans text-[12px] text-muted-fg hover:text-fg disabled:opacity-40"
+            className="rounded-xl border border-edge px-3 py-1.5 font-sans text-[12px] text-muted-fg hover:text-fg disabled:opacity-40"
           >
             Save draft
           </button>
           <div className="flex gap-2">
             <button
               onClick={() => decide("rejected")}
-              className="rounded-[3px] border border-edge px-4 py-1.5 font-sans text-[12px] text-fg hover:border-fg"
+              className="rounded-xl border border-edge px-4 py-1.5 font-sans text-[12px] text-fg hover:border-reject/40 hover:text-reject hover:bg-reject-soft transition-colors"
             >
               Reject
             </button>
             <button
               onClick={() => decide("approved")}
-              className="rounded-[3px] bg-brand px-4 py-1.5 font-sans text-[12px] font-medium text-white hover:opacity-90"
+              className="rounded-xl bg-brand px-4 py-1.5 font-sans text-[12px] font-medium text-white shadow-[0_8px_20px_rgba(200,116,46,.32)] hover:scale-[1.02] transition-transform"
             >
               Approve
             </button>

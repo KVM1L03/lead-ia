@@ -50,10 +50,8 @@ export function Topbar({ demoMode = false }: { demoMode?: boolean }) {
   }, []);
 
   return (
-    <header
-      className="sticky top-0 z-30 flex items-center justify-end h-[60px] px-6 gap-5 border-b border-edge"
-      style={{ background: "rgba(250,250,247,.85)", backdropFilter: "blur(10px)" }}
-    >
+    <header className="sticky top-3 z-30 mx-3 mb-3 flex items-center justify-end h-[52px] px-6 gap-5 rounded-2xl border border-glass-edge bg-glass backdrop-blur-xl shadow-[0_4px_20px_rgba(0,0,0,.04)]">
+
       {!demoMode && (
         <>
           <a

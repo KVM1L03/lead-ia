@@ -15,7 +15,7 @@ export default async function HistoryPage() {
             Past runs
           </h1>
         </div>
-        <div className="rounded-[3px] border border-edge bg-surface px-6 py-10 text-center">
+        <div className="rounded-2xl border border-glass-edge bg-glass backdrop-blur-md px-6 py-10 text-center">
           <p className="font-sans text-[13px] text-muted-fg">
             History is disabled in demo mode — results are returned inline and not persisted.{" "}
             <Link href="/search" className="text-brand hover:underline">
@@ -57,14 +57,14 @@ export default async function HistoryPage() {
         </div>
         <Link
           href="/search"
-          className="inline-flex items-center gap-2 rounded-[3px] bg-brand px-4 py-2 font-sans text-[13px] font-medium text-white hover:brightness-90 transition-[filter]"
+          className="inline-flex items-center gap-2 rounded-xl bg-brand px-4 py-2 font-sans text-[13px] font-medium text-white hover:brightness-90 transition-[filter]"
         >
           New search
         </Link>
       </div>
 
       {runs.length === 0 ? (
-        <div className="rounded-[3px] border border-edge bg-surface px-6 py-10 text-center">
+        <div className="rounded-2xl border border-glass-edge bg-glass backdrop-blur-md px-6 py-10 text-center">
           <p className="font-sans text-[13px] text-muted-fg">
             No runs yet.{" "}
             <Link href="/search" className="text-brand hover:underline">
@@ -74,7 +74,7 @@ export default async function HistoryPage() {
           </p>
         </div>
       ) : (
-        <div className="rounded-[3px] border border-edge overflow-hidden">
+        <div className="rounded-2xl border border-glass-edge bg-glass backdrop-blur-md overflow-hidden">
           <table className="w-full">
             <thead>
               <tr className="border-b border-edge bg-surface">

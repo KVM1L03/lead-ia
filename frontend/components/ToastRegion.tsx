@@ -13,7 +13,7 @@ export function ToastRegion() {
           key={toast.id}
           toast={toast}
           className={cn(
-            "flex flex-col gap-1 rounded-[3px] border border-edge bg-surface px-4 py-3 shadow-sm",
+            "flex flex-col gap-1 rounded-xl border border-glass-edge bg-glass backdrop-blur-md px-4 py-3 shadow-sm",
             "data-[starting-style]:translate-y-2 data-[starting-style]:opacity-0",
             "data-[ending-style]:translate-y-2 data-[ending-style]:opacity-0",
             "transition-all duration-150",

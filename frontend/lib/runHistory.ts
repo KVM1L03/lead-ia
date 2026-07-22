@@ -27,17 +27,17 @@ export function approvalRate(approved: number, total: number): number | null {
 export function statusConfig(status: string): StatusConfig {
   switch (status) {
     case "completed":
-      return { label: "Completed", className: "bg-emerald-50 text-emerald-700 border-emerald-200" };
+      return { label: "Completed", className: "bg-success-soft text-success-fg border-success/30" };
     case "failed":
-      return { label: "Failed", className: "bg-red-50 text-red-700 border-red-200" };
+      return { label: "Failed", className: "bg-reject-soft text-reject border-reject/30" };
     case "scraping":
-      return { label: "Scraping", className: "bg-amber-50 text-amber-700 border-amber-200" };
+      return { label: "Scraping", className: "bg-warning-soft text-warning-fg border-warning/40" };
     case "qualifying":
-      return { label: "Qualifying", className: "bg-amber-50 text-amber-700 border-amber-200" };
+      return { label: "Qualifying", className: "bg-warning-soft text-warning-fg border-warning/40" };
     case "generating":
-      return { label: "Generating", className: "bg-amber-50 text-amber-700 border-amber-200" };
+      return { label: "Generating", className: "bg-warning-soft text-warning-fg border-warning/40" };
     default:
-      return { label: status, className: "bg-slate-50 text-slate-600 border-slate-200" };
+      return { label: status, className: "bg-skeleton text-subtle border-edge" };
   }
 }
 

@@ -122,7 +122,7 @@ export function RunProgressView({ runId, initialRun }: Props) {
 
       {/* Poll error warning */}
       {pollError && (
-        <div className="mb-6 rounded-[3px] border border-edge bg-surface px-4 py-2.5 font-mono text-[11px] text-muted-fg">
+        <div className="mb-6 rounded-2xl border border-glass-edge bg-glass backdrop-blur-md px-4 py-2.5 font-mono text-[11px] text-muted-fg">
           Connection interrupted — retrying…
         </div>
       )}
@@ -136,7 +136,7 @@ export function RunProgressView({ runId, initialRun }: Props) {
 
       {/* Live tail */}
       {events.length > 0 && (
-        <div className="mb-8 rounded-[3px] border border-edge bg-surface p-4">
+        <div className="mb-8 rounded-2xl border border-glass-edge bg-glass backdrop-blur-md p-4">
           <p className="mb-2 font-mono text-[9.5px] uppercase tracking-[.18em] text-muted-fg">
             Activity
           </p>
@@ -158,7 +158,7 @@ export function RunProgressView({ runId, initialRun }: Props) {
 
       {/* Terminal states */}
       {isComplete && (
-        <div className="rounded-[3px] border border-brand/30 bg-brand-soft px-5 py-4">
+        <div className="rounded-2xl border border-brand/25 bg-brand-soft px-5 py-4">
           <p className="font-sans text-[13px] font-medium text-fg">
             Done —{" "}
             <span className="text-brand">{snapshot.emails_generated}</span>{" "}
@@ -167,7 +167,7 @@ export function RunProgressView({ runId, initialRun }: Props) {
         </div>
       )}
       {isFailed && (
-        <div className="rounded-[3px] border border-edge bg-surface px-5 py-4">
+        <div className="rounded-2xl border border-glass-edge bg-glass backdrop-blur-md px-5 py-4">
           <p className="font-sans text-[13px] font-medium text-fg">
             Run failed — check worker logs
           </p>
