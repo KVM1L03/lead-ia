@@ -85,13 +85,13 @@ export function LeadSearchForm({ demoMode = false }: { demoMode?: boolean }) {
           <button
             type="button"
             onClick={() => setSyncResults(null)}
-            className="inline-flex items-center gap-2 rounded-[3px] border border-edge px-4 py-2 font-sans text-[13px] font-medium text-fg hover:bg-surface transition-colors"
+            className="inline-flex items-center gap-2 rounded-xl border border-glass-edge bg-glass backdrop-blur-md px-4 py-2 font-sans text-[13px] font-medium text-fg hover:bg-surface transition-colors"
           >
             ← New search
           </button>
         </div>
         {syncResults.leads.length === 0 ? (
-          <div className="rounded-[3px] border border-edge bg-surface px-6 py-10 text-center">
+          <div className="rounded-2xl border border-glass-edge bg-glass backdrop-blur-md px-6 py-10 text-center">
             <p className="font-sans text-[13px] text-muted-fg">
               No leads matched your criteria. Try a broader prompt.
             </p>
@@ -133,10 +133,10 @@ export function LeadSearchForm({ demoMode = false }: { demoMode?: boolean }) {
           disabled={disabled}
           rows={3}
           className={cn(
-            "w-full resize-none bg-transparent outline-none",
-            "border-b border-[#161613] pb-2 pt-2",
-            "font-serif text-[24px] leading-[1.35] text-fg placeholder:text-[#B0AEA4]",
-            "focus:border-brand transition-colors",
+            "w-full resize-none outline-none",
+            "rounded-2xl border border-edge-input bg-glass backdrop-blur-md px-5 py-4 shadow-[0_6px_22px_rgba(0,0,0,.04)]",
+            "font-serif text-[22px] leading-[1.35] text-fg placeholder:text-muted-fg",
+            "focus:border-brand/40 transition-colors",
             "disabled:opacity-50",
           )}
         />
@@ -157,10 +157,10 @@ export function LeadSearchForm({ demoMode = false }: { demoMode?: boolean }) {
             disabled={disabled}
             rows={2}
             className={cn(
-              "w-full resize-none bg-transparent outline-none",
-              "border-b border-edge-input pb-2 pt-1",
+              "w-full resize-none outline-none",
+              "rounded-2xl border border-edge-input bg-glass backdrop-blur-md px-4 py-3",
               "font-sans text-[14px] leading-[1.6] text-fg placeholder:text-muted-fg",
-              "focus:border-brand transition-colors",
+              "focus:border-brand/40 transition-colors",
               "disabled:opacity-50",
             )}
           />
@@ -201,7 +201,7 @@ export function LeadSearchForm({ demoMode = false }: { demoMode?: boolean }) {
               <p className="font-sans font-medium text-[11px] uppercase tracking-[.14em] text-subtle mb-3">
                 Source
               </p>
-              <div className="inline-flex flex-wrap border border-edge-input rounded-[4px] overflow-hidden text-[11px] font-sans font-medium">
+              <div className="inline-flex flex-wrap border border-edge-input rounded-xl overflow-hidden text-[11px] font-sans font-medium">
                 {MAPS_PROVIDERS.map((p) => (
                   <button
                     key={p}
@@ -231,9 +231,9 @@ export function LeadSearchForm({ demoMode = false }: { demoMode?: boolean }) {
             className={cn(
               "inline-flex items-center gap-2 bg-brand text-white",
               "font-sans font-semibold text-[14px] leading-none",
-              "rounded-[3px] px-6 py-[11px]",
-              "hover:brightness-90 transition-[filter]",
-              "disabled:opacity-50 disabled:cursor-not-allowed",
+              "rounded-2xl px-8 py-[13px] shadow-[0_8px_24px_rgba(200,116,46,.35)]",
+              "hover:scale-[1.02] transition-transform",
+              "disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100",
             )}
           >
             {isPending ? "Running…" : "Start search"}
