@@ -145,13 +145,13 @@ export function RunRow({ run }: Props) {
           <div className="flex justify-end gap-2 border-t border-edge px-6 py-4">
             <button
               onClick={() => dialogRef.current?.close()}
-              className="rounded-[3px] border border-edge px-4 py-1.5 font-sans text-[12px] text-fg hover:bg-skeleton"
+              className="rounded-xl border border-edge px-4 py-1.5 font-sans text-[12px] text-fg hover:bg-skeleton"
             >
               Cancel
             </button>
             <button
               onClick={confirmDelete}
-              className="rounded-[3px] bg-red-600 px-4 py-1.5 font-sans text-[12px] font-medium text-white hover:bg-red-700"
+              className="rounded-xl bg-red-600 px-4 py-1.5 font-sans text-[12px] font-medium text-white hover:bg-red-700"
             >
               Delete
             </button>

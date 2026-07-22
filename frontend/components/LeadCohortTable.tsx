@@ -117,7 +117,7 @@ function CohortCard({
             <path d="M3 2l5 4-5 4" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
           <span className="truncate font-sans text-[13px] font-medium text-fg">{cohort.label}</span>
-          <span className={cn("shrink-0 rounded-[3px] border px-1.5 py-0.5 font-mono text-[10px]", BUCKET_COLORS[cohort.bucket])}>
+          <span className={cn("shrink-0 rounded-full border px-2 py-0.5 font-mono text-[10px]", BUCKET_COLORS[cohort.bucket])}>
             avg {Math.round(cohort.stats.avgScore * 100)}%
           </span>
         </button>

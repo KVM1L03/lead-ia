@@ -51,7 +51,7 @@ export function ExportCsvButton({ runId, approvedLeads, onError }: Props) {
       disabled={disabled}
       title={hasApproved ? undefined : "Approve at least one lead to export"}
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-[3px] border border-edge px-3 py-1.5",
+        "inline-flex items-center gap-1.5 rounded-xl border border-edge px-3 py-1.5",
         "font-sans text-[12px] font-medium transition-colors",
         hasApproved && !isExporting
           ? "text-fg hover:bg-surface"
