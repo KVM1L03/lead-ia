@@ -17,6 +17,20 @@ const LIMIT_MAX_DEMO = 20;
 const LIMIT_DEFAULT = 50;
 const LIMIT_DEFAULT_DEMO = 10;
 
+/** Prompts aligned with recorded mock fixtures (maps_bridge/fixtures/recorded). */
+const DEMO_EXAMPLE_PROMPTS = [
+  "Dental clinics in Wrocław",
+  "Dental clinics in Warszawa",
+  "Marketing agencies in Wrocław",
+  "Marketing agencies in Kraków",
+  "Accounting firms in Wrocław",
+  "Law firms in Warszawa",
+] as const;
+
+const PROMPT_PLACEHOLDER_FULL =
+  "B2B SaaS companies selling scheduling software, targeting dental practices in Warsaw";
+const PROMPT_PLACEHOLDER_DEMO = DEMO_EXAMPLE_PROMPTS[0];
+
 export function LeadSearchForm({ demoMode = false }: { demoMode?: boolean }) {
   const [prompt, setPrompt] = useState("");
   const [senderContext, setSenderContext] = useState("");
@@ -127,7 +141,7 @@ export function LeadSearchForm({ demoMode = false }: { demoMode?: boolean }) {
         <textarea
           id="prompt"
           aria-label="Describe the leads you want"
-          placeholder="B2B SaaS companies selling scheduling software, targeting dental practices in Warsaw"
+          placeholder={demoMode ? PROMPT_PLACEHOLDER_DEMO : PROMPT_PLACEHOLDER_FULL}
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
           disabled={disabled}
@@ -140,6 +154,40 @@ export function LeadSearchForm({ demoMode = false }: { demoMode?: boolean }) {
             "disabled:opacity-50",
           )}
         />
+
+        {demoMode && (
+          <div
+            className="mt-4"
+            role="group"
+            aria-label="Example prompts that work in demo"
+          >
+            <p className="mb-2.5 font-sans font-medium text-[11px] uppercase tracking-[.14em] text-subtle">
+              Try these
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {DEMO_EXAMPLE_PROMPTS.map((example) => {
+                const selected = prompt === example;
+                return (
+                  <button
+                    key={example}
+                    type="button"
+                    disabled={disabled}
+                    onClick={() => setPrompt(example)}
+                    className={cn(
+                      "rounded-xl border px-3 py-1.5 font-mono text-[11px] leading-none transition-colors",
+                      "disabled:opacity-50 disabled:cursor-not-allowed",
+                      selected
+                        ? "border-brand/40 bg-brand-soft text-brand"
+                        : "border-edge-input bg-glass text-subtle hover:bg-brand-soft hover:text-brand",
+                    )}
+                  >
+                    {example}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Sender context */}
         <div className="mt-8">
@@ -250,7 +298,8 @@ export function LeadSearchForm({ demoMode = false }: { demoMode?: boolean }) {
       {demoMode && (
         <p className="mt-10 font-mono text-[10px] leading-[1.6] text-subtle">
           ⓘ Results are real Google Places responses, recorded and cached — the demo is
-          always available and free to run.{" "}
+          always available and free to run. Best results with the example prompts above;
+          other queries may look mismatched because the demo uses a fixed recorded set.{" "}
           <a
             href="https://github.com/KVM1L03/lead-ia"
             target="_blank"
