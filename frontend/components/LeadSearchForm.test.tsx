@@ -146,4 +146,35 @@ describe("LeadSearchForm", () => {
       resolve(_TEMPORAL_SUCCESS);
     });
   });
+
+  it("hides example prompt chips outside demo mode", () => {
+    renderForm(false);
+
+    expect(
+      screen.queryByRole("group", { name: /example prompts that work in demo/i }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /dental clinics in wrocław/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("shows example prompt chips in demo mode and fills the prompt on click", async () => {
+    renderForm(true);
+
+    const examples = screen.getByLabelText(/example prompts that work in demo/i);
+    expect(examples).toBeInTheDocument();
+
+    const chip = screen.getByRole("button", {
+      name: /dental clinics in warszawa/i,
+    });
+    await userEvent.click(chip);
+
+    expect(
+      screen.getByRole("textbox", { name: /describe the leads/i }),
+    ).toHaveValue("Dental clinics in Warszawa");
+
+    expect(
+      screen.getByText(/best results with the example prompts above/i),
+    ).toBeInTheDocument();
+  });
 });
