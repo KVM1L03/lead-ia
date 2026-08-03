@@ -16,17 +16,27 @@ from ai_worker.agent_graph import (
     email_node,
     qualify_node,
 )
+from ai_worker.dspy_engine import expand_search_query
+from ai_worker.llm_router import get_lm
 from ai_worker.observability import activity_span
 from ai_worker.pipeline import (
     get_place_details,
     search_places,
 )
-from shared.schemas import GeneratedEmail, Lead, PlaceDetails, PlaceSearchResult, QualifierVerdict
+from shared.schemas import (
+    ExpansionDecision,
+    GeneratedEmail,
+    Lead,
+    PlaceDetails,
+    PlaceSearchResult,
+    QualifierVerdict,
+)
 
 # ── Timeout defaults — referenced by workflows when scheduling ─────────────────
 SEARCH_TIMEOUT = timedelta(seconds=60)
 GET_DETAILS_TIMEOUT = timedelta(seconds=30)
 QUALIFY_TIMEOUT = timedelta(seconds=90)
+EXPAND_QUERY_TIMEOUT = timedelta(seconds=60)
 EMAIL_TIMEOUT = timedelta(seconds=120)
 PERSIST_TIMEOUT = timedelta(seconds=30)
 
@@ -46,6 +56,10 @@ GET_DETAILS_RETRY = RetryPolicy(
     non_retryable_error_types=_NON_RETRYABLE,
 )
 QUALIFY_RETRY = RetryPolicy(
+    maximum_attempts=3,
+    non_retryable_error_types=_NON_RETRYABLE,
+)
+EXPAND_QUERY_RETRY = RetryPolicy(
     maximum_attempts=3,
     non_retryable_error_types=_NON_RETRYABLE,
 )
@@ -102,6 +116,28 @@ async def qualify_lead_activity(outreach_goal: str, place: PlaceDetails) -> Qual
         if verdict is None:
             raise RuntimeError("qualify_node returned no verdict")
         return verdict
+
+
+@activity.defn
+async def expand_search_query_activity(
+    prompt: str,
+    target_query: str,
+    tried_cities: list[str],
+    tried_industries: list[str],
+    still_missing: int,
+) -> ExpansionDecision:
+    """Decide how to widen a Backfill round's search via the ExpandSearchQuery DSPy signature."""
+    info = activity.info()
+    with activity_span("expand_search_query", workflow_id=info.workflow_id or ""):
+        return await asyncio.to_thread(
+            expand_search_query,
+            prompt,
+            target_query,
+            tried_cities,
+            tried_industries,
+            still_missing,
+            lm=get_lm("qualifier"),
+        )
 
 
 @activity.defn

@@ -5,9 +5,11 @@ that dspy.configure(lm=...) would cause under parallel Temporal activities
 (CLAUDE.md §11 anti-pattern #1).
 """
 
+from typing import Literal
+
 import dspy
 
-from shared.schemas import GeneratedEmail, PlaceDetails, QualifierVerdict
+from shared.schemas import ExpansionDecision, GeneratedEmail, PlaceDetails, QualifierVerdict
 
 
 class QualifyLead(dspy.Signature):  # type: ignore[misc]
@@ -53,9 +55,39 @@ class GenerateEmail(dspy.Signature):  # type: ignore[misc]
     )
 
 
+class ExpandSearchQuery(dspy.Signature):  # type: ignore[misc]
+    """Decide how to widen a Backfill round's search when qualification leaves the cohort short.
+
+    Widens on exactly one axis (city or industry) per round, never reusing a
+    value already tried this run.
+    """
+
+    prompt: str = dspy.InputField(desc="Original ICP prompt describing the outreach goal")
+    target_query: str = dspy.InputField(desc="The original Google Places search query for this run")
+    tried_cities: list[str] = dspy.InputField(
+        desc="Cities already tried as the widening axis this run — never return one of these"
+    )
+    tried_industries: list[str] = dspy.InputField(
+        desc="Industries already tried as the widening axis this run — never return one of these"
+    )
+    still_missing: int = dspy.InputField(
+        desc="How many more qualified leads are needed to close the shortfall"
+    )
+
+    new_target_query: str = dspy.OutputField(
+        desc="New Google Places search query, widened on exactly one axis (city or industry)"
+    )
+    strategy: Literal["city", "industry"] = dspy.OutputField(desc="Which axis this round widens on")
+    axis_value: str = dspy.OutputField(
+        desc="The new city or industry value used to build new_target_query — "
+        "must not appear in tried_cities or tried_industries"
+    )
+
+
 # Module-level predictors — stateless; LM is resolved from context at call time.
 _qualify_predictor = dspy.Predict(QualifyLead)
 _email_predictor = dspy.Predict(GenerateEmail)
+_expand_search_query_predictor = dspy.Predict(ExpandSearchQuery)
 
 
 def qualify_lead(
@@ -107,4 +139,33 @@ def generate_email(
         body=str(prediction.body),
         personalization_hooks=list(prediction.personalization_hooks),
         model_used=str(lm.model),
+    )
+
+
+def expand_search_query(
+    prompt: str,
+    target_query: str,
+    tried_cities: list[str],
+    tried_industries: list[str],
+    still_missing: int,
+    *,
+    lm: dspy.BaseLM,
+) -> ExpansionDecision:
+    """Decide how to widen the next Backfill round's search via DSPy.
+
+    ``lm`` is applied via dspy.context per-call so parallel Temporal activities
+    running this function concurrently never share a global LM setting.
+    """
+    with dspy.context(lm=lm):
+        prediction = _expand_search_query_predictor(
+            prompt=prompt,
+            target_query=target_query,
+            tried_cities=tried_cities,
+            tried_industries=tried_industries,
+            still_missing=still_missing,
+        )
+    return ExpansionDecision(
+        target_query=str(prediction.new_target_query),
+        strategy=prediction.strategy,
+        axis_value=str(prediction.axis_value),
     )
