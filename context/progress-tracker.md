@@ -23,6 +23,7 @@ Full dated history lives in `docs/superpowers/plans/`. Most recent:
 
 | Date | Plan | Summary |
 |---|---|---|
+| 2026-08-04 | expand-search-query-decision-engine | `ExpandSearchQuery` DSPy signature + Temporal activity — Backfill 1/4 (issue #73, part of epic #72), PR #77 merged |
 | 2026-07-11 | maps-pagination | SerpAPI/Places pagination support |
 | 2026-07-10 | mock-provider-recorded-fixtures | Recorded fixtures for the mock maps provider |
 | 2026-07-10 | optional-rating | Optional rating field on the `google_places` path |
@@ -39,6 +40,10 @@ Full dated history lives in `docs/superpowers/plans/`. Most recent:
 
 ## Next Up
 
+- Backfill 2/4: wire the `ExpandSearchQuery` round loop into
+  `LeadGenerationWorkflow` (`.scratch/backfill/issues/02-wire-backfill-loop-into-workflow.md`,
+  issue #74, part of epic #72) — unblocked now that #73 is merged, not yet
+  started
 - Terraform modules validation + deploy runbook (`docs/roadmap.md` #1)
 - DSPy-path qualifier eval → Gemini migration gate (`docs/roadmap.md` #2)
 - Frontend responsive layout (`docs/roadmap.md` #3)
