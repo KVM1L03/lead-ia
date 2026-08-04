@@ -38,6 +38,14 @@ class QualifierVerdict(BaseModel):
     icp_fit: dict[str, bool]
 
 
+class ExpansionDecision(BaseModel):
+    model_config = ConfigDict(strict=True, extra="forbid")
+
+    target_query: str
+    strategy: Literal["city", "industry"]
+    axis_value: str
+
+
 class GeneratedEmail(BaseModel):
     model_config = ConfigDict(strict=True, extra="forbid")
 

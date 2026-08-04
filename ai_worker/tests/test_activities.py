@@ -5,19 +5,21 @@ All tests use ActivityEnvironment (no live Temporal server needed).
 """
 
 from typing import Any
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, Mock
 
 import pytest
 from temporalio.testing import ActivityEnvironment
 
 import ai_worker.activities as act
 from ai_worker.activities import (
+    expand_search_query_activity,
     generate_email_activity,
     qualify_lead_activity,
     search_places_activity,
 )
 from ai_worker.agent_graph import LeadProcessingState
 from shared.schemas import (
+    ExpansionDecision,
     GeneratedEmail,
     PlaceDetails,
     PlaceSearchResult,
@@ -66,6 +68,12 @@ _EMAIL = GeneratedEmail(
     body="Hi, saw your 4.8-star rating — impressive. We help dental clinics automate patient recalls. Worth a quick call?",
     personalization_hooks=["4.8-star rating", "Warsaw", "dental clinic"],
     model_used="anthropic/claude-sonnet-4-6",
+)
+
+_EXPANSION_DECISION = ExpansionDecision(
+    target_query="dentist Krakow",
+    strategy="city",
+    axis_value="Krakow",
 )
 
 
@@ -176,6 +184,75 @@ async def test_qualify_lead_propagates_rate_limit_error(
 
 
 # ---------------------------------------------------------------------------
+# expand_search_query_activity — delegates to dspy_engine.expand_search_query
+# ---------------------------------------------------------------------------
+
+
+async def test_expand_search_query_returns_decision(monkeypatch: pytest.MonkeyPatch) -> None:
+    env = ActivityEnvironment()
+    mock = Mock(return_value=_EXPANSION_DECISION)
+    monkeypatch.setattr(act, "expand_search_query", mock)
+
+    result = await env.run(
+        expand_search_query_activity,
+        "B2B dental software",
+        "dentist Warsaw",
+        ["Warsaw"],
+        [],
+        5,
+    )
+
+    assert result == _EXPANSION_DECISION
+    args, kwargs = mock.call_args
+    assert args == ("B2B dental software", "dentist Warsaw", ["Warsaw"], [], 5)
+    assert "lm" in kwargs
+
+
+async def test_expand_search_query_passes_tried_axes(monkeypatch: pytest.MonkeyPatch) -> None:
+    env = ActivityEnvironment()
+    captured: dict[str, Any] = {}
+
+    def _capture(
+        prompt: str,
+        target_query: str,
+        tried_cities: list[str],
+        tried_industries: list[str],
+        still_missing: int,
+        *,
+        lm: Any,
+    ) -> ExpansionDecision:
+        captured["tried_cities"] = tried_cities
+        captured["tried_industries"] = tried_industries
+        captured["still_missing"] = still_missing
+        return _EXPANSION_DECISION
+
+    monkeypatch.setattr(act, "expand_search_query", _capture)
+
+    await env.run(
+        expand_search_query_activity,
+        "goal",
+        "dentist Warsaw",
+        ["Warsaw", "Krakow"],
+        ["orthodontist"],
+        3,
+    )
+
+    assert captured["tried_cities"] == ["Warsaw", "Krakow"]
+    assert captured["tried_industries"] == ["orthodontist"]
+    assert captured["still_missing"] == 3
+
+
+async def test_expand_search_query_propagates_llm_error(monkeypatch: pytest.MonkeyPatch) -> None:
+    env = ActivityEnvironment()
+    monkeypatch.setattr(
+        act, "expand_search_query", Mock(side_effect=RuntimeError("LLM unavailable"))
+    )
+
+    with pytest.raises(RuntimeError, match="LLM unavailable"):
+        await env.run(expand_search_query_activity, "goal", "dentist Warsaw", [], [], 5)
+
+
+# ---------------------------------------------------------------------------
 # generate_email_activity — delegates to email_node
 # ---------------------------------------------------------------------------
 
@@ -240,10 +317,11 @@ def test_activities_importable_without_side_effects() -> None:
 def test_timeout_constants_are_set() -> None:
     assert act.SEARCH_TIMEOUT.total_seconds() == 60
     assert act.QUALIFY_TIMEOUT.total_seconds() == 90
+    assert act.EXPAND_QUERY_TIMEOUT.total_seconds() == 60
     assert act.EMAIL_TIMEOUT.total_seconds() == 120
 
 
 def test_retry_policies_have_non_retryable_validation_error() -> None:
-    for policy in (act.SEARCH_RETRY, act.QUALIFY_RETRY, act.EMAIL_RETRY):
+    for policy in (act.SEARCH_RETRY, act.QUALIFY_RETRY, act.EXPAND_QUERY_RETRY, act.EMAIL_RETRY):
         assert policy.non_retryable_error_types is not None
         assert "ValidationError" in policy.non_retryable_error_types

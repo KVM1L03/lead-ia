@@ -9,6 +9,7 @@ from temporalio.contrib.pydantic import pydantic_data_converter
 from temporalio.worker import Worker
 
 from ai_worker.activities import (
+    expand_search_query_activity,
     generate_email_activity,
     get_place_details_activity,
     persist_phase_result_activity,
@@ -37,6 +38,7 @@ async def main() -> None:
             search_places_activity,
             get_place_details_activity,
             qualify_lead_activity,
+            expand_search_query_activity,
             generate_email_activity,
             persist_phase_result_activity,
         ],
