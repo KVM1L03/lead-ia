@@ -2,17 +2,18 @@
 
 ## Approach
 
-This project uses a spec-driven workflow built on the Superpowers Claude
-Code plugin. For any change touching more than one file:
+This project uses a spec-driven workflow grounded in written specs — context
+files, ADRs, GitHub issues, `.scratch/` tickets — not a plugin-generated
+design-doc pipeline. For any change touching more than one file:
 
 1. Read `project-overview.md` → `architecture.md` → `ui-context.md`
    (frontend changes only) → `code-standards.md`, in that order.
-2. Invoke the `superpowers:brainstorming` skill — it explores intent,
-   requirements, and 2-3 candidate approaches through dialogue, then writes
-   a design doc to `docs/superpowers/specs/YYYY-MM-DD-<topic>-design.md`.
-3. Once the spec is approved, invoke `superpowers:writing-plans` to produce
-   an implementation plan in `docs/superpowers/plans/YYYY-MM-DD-<topic>.md`.
-4. Execute the plan.
+2. Ground the change in an existing spec (GitHub issue, `.scratch/` ticket,
+   or `docs/adr/*.md`). If the design isn't settled yet, use the
+   `mattpocock-skills:domain-modeling` skill to pin down terminology and
+   decisions, or `mattpocock-skills:prototype` to sanity-check a risky design
+   question, before writing production code.
+3. Implement directly against that spec on a feature branch.
 
 Do not infer or invent behavior from scratch — always ground implementation
 in these context files, `docs/roadmap.md`, and `docs/model-choices.md`.
@@ -71,6 +72,6 @@ Update the relevant context file whenever implementation changes:
 
 1. The current unit works end to end within its defined scope
 2. No invariant defined in root `AGENTS.md` was violated
-3. `progress-tracker.md` reflects the completed work (or points at the new
-   plan file that documents it)
+3. `progress-tracker.md` reflects the completed work (or points at the
+   GitHub issue / PR that documents it)
 4. `make lint && make test` passes (root `CLAUDE.md` §3 "Commands")

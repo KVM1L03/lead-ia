@@ -22,22 +22,25 @@ process only. When editing the frontend, also read `frontend/CLAUDE.md` and
 
 ## 2. Spec-driven workflow (read before implementing)
 
-This project builds via the Superpowers Claude Code plugin's spec-driven
-cycle, not ad hoc edits. For anything touching more than one file:
+This project works from written specs — context files, ADRs, GitHub issues,
+`.scratch/` tickets — not ad hoc edits. For anything touching more than one
+file:
 
 1. Read `context/project-overview.md` → `architecture.md` → `ui-context.md`
    (frontend changes only) → `code-standards.md` → `ai-workflow-rules.md` →
    `progress-tracker.md`, in that order. These are the project's
    "constitution" — product scope, architecture narrative, UI tokens, code
    standards, and workflow rules that don't change per feature.
-2. Invoke the `superpowers:brainstorming` skill. It explores intent through
-   dialogue and writes a design doc to
-   `docs/superpowers/specs/YYYY-MM-DD-<topic>-design.md`.
-3. Once approved, invoke `superpowers:writing-plans` to produce an
-   implementation plan in `docs/superpowers/plans/YYYY-MM-DD-<topic>.md`,
-   then execute it.
-4. Update `context/progress-tracker.md` after each meaningful change — it's
-   a rolling index into `docs/superpowers/plans/`, not a duplicate log.
+2. Ground the change in an existing spec: a GitHub issue
+   (`docs/agents/issue-tracker.md`), a `.scratch/` ticket, or `docs/adr/*.md`.
+   If the design isn't settled yet, use the `mattpocock-skills:domain-modeling`
+   skill to pin down terminology/decisions, or `mattpocock-skills:prototype`
+   to sanity-check a risky design question, before writing production code.
+3. Implement directly against that spec on a feature branch (§5 below) — no
+   separate plan-doc-generation step. Keep changes scoped per
+   `context/ai-workflow-rules.md` "When to Split Work".
+4. Update `context/progress-tracker.md` after each meaningful change — a
+   rolling index into recent work, not a duplicate log.
 
 Full scoping rules, protected files, and "when to split work" live in
 `context/ai-workflow-rules.md` — don't restate them here.

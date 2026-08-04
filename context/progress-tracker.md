@@ -1,9 +1,9 @@
 # Progress Tracker
 
 Update this file after every meaningful implementation change. This is a
-rolling index into `docs/superpowers/plans/`, not a full duplicate log —
-when a new plan lands, add one row to Completed; don't re-narrate its
-contents here.
+rolling index into recent work (GitHub issues, PRs, ADRs), not a full
+duplicate log — when a unit of work lands, add one row to Completed; don't
+re-narrate its contents here.
 
 ## Current Phase
 
@@ -13,13 +13,13 @@ DSPy-path qualifier eval).
 
 ## Current Goal
 
-Merging the `context/` spec template into the existing Superpowers
-spec-driven workflow — see
-`docs/superpowers/specs/2026-07-16-context-driven-spec-workflow-design.md`.
+Backfill epic (#72): reactive search-expansion loop for lead generation —
+see `.scratch/backfill/issues/` and `docs/adr/0001-backfill-temporal-only.md`,
+`docs/adr/0002-backfill-single-final-email-pass.md`.
 
 ## Completed
 
-Full dated history lives in `docs/superpowers/plans/`. Most recent:
+Full dated history lives in git log / merged PRs. Most recent:
 
 | Date | Plan | Summary |
 |---|---|---|
@@ -36,14 +36,15 @@ Full dated history lives in `docs/superpowers/plans/`. Most recent:
 ## In Progress
 
 - Root `AGENTS.md` / `CLAUDE.md` restructuring to complete the spec-driven
-  doc system (this task)
+  doc system — the Superpowers plugin references are dropped (this task);
+  `CONTEXT.md` + `docs/adr/` + `docs/agents/` domain-doc restructuring is
+  still uncommitted, separate task
+- Backfill 2/4: wire the `ExpandSearchQuery` round loop into
+  `LeadGenerationWorkflow` (`.scratch/backfill/issues/02-wire-backfill-loop-into-workflow.md`,
+  issue #74, part of epic #72) — PR #79 open, awaiting CI + review
 
 ## Next Up
 
-- Backfill 2/4: wire the `ExpandSearchQuery` round loop into
-  `LeadGenerationWorkflow` (`.scratch/backfill/issues/02-wire-backfill-loop-into-workflow.md`,
-  issue #74, part of epic #72) — unblocked now that #73 is merged, not yet
-  started
 - Terraform modules validation + deploy runbook (`docs/roadmap.md` #1)
 - DSPy-path qualifier eval → Gemini migration gate (`docs/roadmap.md` #2)
 - Frontend responsive layout (`docs/roadmap.md` #3)
@@ -67,4 +68,13 @@ Full dated history lives in `docs/superpowers/plans/`. Most recent:
 
 ## Session Notes
 
-- None — start of the spec-driven doc merge work.
+- The `superpowers` Claude Code plugin (previously referenced by root
+  `CLAUDE.md` §2 and `context/ai-workflow-rules.md` for
+  `brainstorming`/`writing-plans` and the `docs/superpowers/specs/` +
+  `docs/superpowers/plans/` doc pipeline) was never actually installed in
+  this environment — only `mattpocock-skills` is. Both `CLAUDE.md` and
+  `context/ai-workflow-rules.md` now describe the spec-driven workflow
+  without depending on it, pointing at `mattpocock-skills:domain-modeling`
+  / `mattpocock-skills:prototype` for design work instead. Existing docs
+  under `docs/superpowers/` (already-merged historical specs/plans) are left
+  as-is — only the forward-looking process description changed.
