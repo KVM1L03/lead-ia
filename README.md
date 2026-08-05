@@ -43,14 +43,14 @@ LeadIA collapses **search → qualify → write** into one pipeline, and stops a
 
 ## How it works
 
-One prompt in, a reviewed cohort out. Prompt-to-query translation happens in the API gateway before anything durable starts; every step inside the workflow box is a Temporal activity with its own timeout and retry policy.
+One prompt in, a reviewed cohort out. Prompt-to-query translation runs in the API gateway, before anything durable starts. Inside the workflow, every external call is its own Temporal activity with an explicit timeout and retry policy — while the shortfall branch is plain workflow state, and a single Backfill round expands into four activities (expand query → search → enrich → qualify).
 
 ```mermaid
 flowchart TB
     START(["👤 ICP prompt + who you are + lead target"])
     START --> PARSE["Parse prompt → Maps query · DSPy PromptToQuery<br/>api_gateway, before the workflow starts"]
 
-    subgraph WF["LeadGenerationWorkflow — one Temporal activity per step"]
+    subgraph WF["LeadGenerationWorkflow — external calls run as Temporal activities"]
         direction TB
         SEARCH["① Search Google Maps<br/>MCP tool → SerpAPI / Places API"]
         ENRICH["② Enrich place details · parallel"]
@@ -233,7 +233,7 @@ The local stack runs `LeadGenerationWorkflow` with individually-configured activ
 
 **Traded away in the demo:** crash recovery, per-step retry, replay, real-time workflow visibility, and Backfill ([ADR 0001](./docs/adr/0001-backfill-temporal-only.md)).
 
-The business logic is identical — both paths call the same functions. The Temporal activities are thin wrappers adding timeout and retry metadata.
+The per-lead leaf logic is identical — both paths call the same graph nodes, and the Temporal activities are thin wrappers adding timeout and retry metadata. The orchestration around it is not: the sync path has no Backfill, so a cohort that comes up short on the demo stays short.
 
 </details>
 
