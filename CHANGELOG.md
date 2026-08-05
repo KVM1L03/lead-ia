@@ -4,7 +4,8 @@ All notable changes to LeadIA. Format follows [Keep a Changelog](https://keepach
 versioning is [SemVer](https://semver.org/) on a `0.x` line — the public surface is the pipeline and the
 approval UI, not a library API.
 
-Each release links the pull requests that shipped it.
+Each release links the pull requests that shipped it. Git tags and GitHub Releases are not cut yet — this
+file is the release history, and version-to-version compare links land with the first tag.
 
 ---
 
@@ -12,8 +13,10 @@ Each release links the pull requests that shipped it.
 
 ### Changed
 - README rewritten: shorter narrative, system + agent-flow diagrams, engineering decisions collapsed into
-  scannable sections, release history surfaced.
-- Agent-facing docs restructured into a spec-driven "constitution" (`context/`, `AGENTS.md`, `CLAUDE.md`).
+  scannable sections, release history surfaced ([#84](https://github.com/KVM1L03/lead-ia/pull/84)).
+
+### Added
+- This changelog ([#84](https://github.com/KVM1L03/lead-ia/pull/84)).
 
 ### Planned
 See [`docs/roadmap.md`](./docs/roadmap.md) — Terraform validation + deploy runbook, the Gemini migration
@@ -54,8 +57,8 @@ the requested limit, an LLM decides which axis to widen and the search re-runs.
   ([#70](https://github.com/KVM1L03/lead-ia/pull/70)).
 - Demo prompt examples that are known to hit recorded fixtures — no more guessing what to type
   ([#71](https://github.com/KVM1L03/lead-ia/pull/71)).
-- Spec-driven development workflow: `context/` constitution, plans and specs under `docs/superpowers/`
-  ([#69](https://github.com/KVM1L03/lead-ia/pull/69)).
+- Spec-driven development workflow — the agent-facing "constitution" under `context/`, with plans and specs
+  in `docs/superpowers/` ([#69](https://github.com/KVM1L03/lead-ia/pull/69)).
 
 ### Fixed
 - Pipeline no longer blocks the event loop on DSPy calls, and MCP sessions are reused across a run instead
@@ -189,5 +192,3 @@ Foundations — the tool boundary and the typed LLM programs everything else is 
   ([#11](https://github.com/KVM1L03/lead-ia/pull/11)).
 - `GenerateEmail` DSPy signature — subject and body constrained at the type level
   ([#12](https://github.com/KVM1L03/lead-ia/pull/12)).
-
-[Unreleased]: https://github.com/KVM1L03/lead-ia/compare/main...HEAD

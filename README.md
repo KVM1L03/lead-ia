@@ -43,35 +43,31 @@ LeadIA collapses **search → qualify → write** into one pipeline, and stops a
 
 ## How it works
 
-One prompt in, a reviewed cohort out. Every numbered step is a Temporal activity with its own timeout and retry policy.
+One prompt in, a reviewed cohort out. Prompt-to-query translation happens in the API gateway before anything durable starts; every step inside the workflow box is a Temporal activity with its own timeout and retry policy.
 
 ```mermaid
 flowchart TB
     START(["👤 ICP prompt + who you are + lead target"])
+    START --> PARSE["Parse prompt → Maps query · DSPy PromptToQuery<br/>api_gateway, before the workflow starts"]
 
-    START --> PARSE["① Parse prompt → Maps query<br/>DSPy signature"]
-    PARSE --> SEARCH["② Search Google Maps<br/>MCP tool → SerpAPI / Places API"]
-
-    SEARCH --> LOOP
-
-    subgraph LOOP["③–⑤ per business · parallel, bounded by semaphore"]
+    subgraph WF["LeadGenerationWorkflow — one Temporal activity per step"]
         direction TB
-        ENRICH["Enrich place details"]
-        QUAL{"ICP fit?<br/>Haiku 4.5"}
-        EMAIL["Draft cold email<br/>Sonnet 4.6"]
-        DROP([discard])
+        SEARCH["① Search Google Maps<br/>MCP tool → SerpAPI / Places API"]
+        ENRICH["② Enrich place details · parallel"]
+        QUAL["③ Qualify against the ICP · parallel · Haiku 4.5"]
+        SHORT{"④ Cohort short of target?"}
+        BACKFILL["Backfill round · widen city or industry axis<br/>DSPy ExpandSearchQuery"]
+        EMAIL["⑤ Draft cold emails · parallel · Sonnet 4.6<br/>one pass over the merged qualified pool"]
 
-        ENRICH --> QUAL
-        QUAL -->|qualified| EMAIL
-        QUAL -->|not a fit| DROP
+        SEARCH --> ENRICH --> QUAL --> SHORT
+        SHORT -->|"yes · up to 2 rounds"| BACKFILL
+        BACKFILL -->|"new query · search + qualify again, merge"| SEARCH
+        SHORT -->|"target met · or expansion exhausted"| EMAIL
     end
 
-    LOOP --> SHORT{"⑥ Short of target?"}
-    SHORT -->|yes, ≤2 rounds| BACKFILL["Backfill: widen city or industry axis<br/>DSPy ExpandSearchQuery"]
-    BACKFILL --> SEARCH
-    SHORT -->|target met / exhausted| COHORT["⑦ Lead cohort"]
-
-    COHORT --> REVIEW{"⑧ Human review<br/>approve · edit · reject"}
+    PARSE --> SEARCH
+    QUAL -.->|"not a fit — kept in the run record, never emailed"| RECORD[("Run record")]
+    EMAIL --> REVIEW{"Human review · approve · edit · reject"}
     REVIEW --> OUT(["📤 CSV export — send-ready drafts"])
 
     classDef ai fill:#fff4e6,stroke:#f59e0b,color:#111
@@ -80,7 +76,7 @@ flowchart TB
     class START,REVIEW,OUT human
 ```
 
-**Backfill** (new in [v0.8](./CHANGELOG.md#080--2026-08-05)) is the reactive loop that fires when qualification leaves the cohort short of the requested limit: an LLM picks an axis to widen — neighboring city or adjacent industry — never retrying an axis value it already tried, and stops on target met, round cap, or no progress. If it runs out of room, the UI says so instead of silently under-delivering.
+**Backfill** (new in [v0.8](./CHANGELOG.md#080--2026-08-05), Temporal path only — [ADR 0001](./docs/adr/0001-backfill-temporal-only.md)) is the reactive loop that fires when qualification leaves the cohort short of the requested limit: an LLM picks an axis to widen — neighboring city or adjacent industry — never retrying an axis value it already tried, and stops on target met, round cap (2), or a round that adds nothing. Email generation deliberately waits for the loop to settle and then runs **once** over the merged pool, rather than emailing the first batch and the backfilled leads separately — one call site, one merge path ([ADR 0002](./docs/adr/0002-backfill-single-final-email-pass.md)). The cost is that the original leads' drafts are delayed by however long the backfill rounds take. If expansion runs out of room, the UI says so instead of silently under-delivering.
 
 ## Architecture
 
@@ -112,11 +108,12 @@ flowchart LR
     UI -->|"POST /api/leads/search"| API
     UI -->|"poll status · approve · export"| API
     UI -.->|"run history"| PG
+    API -->|"prompt → Maps query · PromptToQuery"| LLM
     API -->|start workflow| TEMPORAL
     TEMPORAL <-->|task queue| WORKER
     WORKER -->|MCP tools over stdio| MCP
     MCP --> MAPS
-    WORKER --> LLM
+    WORKER -->|qualify · expand · email| LLM
     WORKER --> PG
     WORKER -.->|OTel spans| LF
 
@@ -217,7 +214,9 @@ Each one lists what was **traded away**, not just what was gained.
 <details>
 <summary><b>🧩 DSPy typed signatures instead of raw prompts</b></summary>
 
-Every LLM task is a `dspy.Predict` signature — a typed Python class with field-level descriptions, not an f-string. `QualifyLead` outputs `is_qualified: bool`, `score: float`, `reasoning: str`, `icp_fit: dict[str, bool]`. `GenerateEmail` constrains subject to 80 chars and body to 200 words at the type level. `ExpandSearchQuery` picks a Backfill axis and emits the next query.
+Every LLM task is a `dspy.Predict` signature — a typed Python class with field-level descriptions, not an f-string. `QualifyLead` outputs `is_qualified: bool`, `score: float`, `reasoning: str`, `icp_fit: dict[str, bool]`. `GenerateEmail` returns a subject, body, and `personalization_hooks: list[str]`. `PromptToQuery` turns the user's sentence into a Maps query; `ExpandSearchQuery` picks a Backfill axis and emits the next one.
+
+Length is enforced in two places with different strictness: the signature *asks* for ≤80 chars of subject and ≤200 words of body (a hint the model usually respects), while the `GeneratedEmail` Pydantic model *enforces* `max_length=100` on the subject and `1500` on the body — a hard schema boundary, not a style preference.
 
 **Traded away:** prompt-string transparency (you can't just `print()` what went to the model) and straightforward debugging.
 
@@ -279,7 +278,7 @@ Qualification runs on every scraped place. Email generation runs only on qualifi
 <details>
 <summary><b>💸 Three maps providers, and SKU-tier cost engineering</b></summary>
 
-SerpAPI's free tier is 250 searches/month; one LeadIA run makes 25–30 calls (one Text Search + one Place Details per business). That's ~10 runs/month free, or $25 for 40 — not viable for personal use of a portfolio tool.
+SerpAPI's free tier is 250 searches/month; a single-round run makes 25–30 calls (one Text Search + one Place Details per business), and every Backfill round adds another Text Search plus a Place Details per newly-found place — up to roughly 3× that on a run that expands twice. So ~10 runs/month free at best, or $25 for 40 — not viable for personal use of a portfolio tool.
 
 Google Places API (New) Text Search offers 5,000 free calls/month (~200 runs at $0), but has a billing mechanic that's easy to miss: **it charges at the highest SKU tier among all fields in the FieldMask**. Adding `places.rating` or `places.userRatingCount` escalates a Text Search from Pro (5,000 free/month) to Enterprise (1,000 free/month) — a 5× smaller quota, no warning, no automatic spend cap. `GooglePlacesProvider` therefore uses a tight FieldMask that omits every rating and review field, and two tests in `test_google_places_provider.py` assert it stays that way — a **cost invariant**, not a style preference.
 
@@ -394,6 +393,8 @@ Live demo: **Vercel** (frontend) + **Cloud Run** (backend). The backend is one s
 | [`docs/cost-guardrails.md`](./docs/cost-guardrails.md) | API quota and spend invariants |
 | [`AGENTS.md`](./AGENTS.md) · [`CLAUDE.md`](./CLAUDE.md) | Rules for AI coding agents working in this repo |
 | [`context/`](./context/) | Spec-driven "constitution" — product, architecture, UI, standards |
+
+> **LeadForge** is the internal codename you'll see in the design system, `context/`, and the compose service names. Same project.
 
 ---
 
