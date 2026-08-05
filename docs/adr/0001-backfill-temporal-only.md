@@ -1,0 +1,3 @@
+# Backfill runs only on the Temporal execution path
+
+The sync path (`run_pipeline`, Cloud Run public demo) is hard-capped at 25 leads and a 60s request timeout — already tight for a single search+qualify round. Backfill (the reactive search-expansion loop, see `CONTEXT.md`) is implemented only in `LeadGenerationWorkflow` (Temporal); the sync path keeps its existing single-round behavior unchanged. Each backfill round adds a full MCP search call plus N qualify LLM calls, which risks blowing the 60s budget even on one extra round — the public demo is meant to be a fast, bounded showcase, not a full-featured run.

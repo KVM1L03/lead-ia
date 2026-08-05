@@ -123,6 +123,7 @@ Lint is enforced in CI. Don't lecture me about style — run `make lint` and let
 - **Run `make lint` and `make test` before saying "done".** "Done" = lint clean + tests green + the new behavior demonstrated.
 - **Fill the PR template** (`.github/pull_request_template.md`): one-sentence summary, invariants checked, verification checklist.
 - **Never commit secrets.** `.env` is git-ignored; use `.env.example` for shape.
+- **User-facing change → one line in `CHANGELOG.md` under `## [Unreleased]`** (Added / Changed / Fixed / Removed), linking the PR. Internal refactors and doc typos don't need an entry. Cutting a release = rename the section to `## [x.y.z] — YYYY-MM-DD`, add a row to the README release table, tag it.
 - **Use the MCP bridge** for any SerpAPI call. If you find yourself importing `requests` in the worker, stop — you're about to violate invariant #5 in `AGENTS.md`.
 
 ---
