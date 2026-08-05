@@ -70,6 +70,9 @@ def _make_row(
     qualified: int = 3,
     emails_generated: int = 0,
     leads_json: str | None = None,
+    backfill_exhausted: bool = False,
+    tried_cities: list[str] | None = None,
+    tried_industries: list[str] | None = None,
 ) -> RunRow:
     return RunRow(
         id=_WORKFLOW_ID,
@@ -82,6 +85,9 @@ def _make_row(
         qualified=qualified,
         emails_generated=emails_generated,
         leads_json=leads_json,
+        backfill_exhausted=backfill_exhausted,
+        tried_cities=tried_cities or [],
+        tried_industries=tried_industries or [],
     )
 
 
@@ -195,6 +201,44 @@ async def test_completed_returns_full_leads(
     assert data["progress"]["emails_generated"] == 3
     assert len(data["results"]) == 1
     assert data["results"][0]["place"]["name"] == "Klinika Centrum"
+
+    app.dependency_overrides.clear()
+
+
+@pytest.mark.asyncio
+async def test_completed_returns_backfill_exhaustion_fields(
+    mock_temporal_in_progress: AsyncMock,
+) -> None:
+    """Completed workflow with an unclosed shortfall: exhaustion fields come from the DB row."""
+    row = _make_row(
+        status="completed",
+        scraped=8,
+        qualified=17,
+        emails_generated=17,
+        backfill_exhausted=True,
+        tried_cities=["Krakow"],
+        tried_industries=["aesthetic dentistry"],
+    )
+    session = AsyncMock(spec=AsyncSession)
+    session.get = AsyncMock(return_value=row)
+
+    from ai_worker.workflows import WorkflowProgress
+
+    handle = AsyncMock()
+    handle.query = AsyncMock(
+        return_value=WorkflowProgress(stage="completed", total=8, qualified=17, emailed=17)
+    )
+    mock_temporal_in_progress.get_workflow_handle = MagicMock(return_value=handle)
+
+    async with _make_http(session, mock_temporal_in_progress) as client:
+        resp = await client.get(f"/api/leads/status/{_WORKFLOW_ID}")
+
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["status"] == "completed"
+    assert data["backfill_exhausted"] is True
+    assert data["tried_cities"] == ["Krakow"]
+    assert data["tried_industries"] == ["aesthetic dentistry"]
 
     app.dependency_overrides.clear()
 

@@ -28,19 +28,22 @@ enum Decision {
 // Mirrors shared/db.py RunRow — SQLAlchemy owns DDL for existing columns.
 // Prisma adds: completed_at (new), leads relation (relational model).
 model Run {
-  id               String    @id @default(cuid()) @db.VarChar(36)
-  prompt           String
-  target_query     String
-  limit            Int
-  sender_context   String    @default("")
-  status           String    @db.VarChar(32)
-  scraped          Int       @default(0)
-  qualified        Int       @default(0)
-  emails_generated Int       @default(0)
-  leads_json       String?
-  createdAt        DateTime  @default(now()) @map("created_at")
-  completedAt      DateTime? @map("completed_at")
-  leads            Lead[]
+  id                String    @id @default(cuid()) @db.VarChar(36)
+  prompt            String
+  target_query      String
+  limit             Int
+  sender_context    String    @default("")
+  status            String    @db.VarChar(32)
+  scraped           Int       @default(0)
+  qualified         Int       @default(0)
+  emails_generated  Int       @default(0)
+  leads_json        String?
+  backfillExhausted Boolean   @default(false) @map("backfill_exhausted")
+  triedCities       String[]  @default([]) @map("tried_cities")
+  triedIndustries   String[]  @default([]) @map("tried_industries")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  completedAt       DateTime? @map("completed_at")
+  leads             Lead[]
 
   @@map("runs")
   @@schema("app")

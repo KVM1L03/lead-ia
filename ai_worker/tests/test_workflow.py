@@ -171,6 +171,9 @@ def _make_mocks(
         qualified: int,
         emails_generated: int,
         leads: list[Lead],
+        backfill_exhausted: bool = False,
+        tried_cities: list[str] | None = None,
+        tried_industries: list[str] | None = None,
     ) -> None:
         pass  # no-op in tests — DB not available
 
@@ -365,6 +368,9 @@ async def test_max_concurrency_respected(env: WorkflowEnvironment) -> None:
         qualified: int,
         emails_generated: int,
         leads: list[Lead],
+        backfill_exhausted: bool = False,
+        tried_cities: list[str] | None = None,
+        tried_industries: list[str] | None = None,
     ) -> None:
         pass
 
@@ -450,6 +456,9 @@ def _backfill_mocks(
         qualified: int,
         emails_generated: int,
         leads: list[Lead],
+        backfill_exhausted: bool = False,
+        tried_cities: list[str] | None = None,
+        tried_industries: list[str] | None = None,
     ) -> None:
         pass
 
@@ -506,6 +515,9 @@ async def test_backfill_round_fills_shortfall_no_duplicates(env: WorkflowEnviron
     qualified = [lead for lead in result.leads if lead.verdict and lead.verdict.is_qualified]
     assert len(qualified) == 5
     assert all(lead.email is not None for lead in qualified)
+    assert result.backfill_exhausted is False, "shortfall closed — not exhausted"
+    assert result.tried_cities == ["Krakow"]
+    assert result.tried_industries == []
 
 
 async def test_backfill_stops_on_no_progress(env: WorkflowEnvironment) -> None:
@@ -541,6 +553,8 @@ async def test_backfill_stops_on_no_progress(env: WorkflowEnvironment) -> None:
     qualified = [lead for lead in result.leads if lead.verdict and lead.verdict.is_qualified]
     assert len(qualified) == 2
     assert len(result.leads) == 6  # 4 round-1 + 2 new round-2 (unqualified)
+    assert result.backfill_exhausted is True, "backfill tried but shortfall never closed"
+    assert result.tried_cities == ["Krakow"]
 
 
 async def test_backfill_stops_at_round_cap(env: WorkflowEnvironment) -> None:
@@ -583,6 +597,8 @@ async def test_backfill_stops_at_round_cap(env: WorkflowEnvironment) -> None:
     assert len(expand_tracker) == 2, "must stop exactly at MAX_BACKFILL_ROUNDS"
     qualified = [lead for lead in result.leads if lead.verdict and lead.verdict.is_qualified]
     assert len(qualified) == 7  # 3 round-1 + 2 round-2 + 2 round-3, still short of limit=10
+    assert result.backfill_exhausted is True, "round cap hit while still short of the limit"
+    assert result.tried_cities == ["Krakow", "Krakow"]
 
 
 async def test_backfill_never_triggered_when_round1_meets_limit(
@@ -624,6 +640,9 @@ async def test_backfill_never_triggered_when_round1_meets_limit(
     assert len(search_tracker) == 1, "only the round-1 search must run"
     assert len(result.leads) == 3
     assert all(lead.verdict is not None and lead.verdict.is_qualified for lead in result.leads)
+    assert result.backfill_exhausted is False, "backfill never engaged — nothing to report"
+    assert result.tried_cities == []
+    assert result.tried_industries == []
 
 
 async def test_replay_safety_with_backfill_round(env: WorkflowEnvironment) -> None:

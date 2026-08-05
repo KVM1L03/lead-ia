@@ -90,6 +90,9 @@ class LeadGenOutput:
     limit: int
     leads: list[Lead] = field(default_factory=list)
     created_at: datetime = field(default_factory=datetime.utcnow)
+    backfill_exhausted: bool = False
+    tried_cities: list[str] = field(default_factory=list)
+    tried_industries: list[str] = field(default_factory=list)
 
 
 # ── Workflow ───────────────────────────────────────────────────────────────────
@@ -213,6 +216,8 @@ class LeadGenerationWorkflow:
             if not new_qualified_pairs:
                 break
 
+        backfill_exhausted = backfill_round > 0 and len(qualified_pairs) < input.limit
+
         # Persist partial results so status endpoint can serve them immediately
         await workflow.execute_activity(
             persist_phase_result_activity,
@@ -268,6 +273,9 @@ class LeadGenerationWorkflow:
                 len(qualified_pairs),
                 emailed,
                 all_leads,
+                backfill_exhausted,
+                tried_cities,
+                tried_industries,
             ],
             start_to_close_timeout=PERSIST_TIMEOUT,
             retry_policy=PERSIST_RETRY,
@@ -285,6 +293,9 @@ class LeadGenerationWorkflow:
             limit=input.limit,
             leads=all_leads,
             created_at=workflow.now(),
+            backfill_exhausted=backfill_exhausted,
+            tried_cities=tried_cities,
+            tried_industries=tried_industries,
         )
 
     @workflow.query

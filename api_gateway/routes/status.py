@@ -11,7 +11,10 @@ Response shape:
   {
     "status": "scraping" | "qualifying" | "generating" | "completed" | "failed",
     "progress": {"scraped": int, "qualified": int, "emails_generated": int},
-    "results": list[Lead]   // grows as phases complete
+    "results": list[Lead],   // grows as phases complete
+    "backfill_exhausted": bool,   // set once the run completes; false until then
+    "tried_cities": list[str],
+    "tried_industries": list[str]
   }
 """
 
@@ -58,6 +61,9 @@ class StatusResponse(BaseModel):
     status: Literal["scraping", "qualifying", "generating", "completed", "failed"]
     progress: ProgressCounts
     results: list[Lead]
+    backfill_exhausted: bool
+    tried_cities: list[str]
+    tried_industries: list[str]
 
 
 # ── Route ─────────────────────────────────────────────────────────────────────
@@ -124,4 +130,7 @@ async def get_status(
             emails_generated=emails_generated,
         ),
         results=leads,
+        backfill_exhausted=row.backfill_exhausted,
+        tried_cities=row.tried_cities,
+        tried_industries=row.tried_industries,
     )
