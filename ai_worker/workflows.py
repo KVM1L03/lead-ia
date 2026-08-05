@@ -218,7 +218,12 @@ class LeadGenerationWorkflow:
 
         backfill_exhausted = backfill_round > 0 and len(qualified_pairs) < input.limit
 
-        # Persist partial results so status endpoint can serve them immediately
+        # Persist partial results so status endpoint can serve them immediately.
+        # Must pass all 9 positional args every call: Temporal's payload decoder
+        # only applies the activity's type hints when the input count matches the
+        # function signature exactly, else it silently falls back to untyped dicts
+        # (temporalio/worker/_activity.py) — omitting the trailing optional args
+        # here previously deserialized `leads` as list[dict], not list[Lead].
         await workflow.execute_activity(
             persist_phase_result_activity,
             args=[
@@ -228,6 +233,9 @@ class LeadGenerationWorkflow:
                 len(qualified_pairs),
                 0,
                 qualify_leads,
+                backfill_exhausted,
+                tried_cities,
+                tried_industries,
             ],
             start_to_close_timeout=PERSIST_TIMEOUT,
             retry_policy=PERSIST_RETRY,
