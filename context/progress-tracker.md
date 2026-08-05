@@ -23,6 +23,7 @@ Full dated history lives in `docs/superpowers/plans/`. Most recent:
 
 | Date | Plan | Summary |
 |---|---|---|
+| 2026-08-04 | wire-backfill-loop-into-workflow | Backfill round loop wired into `LeadGenerationWorkflow.run()`, between qualify and email — Backfill 2/4 (issue #74, part of epic #72), `.scratch/backfill/issues/02-wire-backfill-loop-into-workflow.md`, PR pending |
 | 2026-08-04 | expand-search-query-decision-engine | `ExpandSearchQuery` DSPy signature + Temporal activity — Backfill 1/4 (issue #73, part of epic #72), PR #77 merged |
 | 2026-07-11 | maps-pagination | SerpAPI/Places pagination support |
 | 2026-07-10 | mock-provider-recorded-fixtures | Recorded fixtures for the mock maps provider |
@@ -40,10 +41,14 @@ Full dated history lives in `docs/superpowers/plans/`. Most recent:
 
 ## Next Up
 
-- Backfill 2/4: wire the `ExpandSearchQuery` round loop into
-  `LeadGenerationWorkflow` (`.scratch/backfill/issues/02-wire-backfill-loop-into-workflow.md`,
-  issue #74, part of epic #72) — unblocked now that #73 is merged, not yet
+- Backfill 3/4: persist the Backfill exhaustion result on `RunRow` and expose
+  it via `GET /api/leads/status/{id}`
+  (`.scratch/backfill/issues/03-persist-exhaustion-result-status-api.md`,
+  issue #75, part of epic #72) — unblocked now that #74 is merged, not yet
   started
+- Backfill 4/4: exhaustion banner in the lead review UI
+  (`.scratch/backfill/issues/04-exhaustion-banner-review-ui.md`, issue #76,
+  part of epic #72) — blocked on Backfill 3/4
 - Terraform modules validation + deploy runbook (`docs/roadmap.md` #1)
 - DSPy-path qualifier eval → Gemini migration gate (`docs/roadmap.md` #2)
 - Frontend responsive layout (`docs/roadmap.md` #3)
@@ -67,4 +72,13 @@ Full dated history lives in `docs/superpowers/plans/`. Most recent:
 
 ## Session Notes
 
-- None — start of the spec-driven doc merge work.
+- The `superpowers` Claude Code plugin referenced by root `CLAUDE.md` §2 (the
+  `brainstorming` / `writing-plans` skills, `docs/superpowers/specs/` and
+  `docs/superpowers/plans/`) is not installed in this environment — only
+  `mattpocock-skills` is present under `~/.claude/plugins`. Backfill 1/4
+  (issue #73) also shipped with no spec/plan doc under `docs/superpowers/`,
+  confirming that step was skipped in practice, not just this session.
+  Backfill 2/4 (issue #74) proceeded straight from the ticket file + ADRs to
+  implementation on a feature branch, following that precedent. Flag this to
+  the user if a properly-installed `superpowers` plugin is expected — the
+  root `CLAUDE.md` workflow section may need updating to match reality.

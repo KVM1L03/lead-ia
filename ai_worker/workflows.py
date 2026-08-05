@@ -31,6 +31,8 @@ with workflow.unsafe.imports_passed_through():
     from ai_worker.activities import (
         EMAIL_RETRY,
         EMAIL_TIMEOUT,
+        EXPAND_QUERY_RETRY,
+        EXPAND_QUERY_TIMEOUT,
         GET_DETAILS_RETRY,
         GET_DETAILS_TIMEOUT,
         PERSIST_RETRY,
@@ -39,6 +41,7 @@ with workflow.unsafe.imports_passed_through():
         QUALIFY_TIMEOUT,
         SEARCH_RETRY,
         SEARCH_TIMEOUT,
+        expand_search_query_activity,
         generate_email_activity,
         get_place_details_activity,
         persist_phase_result_activity,
@@ -46,12 +49,16 @@ with workflow.unsafe.imports_passed_through():
         search_places_activity,
     )
     from shared.schemas import (
+        ExpansionDecision,
         GeneratedEmail,
         Lead,
         PlaceDetails,
         PlaceSearchResult,
         QualifierVerdict,
     )
+
+# Backfill round cap — see docs/adr/0001-backfill-temporal-only.md and CONTEXT.md § Backfill.
+MAX_BACKFILL_ROUNDS = 2
 
 
 # ── Workflow I/O dataclasses ───────────────────────────────────────────────────
@@ -154,13 +161,65 @@ class LeadGenerationWorkflow:
             for lead in qualify_leads
             if lead.verdict is not None and lead.verdict.is_qualified
         ]
+        total_scraped = len(places)
+
+        # 3b. Backfill (Temporal-only reactive search-expansion loop) ──────────
+        # See CONTEXT.md § Backfill / Shortfall / Strategy axis and
+        # docs/adr/0001-backfill-temporal-only.md, 0002-backfill-single-final-email-pass.md.
+        seen_place_ids: set[str] = {r.id for r in results}
+        tried_cities: list[str] = []
+        tried_industries: list[str] = []
+        backfill_round = 0
+        while len(qualified_pairs) < input.limit and backfill_round < MAX_BACKFILL_ROUNDS:
+            backfill_round += 1
+            shortfall = input.limit - len(qualified_pairs)
+
+            decision: ExpansionDecision = await workflow.execute_activity(
+                expand_search_query_activity,
+                args=[input.prompt, input.target_query, tried_cities, tried_industries, shortfall],
+                start_to_close_timeout=EXPAND_QUERY_TIMEOUT,
+                retry_policy=EXPAND_QUERY_RETRY,
+            )
+            if decision.strategy == "city":
+                tried_cities.append(decision.axis_value)
+            else:
+                tried_industries.append(decision.axis_value)
+
+            round_results: list[PlaceSearchResult] = await workflow.execute_activity(
+                search_places_activity,
+                args=[decision.target_query, shortfall, input.maps_provider],
+                start_to_close_timeout=SEARCH_TIMEOUT,
+                retry_policy=SEARCH_RETRY,
+            )
+            new_results = [r for r in round_results if r.id not in seen_place_ids]
+            seen_place_ids.update(r.id for r in new_results)
+
+            new_places: list[PlaceDetails] = list(
+                await asyncio.gather(*[_fetch_details(r) for r in new_results])
+            )
+            total_scraped += len(new_places)
+
+            new_qualify_leads: list[Lead] = list(
+                await asyncio.gather(*[_qualify(p) for p in new_places])
+            )
+            new_qualified_pairs = [
+                (lead.place, lead.verdict)
+                for lead in new_qualify_leads
+                if lead.verdict is not None and lead.verdict.is_qualified
+            ]
+            qualify_leads += new_qualify_leads
+            qualified_pairs += new_qualified_pairs
+
+            if not new_qualified_pairs:
+                break
+
         # Persist partial results so status endpoint can serve them immediately
         await workflow.execute_activity(
             persist_phase_result_activity,
             args=[
                 workflow.info().workflow_id,
                 "generating",
-                len(places),
+                total_scraped,
                 len(qualified_pairs),
                 0,
                 qualify_leads,
@@ -170,7 +229,7 @@ class LeadGenerationWorkflow:
         )
         self._progress = WorkflowProgress(
             stage="generating",
-            total=len(places),
+            total=total_scraped,
             qualified=len(qualified_pairs),
         )
 
@@ -205,7 +264,7 @@ class LeadGenerationWorkflow:
             args=[
                 workflow.info().workflow_id,
                 "completed",
-                len(places),
+                total_scraped,
                 len(qualified_pairs),
                 emailed,
                 all_leads,
@@ -215,7 +274,7 @@ class LeadGenerationWorkflow:
         )
         self._progress = WorkflowProgress(
             stage="completed",
-            total=len(places),
+            total=total_scraped,
             qualified=len(qualified_pairs),
             emailed=emailed,
         )
