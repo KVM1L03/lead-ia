@@ -23,7 +23,8 @@ Full dated history lives in `docs/superpowers/plans/`. Most recent:
 
 | Date | Plan | Summary |
 |---|---|---|
-| 2026-08-05 | persist-exhaustion-result-status-api | `RunRow` gains `backfill_exhausted`/`tried_cities`/`tried_industries` (SQLAlchemy DDL + Prisma mirror), `LeadGenOutput` and `persist_phase_result_activity` carry them through, `GET /api/leads/status/{id}` returns them — Backfill 3/4 (issue #75, part of epic #72), `.scratch/backfill/issues/03-persist-exhaustion-result-status-api.md`, PR pending |
+| 2026-08-05 | exhaustion-banner-review-ui | `LeadCohortTable` renders a non-alarming exhaustion banner (`ExhaustionBanner` + pure `buildExhaustionBannerText` in `lib/exhaustionBanner.ts`) sourced from the Prisma `Run` row's `backfillExhausted`/`triedCities`/`triedIndustries`, nothing renders when absent — Backfill 4/4 (issue #76, part of epic #72), `.scratch/backfill/issues/04-exhaustion-banner-review-ui.md`, PR pending |
+| 2026-08-05 | persist-exhaustion-result-status-api | `RunRow` gains `backfill_exhausted`/`tried_cities`/`tried_industries` (SQLAlchemy DDL + Prisma mirror), `LeadGenOutput` and `persist_phase_result_activity` carry them through, `GET /api/leads/status/{id}` returns them — Backfill 3/4 (issue #75, part of epic #72), `.scratch/backfill/issues/03-persist-exhaustion-result-status-api.md`, PR #80 merged |
 | 2026-08-04 | wire-backfill-loop-into-workflow | Backfill round loop wired into `LeadGenerationWorkflow.run()`, between qualify and email — Backfill 2/4 (issue #74, part of epic #72), `.scratch/backfill/issues/02-wire-backfill-loop-into-workflow.md`, PR #79 merged |
 | 2026-08-04 | expand-search-query-decision-engine | `ExpandSearchQuery` DSPy signature + Temporal activity — Backfill 1/4 (issue #73, part of epic #72), PR #77 merged |
 | 2026-07-11 | maps-pagination | SerpAPI/Places pagination support |
@@ -42,9 +43,6 @@ Full dated history lives in `docs/superpowers/plans/`. Most recent:
 
 ## Next Up
 
-- Backfill 4/4: exhaustion banner in the lead review UI
-  (`.scratch/backfill/issues/04-exhaustion-banner-review-ui.md`, issue #76,
-  part of epic #72) — unblocked once Backfill 3/4's PR merges
 - Terraform modules validation + deploy runbook (`docs/roadmap.md` #1)
 - DSPy-path qualifier eval → Gemini migration gate (`docs/roadmap.md` #2)
 - Frontend responsive layout (`docs/roadmap.md` #3)

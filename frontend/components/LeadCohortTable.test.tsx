@@ -163,4 +163,26 @@ describe("LeadCohortTable", () => {
       screen.queryByRole("button", { name: /Advertising Agency, Branding/i }),
     ).toBeNull();
   });
+
+  it("renders the exhaustion banner when backfillExhausted is true", () => {
+    render(
+      <LeadCohortTable
+        leads={TWO_LEADS}
+        runId="run-3"
+        limit={100}
+        backfillExhausted={true}
+        triedCities={["Krakow"]}
+        triedIndustries={["aesthetic dentistry"]}
+      />,
+    );
+
+    expect(
+      screen.getByText("Found 2/100 — also checked Krakow and 'aesthetic dentistry', no further matches."),
+    ).toBeInTheDocument();
+  });
+
+  it("renders no banner when backfillExhausted is false or absent", () => {
+    render(<LeadCohortTable leads={TWO_LEADS} runId="run-4" />);
+    expect(screen.queryByText(/no further matches/i)).toBeNull();
+  });
 });
