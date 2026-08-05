@@ -1,0 +1,3 @@
+# Backfill completes before email generation runs, once, for the full pool
+
+Backfill sits between the qualify and email steps of `LeadGenerationWorkflow`. We considered emailing the original qualified batch immediately and emailing newly-backfilled leads separately as they arrive, merging results at the end. Instead, `generate_email_activity` is invoked once, for the full merged qualified pool, after the backfill loop terminates (target met, round cap hit, or no-progress stop) — avoiding a second call site and a second `persist_phase_result_activity` merge path. The trade-off: email drafts for the original leads are delayed by the duration of any backfill rounds, bounded by `MAX_BACKFILL_ROUNDS = 2` plus the no-progress early exit.
