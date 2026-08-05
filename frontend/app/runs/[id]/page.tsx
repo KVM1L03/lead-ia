@@ -18,7 +18,16 @@ export default async function RunPage({
   const showCohorts = run.status === "completed" && leads.length > 0;
 
   if (showCohorts) {
-    return <LeadCohortTable leads={leads} runId={id} />;
+    return (
+      <LeadCohortTable
+        leads={leads}
+        runId={id}
+        limit={run.limit}
+        backfillExhausted={run.backfillExhausted}
+        triedCities={run.triedCities}
+        triedIndustries={run.triedIndustries}
+      />
+    );
   }
 
   return (

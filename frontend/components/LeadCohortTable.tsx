@@ -6,9 +6,17 @@ import { allIndustries, groupIntoCohorts, DEFAULT_FILTERS, type Cohort, type Fil
 import { serverApproveLeads, serverExportLeads } from "@/app/actions";
 import { EmailDrawer } from "./EmailDrawer";
 import { ExportCsvButton } from "./ExportCsvButton";
+import { ExhaustionBanner } from "./ExhaustionBanner";
 import { cn } from "@/lib/utils";
 
-type Props = { leads: Lead[]; runId: string };
+type Props = {
+  leads: Lead[];
+  runId: string;
+  limit?: number;
+  backfillExhausted?: boolean;
+  triedCities?: string[];
+  triedIndustries?: string[];
+};
 
 const BUCKET_COLORS: Record<string, string> = {
   high: "text-success-fg bg-success-soft border-success/30",
@@ -174,7 +182,14 @@ function CohortCard({
   );
 }
 
-export function LeadCohortTable({ leads: initialLeads, runId }: Props) {
+export function LeadCohortTable({
+  leads: initialLeads,
+  runId,
+  limit = 0,
+  backfillExhausted = false,
+  triedCities = [],
+  triedIndustries = [],
+}: Props) {
   const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [toast, setToast] = useState<string | null>(null);
@@ -307,6 +322,14 @@ export function LeadCohortTable({ leads: initialLeads, runId }: Props) {
           />
         </div>
       </div>
+
+      <ExhaustionBanner
+        backfillExhausted={backfillExhausted}
+        qualified={totalQualified}
+        limit={limit}
+        triedCities={triedCities}
+        triedIndustries={triedIndustries}
+      />
 
       <FiltersBar filters={filters} onChange={setFilters} industries={industries} />
 
