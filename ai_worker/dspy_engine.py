@@ -59,7 +59,9 @@ class ExpandSearchQuery(dspy.Signature):  # type: ignore[misc]
     """Decide how to widen a Backfill round's search when qualification leaves the cohort short.
 
     Widens on exactly one axis (city or industry) per round, never reusing a
-    value already tried this run.
+    value already tried this run. For the city axis, prefer a geographically
+    adjacent neighboring city/region to the one in target_query (e.g. a nearby
+    metro-area suburb) — never jump to an arbitrary distant large city.
     """
 
     prompt: str = dspy.InputField(desc="Original ICP prompt describing the outreach goal")

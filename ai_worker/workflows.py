@@ -144,12 +144,12 @@ class LeadGenerationWorkflow:
         self._progress = WorkflowProgress(stage="qualifying", total=len(places))
 
         # 3. Qualify (parallel, partial failure → Lead.error) ──────────────────
-        async def _qualify(place: PlaceDetails) -> Lead:
+        async def _qualify(place: PlaceDetails, outreach_goal: str) -> Lead:
             async with sem:
                 try:
                     verdict: QualifierVerdict = await workflow.execute_activity(
                         qualify_lead_activity,
-                        args=[input.prompt, place],
+                        args=[outreach_goal, place],
                         start_to_close_timeout=QUALIFY_TIMEOUT,
                         retry_policy=QUALIFY_RETRY,
                     )
@@ -158,7 +158,9 @@ class LeadGenerationWorkflow:
                     root = exc.__cause__ if exc.__cause__ is not None else exc
                     return Lead(place=place, error=str(root))
 
-        qualify_leads: list[Lead] = list(await asyncio.gather(*[_qualify(p) for p in places]))
+        qualify_leads: list[Lead] = list(
+            await asyncio.gather(*[_qualify(p, input.prompt) for p in places])
+        )
         qualified_pairs: list[tuple[PlaceDetails, QualifierVerdict]] = [
             (lead.place, lead.verdict)
             for lead in qualify_leads
@@ -185,8 +187,16 @@ class LeadGenerationWorkflow:
             )
             if decision.strategy == "city":
                 tried_cities.append(decision.axis_value)
+                # Widen the ICP geography for this round's qualify calls only — the
+                # original prompt still names the original city, so without this every
+                # newly-searched place gets rejected for a geo mismatch. See CONTEXT.md
+                # § Backfill / Strategy axis.
+                round_outreach_goal = (
+                    f"{input.prompt} Also accept businesses located in {decision.axis_value}."
+                )
             else:
                 tried_industries.append(decision.axis_value)
+                round_outreach_goal = input.prompt
 
             round_results: list[PlaceSearchResult] = await workflow.execute_activity(
                 search_places_activity,
@@ -203,7 +213,7 @@ class LeadGenerationWorkflow:
             total_scraped += len(new_places)
 
             new_qualify_leads: list[Lead] = list(
-                await asyncio.gather(*[_qualify(p) for p in new_places])
+                await asyncio.gather(*[_qualify(p, round_outreach_goal) for p in new_places])
             )
             new_qualified_pairs = [
                 (lead.place, lead.verdict)

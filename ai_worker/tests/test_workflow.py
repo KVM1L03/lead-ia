@@ -96,6 +96,10 @@ _EXPAND_DECISION = ExpansionDecision(
     target_query="dentist Krakow", strategy="city", axis_value="Krakow"
 )
 
+_EXPAND_DECISION_WROCLAW = ExpansionDecision(
+    target_query="dentist Wroclaw", strategy="city", axis_value="Wroclaw"
+)
+
 
 def _result(place_id: str) -> PlaceSearchResult:
     return _RESULT.model_copy(update={"id": place_id})
@@ -647,6 +651,117 @@ async def test_backfill_never_triggered_when_round1_meets_limit(
     assert result.backfill_exhausted is False, "backfill never engaged — nothing to report"
     assert result.tried_cities == []
     assert result.tried_industries == []
+
+
+def _city_expansion_mocks(qualify_goal_tracker: list[str]) -> list[Any]:
+    """Backfill mocks where round-2 places only qualify if the outreach goal
+    passed to qualify_lead_activity mentions the expanded city — proving the
+    Backfill loop widens the ICP for that round instead of reusing the
+    original (wrong-city) prompt for every round."""
+    round1_ids = ["place-1", "place-2", "place-3"]
+    round1_qualified = {"place-1", "place-2", "place-3"}
+    round2_ids = ["place-4", "place-5"]
+    search_call_count = [0]
+
+    @activity.defn(name="search_places_activity")
+    async def mock_search(
+        query: str,
+        limit: int,
+        maps_provider: str | None = None,
+    ) -> list[PlaceSearchResult]:
+        idx = search_call_count[0]
+        search_call_count[0] += 1
+        ids = round1_ids if idx == 0 else round2_ids
+        return [_result(i) for i in ids]
+
+    @activity.defn(name="get_place_details_activity")
+    async def mock_details(
+        place_id: str,
+        maps_provider: str | None = None,
+    ) -> PlaceDetails:
+        return _place(place_id)
+
+    @activity.defn(name="qualify_lead_activity")
+    async def mock_qualify(outreach_goal: str, place: PlaceDetails) -> QualifierVerdict:
+        qualify_goal_tracker.append(outreach_goal)
+        if place.id in round1_qualified:
+            return _VERDICT_GOOD
+        # Round-2 places only qualify if the outreach goal was widened to
+        # mention the expanded city — this is what proves the fix threads
+        # round_outreach_goal into qualify instead of the original prompt.
+        return _VERDICT_GOOD if "Wroclaw" in outreach_goal else _VERDICT_BAD
+
+    @activity.defn(name="generate_email_activity")
+    async def mock_email(
+        outreach_goal: str,
+        place: PlaceDetails,
+        verdict: QualifierVerdict,
+        sender_context: str,
+    ) -> GeneratedEmail:
+        return _EMAIL
+
+    @activity.defn(name="persist_phase_result_activity")
+    async def mock_persist(
+        run_id: str,
+        status: str,
+        scraped: int,
+        qualified: int,
+        emails_generated: int,
+        leads: list[Lead],
+        backfill_exhausted: bool = False,
+        tried_cities: list[str] | None = None,
+        tried_industries: list[str] | None = None,
+    ) -> None:
+        assert all(isinstance(lead, Lead) for lead in leads)
+
+    @activity.defn(name="expand_search_query_activity")
+    async def mock_expand(
+        prompt: str,
+        target_query: str,
+        tried_cities: list[str],
+        tried_industries: list[str],
+        still_missing: int,
+    ) -> ExpansionDecision:
+        return _EXPAND_DECISION_WROCLAW
+
+    return [mock_search, mock_details, mock_qualify, mock_email, mock_persist, mock_expand]
+
+
+async def test_backfill_city_expansion_widens_qualify_outreach_goal(
+    env: WorkflowEnvironment,
+) -> None:
+    """City-axis Backfill must qualify the new round's places against a widened
+    outreach goal (original ICP + expanded city), not the bare original prompt —
+    otherwise every new-city lead is rejected for a geo mismatch and the
+    shortfall never closes."""
+    qualify_goal_tracker: list[str] = []
+    mocks = _city_expansion_mocks(qualify_goal_tracker)
+
+    async with Worker(
+        env.client,
+        task_queue="test-leads",
+        workflows=[LeadGenerationWorkflow],
+        workflow_runner=SANDBOXED_RUNNER,
+        activities=mocks,
+    ):
+        result = await env.client.execute_workflow(
+            LeadGenerationWorkflow.run,
+            _INPUT,  # limit=5
+            id="backfill-city-expansion-wf",
+            task_queue="test-leads",
+        )
+
+    round1_calls, round2_calls = qualify_goal_tracker[:3], qualify_goal_tracker[3:]
+    assert all(goal == _INPUT.prompt for goal in round1_calls), "round 1 uses the bare prompt"
+    assert len(round2_calls) == 2
+    assert all(goal.startswith(_INPUT.prompt) and "Wroclaw" in goal for goal in round2_calls), (
+        "round 2 must widen the outreach goal to include the expanded city"
+    )
+
+    qualified = [lead for lead in result.leads if lead.verdict and lead.verdict.is_qualified]
+    assert len(qualified) == 5, "widened goal let the new-city leads qualify, closing the shortfall"
+    assert result.backfill_exhausted is False
+    assert result.tried_cities == ["Wroclaw"]
 
 
 async def test_replay_safety_with_backfill_round(env: WorkflowEnvironment) -> None:
