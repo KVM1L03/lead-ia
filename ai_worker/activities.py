@@ -175,12 +175,16 @@ async def persist_phase_result_activity(
     qualified: int,
     emails_generated: int,
     leads: list[Lead],
+    backfill_exhausted: bool = False,
+    tried_cities: list[str] | None = None,
+    tried_industries: list[str] | None = None,
 ) -> None:
     """Write phase results to the DB so the status endpoint can serve partial data.
 
     Called by the workflow at two points:
       1. After the qualify phase (status='generating', leads=qualify_leads)
-      2. After the email phase   (status='completed',  leads=all_leads)
+      2. After the email phase   (status='completed',  leads=all_leads) — this call
+         also carries the Backfill outcome (backfill_exhausted/tried_cities/tried_industries)
     """
     from ai_worker.db import RunRow, session_factory
 
@@ -194,4 +198,8 @@ async def persist_phase_result_activity(
         row.qualified = qualified
         row.emails_generated = emails_generated
         row.leads_json = leads_json
+        if status == "completed":
+            row.backfill_exhausted = backfill_exhausted
+            row.tried_cities = tried_cities or []
+            row.tried_industries = tried_industries or []
         await db.commit()

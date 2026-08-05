@@ -9,7 +9,8 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, Integer, String, Text
+from sqlalchemy import Boolean, DateTime, Integer, String, Text
+from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
@@ -38,3 +39,13 @@ class RunRow(_Base):
     )
     # JSON-encoded list[Lead]; null until first persist, updated at each phase boundary
     leads_json: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Backfill outcome — written once by persist_phase_result_activity on completion
+    backfill_exhausted: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default="false"
+    )
+    tried_cities: Mapped[list[str]] = mapped_column(
+        ARRAY(String), nullable=False, default=list, server_default="{}"
+    )
+    tried_industries: Mapped[list[str]] = mapped_column(
+        ARRAY(String), nullable=False, default=list, server_default="{}"
+    )
