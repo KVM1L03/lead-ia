@@ -175,7 +175,11 @@ def _make_mocks(
         tried_cities: list[str] | None = None,
         tried_industries: list[str] | None = None,
     ) -> None:
-        pass  # no-op in tests — DB not available
+        # Regression guard: a workflow call site passing fewer positional args than
+        # this activity declares makes Temporal drop type hints and deliver dicts
+        # instead of Lead instances (see ai_worker/workflows.py comment above the
+        # "generating"-phase persist call).
+        assert all(isinstance(lead, Lead) for lead in leads)
 
     @activity.defn(name="expand_search_query_activity")
     async def mock_expand(
@@ -372,7 +376,7 @@ async def test_max_concurrency_respected(env: WorkflowEnvironment) -> None:
         tried_cities: list[str] | None = None,
         tried_industries: list[str] | None = None,
     ) -> None:
-        pass
+        assert all(isinstance(lead, Lead) for lead in leads)
 
     low_concurrency = LeadGenInput(
         prompt="test",
@@ -460,7 +464,7 @@ def _backfill_mocks(
         tried_cities: list[str] | None = None,
         tried_industries: list[str] | None = None,
     ) -> None:
-        pass
+        assert all(isinstance(lead, Lead) for lead in leads)
 
     @activity.defn(name="expand_search_query_activity")
     async def mock_expand(
