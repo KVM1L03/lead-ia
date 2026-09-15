@@ -123,7 +123,7 @@ Lint is enforced in CI. Don't lecture me about style — run `make lint` and let
 - **Run `make lint` and `make test` before saying "done".** "Done" = lint clean + tests green + the new behavior demonstrated.
 - **Fill the PR template** (`.github/pull_request_template.md`): one-sentence summary, invariants checked, verification checklist.
 - **Never commit secrets.** `.env` is git-ignored; use `.env.example` for shape.
-- **User-facing change → one line in `CHANGELOG.md` under `## [Unreleased]`** (Added / Changed / Fixed / Removed), linking the PR. Internal refactors and doc typos don't need an entry. Cutting a release = rename the section to `## [x.y.z] — YYYY-MM-DD`, add a row to the README release table, tag it.
+- **User-facing change → one line in `CHANGELOG.md` under `## [Unreleased]`** (Added / Changed / Fixed / Removed), linking the PR. Internal refactors and doc typos don't need an entry. Cutting a release = rename the section to `## [x.y.z] — YYYY-MM-DD`, tag it.
 - **Use the MCP bridge** for any SerpAPI call. If you find yourself importing `requests` in the worker, stop — you're about to violate invariant #5 in `AGENTS.md`.
 
 ---
@@ -187,7 +187,7 @@ Add label `run-evals` **before** opening the PR, or push a new commit after addi
 ## 7. When you're confused
 
 - Product scope, architecture narrative, UI tokens, code standards → `context/*.md` (§2 above)
-- Architecture overview → README §Architecture and §Engineering decisions
+- Architecture overview → README §How it works and `docs/engineering-decisions.md`
 - Why a model was picked, eval backlog, migration plan → `docs/model-choices.md`
 - Branch protection / merge gates → §6 above ("Merge requirements" table)
 - Deployment + twelve-factor audit → `docs/twelve-factor-audit.md`
