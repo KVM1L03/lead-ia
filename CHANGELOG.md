@@ -13,7 +13,7 @@ file is the release history, and version-to-version compare links land with the 
 
 ### Changed
 - New LeadIA logo and favicon; README restructured into a short overview with a banner, with engineering
-  decisions, evaluation, and deployment notes moved to `docs/engineering-decisions.md`.
+  decisions, evaluation, and deployment notes moved to `docs/engineering-decisions.md` ([#85](https://github.com/KVM1L03/lead-ia/pull/85)).
 - README rewritten: shorter narrative, system + agent-flow diagrams, engineering decisions collapsed into
   scannable sections, release history surfaced ([#84](https://github.com/KVM1L03/lead-ia/pull/84)).
 

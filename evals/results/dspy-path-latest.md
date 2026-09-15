@@ -10,4 +10,4 @@
 | `anthropic/claude-haiku-4-5-20251001` | 81.0% | 88.5% | 78.0% | 82.9% | 1936 ms | 2810 ms | $0.1339 |
 
 Temperature=0 for reproducibility.  
-Errors (parse/API failures counted as false predictions): 0
+Errors (parse/API failures counted as false predictions): 0 
