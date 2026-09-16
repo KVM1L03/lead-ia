@@ -16,14 +16,19 @@ import sys
 from collections.abc import Awaitable, Callable
 from contextlib import AsyncExitStack
 from types import TracebackType
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
+import dspy
 from mcp import ClientSession
 from mcp.client.stdio import StdioServerParameters, stdio_client
 from mcp.types import CallToolResult, TextContent
 
-from ai_worker.agent_graph import LeadProcessingState, process_one_lead
+from ai_worker.agent_graph import build_lead_state, process_one_lead
+from ai_worker.llm_router import get_lm
 from shared.schemas import Lead, PlaceDetails, PlaceSearchResult
+
+if TYPE_CHECKING:
+    from maps_bridge.providers import MapsProvider
 
 # ── MCP transport selection ────────────────────────────────────────────────────
 # MAPS_TRANSPORT=stdio  (default): spawn maps_bridge as a subprocess via MCP stdio.
@@ -184,12 +189,19 @@ async def _call_get_place_details_inline(
 # ── Public API — called by both activities and sync path ────────────────────────
 
 
+def _load_pipeline_lms() -> tuple[dspy.BaseLM, dspy.BaseLM]:
+    return get_lm("qualifier"), get_lm("email")
+
+
 async def search_places(
     query: str,
     limit: int,
     maps_provider: str | None = None,
+    provider: MapsProvider | None = None,
 ) -> list[PlaceSearchResult]:
     """Search Google Places via maps_bridge. Transport selected by MAPS_TRANSPORT."""
+    if provider is not None:
+        return list(await provider.search_places(query, limit))
     if _MAPS_TRANSPORT == "inline":
         return await _call_search_places_inline(query, limit, maps_provider)
     return await _call_search_places_stdio(query, limit, maps_provider)
@@ -198,8 +210,11 @@ async def search_places(
 async def get_place_details(
     place_id: str,
     maps_provider: str | None = None,
+    provider: MapsProvider | None = None,
 ) -> PlaceDetails:
     """Fetch full place details via maps_bridge. Transport selected by MAPS_TRANSPORT."""
+    if provider is not None:
+        return await provider.get_place_details(place_id)
     if _MAPS_TRANSPORT == "inline":
         return await _call_get_place_details_inline(place_id, maps_provider)
     return await _call_get_place_details_stdio(place_id, maps_provider)
@@ -278,19 +293,23 @@ async def _run_pipeline_with_maps(
 
     enriched: list[PlaceDetails | Lead] = list(await asyncio.gather(*[_fetch(r) for r in results]))
 
+    qualifier_lm, email_lm = await asyncio.to_thread(_load_pipeline_lms)
+
     # 3. Per-lead: qualify → decide → email via LangGraph graph (partial failure OK)
     async def _process(place: PlaceDetails) -> Lead:
         async with sem:
-            state: LeadProcessingState = {
-                "outreach_goal": prompt,
-                "sender_context": sender_context,
-                "place": place,
-                "verdict": None,
-                "email": None,
-                "error": None,
-            }
+            state = build_lead_state(
+                outreach_goal=prompt,
+                place=place,
+                sender_context=sender_context,
+            )
             try:
-                return await asyncio.to_thread(process_one_lead, state)
+                return await asyncio.to_thread(
+                    process_one_lead,
+                    state,
+                    qualifier_lm=qualifier_lm,
+                    email_lm=email_lm,
+                )
             except Exception as exc:
                 root = exc.__cause__ if exc.__cause__ is not None else exc
                 return Lead(place=place, error=str(root))

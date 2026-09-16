@@ -48,6 +48,7 @@ with workflow.unsafe.imports_passed_through():
         qualify_lead_activity,
         search_places_activity,
     )
+    from ai_worker.agent_graph import build_lead_state, should_generate_email
     from shared.schemas import (
         ExpansionDecision,
         GeneratedEmail,
@@ -59,6 +60,30 @@ with workflow.unsafe.imports_passed_through():
 
 # Backfill round cap — see docs/adr/0001-backfill-temporal-only.md and CONTEXT.md § Backfill.
 MAX_BACKFILL_ROUNDS = 2
+
+
+def _lead_should_generate_email(lead: Lead, outreach_goal: str, sender_context: str) -> bool:
+    """Route through the shared agent_graph predicate — do not reimplement it here."""
+    return should_generate_email(
+        build_lead_state(
+            outreach_goal=outreach_goal,
+            place=lead.place,
+            sender_context=sender_context,
+            verdict=lead.verdict,
+            email=lead.email,
+            error=lead.error,
+        )
+    )
+
+
+def _qualified_pair(
+    lead: Lead, outreach_goal: str, sender_context: str
+) -> tuple[PlaceDetails, QualifierVerdict] | None:
+    if not _lead_should_generate_email(lead, outreach_goal, sender_context):
+        return None
+    verdict = lead.verdict
+    assert verdict is not None
+    return (lead.place, verdict)
 
 
 # ── Workflow I/O dataclasses ───────────────────────────────────────────────────
@@ -162,9 +187,9 @@ class LeadGenerationWorkflow:
             await asyncio.gather(*[_qualify(p, input.prompt) for p in places])
         )
         qualified_pairs: list[tuple[PlaceDetails, QualifierVerdict]] = [
-            (lead.place, lead.verdict)
+            pair
             for lead in qualify_leads
-            if lead.verdict is not None and lead.verdict.is_qualified
+            if (pair := _qualified_pair(lead, input.prompt, input.sender_context)) is not None
         ]
         total_scraped = len(places)
 
@@ -216,9 +241,10 @@ class LeadGenerationWorkflow:
                 await asyncio.gather(*[_qualify(p, round_outreach_goal) for p in new_places])
             )
             new_qualified_pairs = [
-                (lead.place, lead.verdict)
+                pair
                 for lead in new_qualify_leads
-                if lead.verdict is not None and lead.verdict.is_qualified
+                if (pair := _qualified_pair(lead, round_outreach_goal, input.sender_context))
+                is not None
             ]
             qualify_leads += new_qualify_leads
             qualified_pairs += new_qualified_pairs
@@ -277,7 +303,9 @@ class LeadGenerationWorkflow:
         emailed = sum(1 for lead in email_leads if lead.email is not None)
 
         unqualified = [
-            lead for lead in qualify_leads if lead.verdict is None or not lead.verdict.is_qualified
+            lead
+            for lead in qualify_leads
+            if not _lead_should_generate_email(lead, input.prompt, input.sender_context)
         ]
         all_leads: list[Lead] = unqualified + email_leads
 
