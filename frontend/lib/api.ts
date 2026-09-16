@@ -138,3 +138,16 @@ export async function approveLeads(
   });
 }
 
+export async function exportLeads(runId: string, leads: Lead[]): Promise<string> {
+  const res = await fetch(`${API_BASE}/api/leads/export`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ run_id: runId, leads }),
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => res.statusText);
+    throw new Error(`${res.status} /api/leads/export: ${text}`);
+  }
+  return res.text();
+}
+

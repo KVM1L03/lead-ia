@@ -7,12 +7,13 @@ and the sync execution path (pipeline.py) delegate to the same graph nodes.
 import asyncio
 import json
 from datetime import timedelta
+from typing import Any
 
 from temporalio import activity
 from temporalio.common import RetryPolicy
 
 from ai_worker.agent_graph import (
-    LeadProcessingState,
+    build_lead_state,
     email_node,
     qualify_node,
 )
@@ -101,15 +102,12 @@ async def qualify_lead_activity(outreach_goal: str, place: PlaceDetails) -> Qual
     """Run the LangGraph qualify_node for one place; raises on validation or LLM error."""
     info = activity.info()
     with activity_span("qualify_lead", workflow_id=info.workflow_id or "", lead_id=place.id):
-        state: LeadProcessingState = {
-            "outreach_goal": outreach_goal,
-            "sender_context": "",
-            "place": place,
-            "verdict": None,
-            "email": None,
-            "error": None,
-        }
-        patch = await asyncio.to_thread(qualify_node, state)
+        state = build_lead_state(outreach_goal=outreach_goal, place=place)
+
+        def _qualify() -> dict[str, Any]:
+            return qualify_node(state, lm=get_lm("qualifier"))
+
+        patch = await asyncio.to_thread(_qualify)
         if patch.get("error") is not None:
             raise RuntimeError(patch["error"])
         verdict: QualifierVerdict | None = patch.get("verdict")
@@ -129,15 +127,18 @@ async def expand_search_query_activity(
     """Decide how to widen a Backfill round's search via the ExpandSearchQuery DSPy signature."""
     info = activity.info()
     with activity_span("expand_search_query", workflow_id=info.workflow_id or ""):
-        return await asyncio.to_thread(
-            expand_search_query,
-            prompt,
-            target_query,
-            tried_cities,
-            tried_industries,
-            still_missing,
-            lm=get_lm("qualifier"),
-        )
+
+        def _expand() -> ExpansionDecision:
+            return expand_search_query(
+                prompt,
+                target_query,
+                tried_cities,
+                tried_industries,
+                still_missing,
+                lm=get_lm("qualifier"),
+            )
+
+        return await asyncio.to_thread(_expand)
 
 
 @activity.defn
@@ -150,15 +151,17 @@ async def generate_email_activity(
     """Draft a personalised cold-outreach email via the LangGraph email_node."""
     info = activity.info()
     with activity_span("generate_email", workflow_id=info.workflow_id or "", lead_id=place.id):
-        state: LeadProcessingState = {
-            "outreach_goal": outreach_goal,
-            "sender_context": sender_context,
-            "place": place,
-            "verdict": verdict,
-            "email": None,
-            "error": None,
-        }
-        patch = await asyncio.to_thread(email_node, state)
+        state = build_lead_state(
+            outreach_goal=outreach_goal,
+            place=place,
+            sender_context=sender_context,
+            verdict=verdict,
+        )
+
+        def _email() -> dict[str, Any]:
+            return email_node(state, lm=get_lm("email"))
+
+        patch = await asyncio.to_thread(_email)
         if patch.get("error") is not None:
             raise RuntimeError(patch["error"])
         email_result: GeneratedEmail | None = patch.get("email")

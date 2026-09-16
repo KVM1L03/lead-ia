@@ -1,8 +1,8 @@
 """Tests for the LangGraph lead-processing pipeline.
 
 All tests use DummyLM — no real API calls.
-Node-level unit tests patch get_lm directly.
-Integration tests run the compiled graph end-to-end.
+Node-level unit tests inject DummyLM via the `lm` parameter.
+Integration tests run the compiled graph end-to-end with injected LMs.
 """
 
 from typing import Any
@@ -15,6 +15,7 @@ from ai_worker.agent_graph import (
     LeadProcessingState,
     _decide_node,
     _route,
+    build_lead_state,
     email_node,
     process_one_lead,
     qualify_node,
@@ -63,16 +64,54 @@ _EMAIL_GOOD = {
 
 
 def _base_state(**overrides: Any) -> LeadProcessingState:
-    state: LeadProcessingState = {
+    state = build_lead_state(
+        outreach_goal="B2B dental software",
+        place=_PLACE,
+        sender_context="I run a SaaS that automates patient recalls.",
+    )
+    state.update(overrides)  # type: ignore[typeddict-item]
+    return state
+
+
+# ---------------------------------------------------------------------------
+# build_lead_state
+# ---------------------------------------------------------------------------
+
+
+def test_build_lead_state_fills_optional_fields_with_defaults() -> None:
+    state = build_lead_state(outreach_goal="B2B dental software", place=_PLACE)
+    assert state == {
         "outreach_goal": "B2B dental software",
-        "sender_context": "I run a SaaS that automates patient recalls.",
+        "sender_context": "",
         "place": _PLACE,
         "verdict": None,
         "email": None,
         "error": None,
     }
-    state.update(overrides)  # type: ignore[typeddict-item]
-    return state
+
+
+def test_build_lead_state_preserves_verdict_email_and_error() -> None:
+    from shared.schemas import GeneratedEmail, QualifierVerdict
+
+    verdict = QualifierVerdict(is_qualified=True, score=0.9, reasoning="fit", icp_fit={"x": True})
+    email = GeneratedEmail(
+        subject="Hello",
+        body="Body",
+        personalization_hooks=["hook"],
+        model_used="mock",
+    )
+    state = build_lead_state(
+        outreach_goal="goal",
+        place=_PLACE,
+        sender_context="sender",
+        verdict=verdict,
+        email=email,
+        error="boom",
+    )
+    assert state["verdict"] is verdict
+    assert state["email"] is email
+    assert state["error"] == "boom"
+    assert state["sender_context"] == "sender"
 
 
 # ---------------------------------------------------------------------------
@@ -80,15 +119,15 @@ def _base_state(**overrides: Any) -> LeadProcessingState:
 # ---------------------------------------------------------------------------
 
 
-def test_qualify_node_sets_verdict_on_success(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_qualify_node_sets_verdict_on_success() -> None:
     lm = DummyLM(answers=[_QUALIFY_GOOD])
-    monkeypatch.setattr(ag, "get_lm", lambda _role: lm)
 
-    result = qualify_node(_base_state())
+    result = qualify_node(_base_state(), lm=lm)
 
     assert "verdict" in result
     assert result["verdict"].is_qualified is True
     assert "error" not in result
+    assert len(lm.history) == 1
 
 
 def test_qualify_node_sets_error_on_exception(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -96,9 +135,8 @@ def test_qualify_node_sets_error_on_exception(monkeypatch: pytest.MonkeyPatch) -
         raise RuntimeError("LLM rate limit")
 
     monkeypatch.setattr(ag, "qualify_lead", _bad_qualify)
-    monkeypatch.setattr(ag, "get_lm", lambda _role: DummyLM(answers=[]))
 
-    result = qualify_node(_base_state())
+    result = qualify_node(_base_state(), lm=DummyLM(answers=[]))
 
     assert result.get("verdict") is None
     assert "LLM rate limit" in result["error"]
@@ -185,20 +223,20 @@ def test_should_generate_email_returns_false_when_verdict_none() -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_email_node_sets_email_on_success(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_email_node_sets_email_on_success() -> None:
     from shared.schemas import QualifierVerdict
 
     lm = DummyLM(answers=[_EMAIL_GOOD])
-    monkeypatch.setattr(ag, "get_lm", lambda _role: lm)
 
     verdict = QualifierVerdict(
         is_qualified=True, score=0.9, reasoning="fits ICP", icp_fit={"x": True}
     )
     state = _base_state(verdict=verdict)
-    result = email_node(state)
+    result = email_node(state, lm=lm)
 
     assert "email" in result
     assert len(result["email"].subject) > 0
+    assert len(lm.history) == 1
 
 
 def test_email_node_sets_error_on_exception(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -208,12 +246,11 @@ def test_email_node_sets_error_on_exception(monkeypatch: pytest.MonkeyPatch) -> 
         raise RuntimeError("LLM rate limit")
 
     monkeypatch.setattr(ag, "generate_email", _bad_email)
-    monkeypatch.setattr(ag, "get_lm", lambda _role: DummyLM(answers=[]))
 
     verdict = QualifierVerdict(
         is_qualified=True, score=0.9, reasoning="fits ICP", icp_fit={"x": True}
     )
-    result = email_node(_base_state(verdict=verdict))
+    result = email_node(_base_state(verdict=verdict), lm=DummyLM(answers=[]))
 
     assert result.get("email") is None
     assert "LLM rate limit" in result["error"]
@@ -224,39 +261,27 @@ def test_email_node_sets_error_on_exception(monkeypatch: pytest.MonkeyPatch) -> 
 # ---------------------------------------------------------------------------
 
 
-def test_integration_qualified_lead_returns_lead_with_verdict_and_email(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    call_log: list[str] = []
+def test_integration_qualified_lead_returns_lead_with_verdict_and_email() -> None:
+    qualifier_lm = DummyLM(answers=[_QUALIFY_GOOD])
+    email_lm = DummyLM(answers=[_EMAIL_GOOD])
 
-    def _mock_get_lm(role: str) -> DummyLM:
-        call_log.append(role)
-        if role == "qualifier":
-            return DummyLM(answers=[_QUALIFY_GOOD])
-        return DummyLM(answers=[_EMAIL_GOOD])
-
-    monkeypatch.setattr(ag, "get_lm", _mock_get_lm)
-
-    lead = process_one_lead(_base_state())
+    lead = process_one_lead(_base_state(), qualifier_lm=qualifier_lm, email_lm=email_lm)
 
     assert isinstance(lead, Lead)
     assert lead.verdict is not None
     assert lead.verdict.is_qualified is True
     assert lead.email is not None
     assert lead.error is None
-    assert "qualifier" in call_log
-    assert "email" in call_log
+    assert len(qualifier_lm.history) == 1
+    assert len(email_lm.history) == 1
 
 
-def test_integration_not_qualified_returns_lead_without_email(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    def _mock_get_lm(role: str) -> DummyLM:
-        return DummyLM(answers=[_QUALIFY_BAD])
-
-    monkeypatch.setattr(ag, "get_lm", _mock_get_lm)
-
-    lead = process_one_lead(_base_state())
+def test_integration_not_qualified_returns_lead_without_email() -> None:
+    lead = process_one_lead(
+        _base_state(),
+        qualifier_lm=DummyLM(answers=[_QUALIFY_BAD]),
+        email_lm=DummyLM(answers=[_EMAIL_GOOD]),
+    )
 
     assert lead.verdict is not None
     assert lead.verdict.is_qualified is False
@@ -271,9 +296,12 @@ def test_integration_qualify_error_returns_lead_with_error_field(
         raise RuntimeError("provider down")
 
     monkeypatch.setattr(ag, "qualify_lead", _bad_qualify)
-    monkeypatch.setattr(ag, "get_lm", lambda _role: DummyLM(answers=[]))
 
-    lead = process_one_lead(_base_state())
+    lead = process_one_lead(
+        _base_state(),
+        qualifier_lm=DummyLM(answers=[]),
+        email_lm=DummyLM(answers=[]),
+    )
 
     assert lead.verdict is None
     assert lead.email is None

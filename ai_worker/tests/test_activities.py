@@ -121,7 +121,7 @@ async def test_search_places_propagates_mcp_error(monkeypatch: pytest.MonkeyPatc
 async def test_qualify_lead_returns_verdict(monkeypatch: pytest.MonkeyPatch) -> None:
     env = ActivityEnvironment()
 
-    def _mock_node(state: LeadProcessingState) -> dict[str, Any]:
+    def _mock_node(state: LeadProcessingState, **_: object) -> dict[str, Any]:
         return {"verdict": _VERDICT}
 
     monkeypatch.setattr(act, "qualify_node", _mock_node)
@@ -136,7 +136,7 @@ async def test_qualify_lead_passes_outreach_goal(monkeypatch: pytest.MonkeyPatch
     env = ActivityEnvironment()
     captured: dict[str, Any] = {}
 
-    def _capture_node(state: LeadProcessingState) -> dict[str, Any]:
+    def _capture_node(state: LeadProcessingState, **_: object) -> dict[str, Any]:
         captured["goal"] = state["outreach_goal"]
         captured["place"] = state["place"]
         return {"verdict": _VERDICT}
@@ -157,7 +157,7 @@ async def test_qualify_lead_propagates_validation_error(
 
     env = ActivityEnvironment()
 
-    def _bad_node(state: LeadProcessingState) -> dict[str, Any]:
+    def _bad_node(state: LeadProcessingState, **_: object) -> dict[str, Any]:
         # qualify_node re-raises ValidationError (doesn't catch it)
         QualifierVerdict.model_validate({"is_qualified": "yes", "score": 99})
         return {}  # unreachable
@@ -174,7 +174,7 @@ async def test_qualify_lead_propagates_rate_limit_error(
     """LLM errors (caught by qualify_node as {"error": ...}) are re-raised by the activity."""
     env = ActivityEnvironment()
 
-    def _error_node(state: LeadProcessingState) -> dict[str, Any]:
+    def _error_node(state: LeadProcessingState, **_: object) -> dict[str, Any]:
         return {"error": "rate limit exceeded"}
 
     monkeypatch.setattr(act, "qualify_node", _error_node)
@@ -260,7 +260,7 @@ async def test_expand_search_query_propagates_llm_error(monkeypatch: pytest.Monk
 async def test_generate_email_returns_email(monkeypatch: pytest.MonkeyPatch) -> None:
     env = ActivityEnvironment()
 
-    def _mock_node(state: LeadProcessingState) -> dict[str, Any]:
+    def _mock_node(state: LeadProcessingState, **_: object) -> dict[str, Any]:
         return {"email": _EMAIL}
 
     monkeypatch.setattr(act, "email_node", _mock_node)
@@ -277,7 +277,7 @@ async def test_generate_email_passes_sender_context(monkeypatch: pytest.MonkeyPa
     env = ActivityEnvironment()
     captured: dict[str, Any] = {}
 
-    def _capture_node(state: LeadProcessingState) -> dict[str, Any]:
+    def _capture_node(state: LeadProcessingState, **_: object) -> dict[str, Any]:
         captured["sender_context"] = state["sender_context"]
         captured["qualifier_reasoning"] = state["verdict"].reasoning  # type: ignore[union-attr]
         return {"email": _EMAIL}
@@ -293,7 +293,7 @@ async def test_generate_email_passes_sender_context(monkeypatch: pytest.MonkeyPa
 async def test_generate_email_propagates_llm_error(monkeypatch: pytest.MonkeyPatch) -> None:
     env = ActivityEnvironment()
 
-    def _error_node(state: LeadProcessingState) -> dict[str, Any]:
+    def _error_node(state: LeadProcessingState, **_: object) -> dict[str, Any]:
         return {"error": "LLM unavailable"}
 
     monkeypatch.setattr(act, "email_node", _error_node)

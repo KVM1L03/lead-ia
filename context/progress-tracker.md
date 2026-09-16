@@ -23,6 +23,7 @@ Full dated history lives in `docs/superpowers/plans/`. Most recent:
 
 | Date | Plan | Summary |
 |---|---|---|
+| 2026-09-16 | deepen-export-graph-injection | Issue #86: CSV export collapsed onto `POST /api/leads/export`; `build_lead_state` + `should_generate_email` shared by both orchestrators; provider/LM resolved at entry points and injected (no `frontend/lib/csv.ts`, no `get_provider` settings-vs-active bug) |
 | 2026-08-05 | exhaustion-banner-review-ui | `LeadCohortTable` renders a non-alarming exhaustion banner (`ExhaustionBanner` + pure `buildExhaustionBannerText` in `lib/exhaustionBanner.ts`) sourced from the Prisma `Run` row's `backfillExhausted`/`triedCities`/`triedIndustries`, nothing renders when absent — Backfill 4/4 (issue #76, part of epic #72), `.scratch/backfill/issues/04-exhaustion-banner-review-ui.md`, PR pending |
 | 2026-08-05 | persist-exhaustion-result-status-api | `RunRow` gains `backfill_exhausted`/`tried_cities`/`tried_industries` (SQLAlchemy DDL + Prisma mirror), `LeadGenOutput` and `persist_phase_result_activity` carry them through, `GET /api/leads/status/{id}` returns them — Backfill 3/4 (issue #75, part of epic #72), `.scratch/backfill/issues/03-persist-exhaustion-result-status-api.md`, PR #80 merged |
 | 2026-08-04 | wire-backfill-loop-into-workflow | Backfill round loop wired into `LeadGenerationWorkflow.run()`, between qualify and email — Backfill 2/4 (issue #74, part of epic #72), `.scratch/backfill/issues/02-wire-backfill-loop-into-workflow.md`, PR #79 merged |

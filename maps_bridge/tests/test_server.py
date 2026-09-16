@@ -27,10 +27,6 @@ async def test_get_place_details_returns_known_fixture() -> None:
 
 
 def test_unknown_provider_raises(monkeypatch: pytest.MonkeyPatch) -> None:
-    get_provider.cache_clear()
     monkeypatch.setattr("maps_bridge.config.settings.MAPS_PROVIDER", "unknown_xyz")
-    try:
-        with pytest.raises(NotImplementedError, match="Unknown provider"):
-            get_provider()
-    finally:
-        get_provider.cache_clear()
+    with pytest.raises(NotImplementedError, match="Unknown provider"):
+        get_provider()

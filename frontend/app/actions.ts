@@ -1,8 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { approveLeads, searchLeads, type EditedEmail, type Lead } from "@/lib/api";
-import { leadsToCSV } from "@/lib/csv";
+import { approveLeads, exportLeads, searchLeads, type EditedEmail, type Lead } from "@/lib/api";
 import type { MapsProvider } from "@/lib/mapsProviders";
 import { prisma } from "@/lib/prisma";
 
@@ -48,11 +47,11 @@ export async function serverApproveLeads(
 }
 
 export async function serverExportLeads(
-  _runId: string,
+  runId: string,
   approvedLeads: Lead[],
 ): Promise<{ ok: true; csv: string } | { ok: false; error: string }> {
   try {
-    return { ok: true, csv: leadsToCSV(approvedLeads) };
+    return { ok: true, csv: await exportLeads(runId, approvedLeads) };
   } catch (err) {
     return {
       ok: false,

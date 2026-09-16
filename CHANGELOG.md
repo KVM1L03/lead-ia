@@ -12,6 +12,8 @@ file is the release history, and version-to-version compare links land with the 
 ## [Unreleased]
 
 ### Changed
+- Approve-and-export and Export CSV both serialize through `POST /api/leads/export`; the
+  duplicated client-side CSV builder is gone ([#87](https://github.com/KVM1L03/lead-ia/pull/87)).
 - New LeadIA logo and favicon; README restructured into a short overview with a banner, with engineering
   decisions, evaluation, and deployment notes moved to `docs/engineering-decisions.md` ([#85](https://github.com/KVM1L03/lead-ia/pull/85)).
 - README rewritten: shorter narrative, system + agent-flow diagrams, engineering decisions collapsed into

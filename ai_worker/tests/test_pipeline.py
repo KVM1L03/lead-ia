@@ -305,7 +305,7 @@ async def test_run_pipeline_reuses_one_stdio_session(monkeypatch: pytest.MonkeyP
         stdio_calls.append(params)
         return FakeStdioClient()
 
-    def _process(state: dict[str, object]) -> Lead:
+    def _process(state: dict[str, object], **_: object) -> Lead:
         place = state["place"]
         assert isinstance(place, PlaceDetails)
         return Lead(place=place, verdict=_VERDICT_NO)
@@ -346,7 +346,7 @@ async def test_qualify_lead_activity_calls_graph_qualify_node() -> None:
     """qualify_lead_activity delegates to qualify_node (graph node), not pipeline directly."""
     captured: dict[str, Any] = {}
 
-    def _mock_qualify_node(state: dict[str, Any]) -> dict[str, Any]:
+    def _mock_qualify_node(state: dict[str, Any], **_: object) -> dict[str, Any]:
         captured["goal"] = state["outreach_goal"]
         captured["place"] = state["place"]
         return {"verdict": _VERDICT_YES}
@@ -369,7 +369,7 @@ async def test_generate_email_activity_calls_graph_email_node() -> None:
     """generate_email_activity delegates to email_node (graph node), not pipeline directly."""
     captured: dict[str, Any] = {}
 
-    def _mock_email_node(state: dict[str, Any]) -> dict[str, Any]:
+    def _mock_email_node(state: dict[str, Any], **_: object) -> dict[str, Any]:
         captured["sender_context"] = state["sender_context"]
         return {"email": _EMAIL}
 
@@ -385,3 +385,40 @@ async def test_generate_email_activity_calls_graph_email_node() -> None:
 
     assert captured["sender_context"] == "I sell SaaS"
     assert result.subject == "Hi"
+
+
+@pytest.mark.asyncio
+async def test_search_places_uses_injected_provider() -> None:
+    """Inline search accepts a provider instance — no module-global lookup."""
+
+    class FakeProvider:
+        async def search_places(self, query: str, limit: int) -> list[PlaceSearchResult]:
+            assert query == "dental clinic warsaw"
+            assert limit == 10
+            return [_PLACE_SEARCH]
+
+        async def get_place_details(self, place_id: str) -> PlaceDetails:
+            raise AssertionError("search_places should not fetch details")
+
+    from ai_worker.pipeline import search_places
+
+    results = await search_places("dental clinic warsaw", 10, provider=FakeProvider())
+    assert results == [_PLACE_SEARCH]
+
+
+@pytest.mark.asyncio
+async def test_get_place_details_uses_injected_provider() -> None:
+    """Inline details fetch accepts a provider instance — no module-global lookup."""
+
+    class FakeProvider:
+        async def search_places(self, query: str, limit: int) -> list[PlaceSearchResult]:
+            raise AssertionError("get_place_details should not search")
+
+        async def get_place_details(self, place_id: str) -> PlaceDetails:
+            assert place_id == "p1"
+            return _PLACE_DETAILS
+
+    from ai_worker.pipeline import get_place_details
+
+    details = await get_place_details("p1", provider=FakeProvider())
+    assert details == _PLACE_DETAILS

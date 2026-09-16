@@ -1,29 +1,31 @@
-"""Provider singleton for maps_bridge — importable without starting the MCP server.
+"""Provider factory for maps_bridge — importable without starting the MCP server.
 
 Importing this module does NOT start the FastMCP stdio loop. Safe to import from
 ai_worker when MAPS_TRANSPORT=inline (provider runs in-process).
+
+Callers resolve a provider at the entry point (MCP tool / pipeline activity)
+and pass the instance down. This function is a constructor, not a process-wide
+singleton.
 """
 
 from __future__ import annotations
-
-from functools import lru_cache
 
 from maps_bridge.config import settings
 from maps_bridge.providers import MapsProvider
 
 
-@lru_cache(maxsize=4)
 def get_provider(provider_name: str | None = None) -> MapsProvider:
     """Return a MapsProvider (mock, serpapi, or google_places).
 
     When *provider_name* is omitted, falls back to ``settings.MAPS_PROVIDER``.
+    Branching uses the resolved ``active`` name, never the raw settings value.
     """
     active = provider_name or settings.MAPS_PROVIDER
     if active == "mock":
         from maps_bridge.providers.mock import MockMapsProvider
 
         return MockMapsProvider()
-    if settings.MAPS_PROVIDER == "serpapi":
+    if active == "serpapi":
         if not settings.SERPAPI_API_KEY:
             raise ValueError("SERPAPI_API_KEY must be set when MAPS_PROVIDER=serpapi")
         from maps_bridge.cache import CachingMapsProvider, SQLiteCache

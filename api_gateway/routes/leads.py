@@ -58,19 +58,10 @@ class PromptToQuery(dspy.Signature):  # type: ignore[misc]
 
 _prompt_to_query = dspy.Predict(PromptToQuery)
 
-_lm: dspy.LM | None = None
 
-
-def _get_lm() -> dspy.LM:
-    global _lm
-    if _lm is None:
-        _lm = dspy.LM("anthropic/claude-haiku-4-5-20251001")
-    return _lm
-
-
-def translate_prompt(prompt: str) -> str:
+def translate_prompt(prompt: str, lm: dspy.BaseLM) -> str:
     """Run PromptToQuery and return the search query string."""
-    with dspy.context(lm=_get_lm()):
+    with dspy.context(lm=lm):
         result = _prompt_to_query(prompt=prompt)
     return str(result.target_query).strip()
 
@@ -119,7 +110,12 @@ async def search_leads(
 ) -> SearchResponse:
     """Kick off a lead-generation workflow or run inline (depending on EXECUTION_MODE)."""
     run_id = str(uuid.uuid4())
-    target_query = await asyncio.to_thread(translate_prompt, body.prompt)
+    from ai_worker.llm_router import get_lm
+
+    def _translate(prompt: str) -> str:
+        return translate_prompt(prompt, get_lm("qualifier"))
+
+    target_query = await asyncio.to_thread(_translate, body.prompt)
     maps_provider = _effective_maps_provider(body.maps_provider)
 
     if settings.EXECUTION_MODE == "sync":

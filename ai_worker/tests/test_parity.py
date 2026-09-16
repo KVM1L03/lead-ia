@@ -11,7 +11,6 @@ import pytest
 from dspy.utils import DummyLM
 from temporalio.testing import ActivityEnvironment
 
-import ai_worker.agent_graph as ag
 from ai_worker.activities import generate_email_activity, qualify_lead_activity
 from ai_worker.agent_graph import (
     LeadProcessingState,
@@ -75,14 +74,13 @@ async def test_qualify_node_and_activity_return_same_verdict(
     """qualify_lead_activity and qualify_node produce identical verdicts for same input."""
     # Node path
     lm1 = DummyLM(answers=[_QUALIFY_GOOD])
-    monkeypatch.setattr(ag, "get_lm", lambda _role: lm1)
-    node_patch = qualify_node(_base_state())
+    node_patch = qualify_node(_base_state(), lm=lm1)
     node_verdict = node_patch.get("verdict")
     assert node_verdict is not None, "qualify_node should return a verdict"
 
     # Activity path — fresh LM so DummyLM cursor resets
     lm2 = DummyLM(answers=[_QUALIFY_GOOD])
-    monkeypatch.setattr(ag, "get_lm", lambda _role: lm2)
+    monkeypatch.setattr("ai_worker.activities.get_lm", lambda _role: lm2)
     env = ActivityEnvironment()
     activity_verdict = await env.run(qualify_lead_activity, "B2B dental software", _PLACE)
 
@@ -108,15 +106,14 @@ async def test_email_node_and_activity_return_same_email(
 
     # Node path
     lm1 = DummyLM(answers=[_EMAIL_GOOD])
-    monkeypatch.setattr(ag, "get_lm", lambda _role: lm1)
     state = _base_state(verdict=verdict)
-    node_patch = email_node(state)
+    node_patch = email_node(state, lm=lm1)
     node_email = node_patch.get("email")
     assert node_email is not None, "email_node should return an email"
 
     # Activity path — fresh LM
     lm2 = DummyLM(answers=[_EMAIL_GOOD])
-    monkeypatch.setattr(ag, "get_lm", lambda _role: lm2)
+    monkeypatch.setattr("ai_worker.activities.get_lm", lambda _role: lm2)
     env = ActivityEnvironment()
     activity_email = await env.run(
         generate_email_activity,
