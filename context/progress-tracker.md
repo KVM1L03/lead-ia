@@ -13,9 +13,10 @@ DSPy-path qualifier eval).
 
 ## Current Goal
 
-Merging the `context/` spec template into the existing Superpowers
-spec-driven workflow — see
-`docs/superpowers/specs/2026-07-16-context-driven-spec-workflow-design.md`.
+Site Profile, Contact Ledger and Preflight — closing the four product gaps
+that stop a run from being actionable and a second run from being safe. See
+`docs/superpowers/specs/2026-09-16-site-profile-ledger-preflight-design.md`
+and ADRs 0003–0005; twelve tickets tracked on GitHub.
 
 ## Completed
 
@@ -39,8 +40,8 @@ Full dated history lives in `docs/superpowers/plans/`. Most recent:
 
 ## In Progress
 
-- Root `AGENTS.md` / `CLAUDE.md` restructuring to complete the spec-driven
-  doc system (this task)
+- Site Profile / Contact Ledger / Preflight — design approved, tickets 1–12
+  queued (see Current Goal)
 
 ## Next Up
 
