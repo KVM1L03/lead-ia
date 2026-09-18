@@ -1,7 +1,7 @@
 import pytest
 
 from maps_bridge.provider_factory import get_provider
-from maps_bridge.server import get_place_details, mcp, search_places
+from maps_bridge.server import fetch_site, get_place_details, mcp, search_places
 
 
 def test_server_imports() -> None:
@@ -13,6 +13,13 @@ async def test_tools_registered() -> None:
     names = {t.name for t in tools}
     assert "search_places" in names
     assert "get_place_details" in names
+    assert "fetch_site" in names
+
+
+async def test_fetch_site_uses_mock_path_no_network() -> None:
+    result = await fetch_site(url="https://example.com")
+    assert result.final_url == "https://example.com"
+    assert len(result.text) > 0
 
 
 async def test_search_places_returns_mock_results() -> None:
