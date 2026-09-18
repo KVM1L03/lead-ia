@@ -20,6 +20,13 @@ class PlaceSearchResult(BaseModel):
     review_count: int | None = None
 
 
+class FetchedSite(BaseModel):
+    model_config = ConfigDict(strict=True, extra="forbid")
+
+    text: str
+    final_url: str
+
+
 class PlaceDetails(PlaceSearchResult):
     model_config = ConfigDict(strict=True, extra="forbid")
 
