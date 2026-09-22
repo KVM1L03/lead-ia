@@ -59,16 +59,16 @@ evals/           Promptfoo eval configs + results
 docs/            model choices, deployment audit, roadmap, ADRs, specs & plans
 context/         spec-driven "constitution" — product, architecture, UI, code
                  standards, workflow rules — read before implementing
-.github/         CI workflows, LLM review prompt, PR template
+.github/         CI workflows, PR template
 ```
 
 ---
 
 ## 4. Architecture invariants (NEVER violate)
 
-These are checked by the automated LLM diff review
-(`.github/prompts/llm-review-prompt.txt`) and must be listed in every PR
-template checklist.
+There is no automated check for these (see [ADR 0007](docs/adr/0007-remove-automated-llm-diff-review.md)
+for why) — they must be listed in every PR template checklist and verified
+by a human reviewer.
 
 1. **Microservices only.** `api_gateway/`, `maps_bridge/`, `ai_worker/`, `frontend/` are separate processes. Never collapse them.
 2. **Durable execution.** All business logic lives in Temporal workflows + activities. Workflows are 100% deterministic — no `datetime.now()`, no raw HTTP, no random.
@@ -85,7 +85,7 @@ Copy `.env.example` → `.env` on first clone (`make bootstrap` does this). Neve
 
 | Variable | Purpose | Local default | CI |
 |---|---|---|---|
-| `ANTHROPIC_API_KEY` | Haiku/Sonnet calls, LLM review workflow | required for real LLM | GitHub secret (evals + LLM review) |
+| `ANTHROPIC_API_KEY` | Haiku/Sonnet calls | required for real LLM | GitHub secret (evals) |
 | `SERPAPI_API_KEY` | Google Places via maps_bridge | required for live maps | not used (mock) |
 | `LANGFUSE_*` | Tracing | optional locally | not used |
 | `TEMPORAL_ADDRESS` | Worker connection | `localhost:7233` | not used in unit CI |
@@ -193,7 +193,7 @@ Lint is enforced in CI. Don't lecture me about style — run `make lint` and let
 
 - **Backend unit/integration:** `tests/` — run with `uv run pytest` or `make test`. CI sets `MAPS_PROVIDER=mock` — no real Maps API calls. LLM calls are mocked at test level via `DummyLM` / `monkeypatch` (no `LLM_PROVIDER` env var; that var is not read by production code).
 - **Frontend unit:** `frontend/` — vitest, run via `make test` or `cd frontend && npm test -- --run`.
-- **New logic needs tests.** If you add a function with branching, side effects, or parsing, add a pytest or vitest case (see `mattpocock-skills:tdd`). CI pytest covers this; LLM review does not check test coverage.
+- **New logic needs tests.** If you add a function with branching, side effects, or parsing, add a pytest or vitest case (see `mattpocock-skills:tdd`). CI pytest covers this; there's no automated review pass to catch missing coverage, so `mattpocock-skills:code-review` and human review are what enforce it.
 - **Evals (optional, costs money):** `make eval` locally, or add label `run-evals` on a PR to trigger the `evals` CI job. Only run when changing DSPy signatures or prompt behavior — not on every PR.
 - **Manual smoke:** describe what you clicked/ran in the PR template. Required for UI or end-to-end flow changes.
 
@@ -222,14 +222,14 @@ Lint is enforced in CI. Don't lecture me about style — run `make lint` and let
 3. `git push -u origin <branch>`
 4. Open PR to `main` via `gh pr create` — template in `.github/pull_request_template.md` fills automatically
 5. Report PR URL. **Do not merge** — wait for CI (`python`, `frontend`) + human approval
-6. LLM review (`llm-review.yml`) is advisory only; human review is required (§10 "Merge requirements")
+6. Human review is required before merge — there is no automated review pass (§10 "Merge requirements", [ADR 0007](docs/adr/0007-remove-automated-llm-diff-review.md))
 
 **Never:** push to `main`, force-push, merge your own PR without explicit user ask, open 600 LOC PRs when 3×200 LOC would work.
 
 ### General
 
 - **Plan before writing code** for any change touching >1 file — see §6.
-- **PR size:** aim for ≤200–400 LOC per PR. Hard limit: automated LLM review skips backend diffs >400 lines — split before you hit that ceiling.
+- **PR size:** aim for ≤200–400 LOC per PR — keeps human review fast and thorough; split larger changes into multiple PRs.
 - **Run `make lint` and `make test` before saying "done".** "Done" = lint clean + tests green + the new behavior demonstrated.
 - **Fill the PR template** (`.github/pull_request_template.md`): one-sentence summary, invariants checked, verification checklist.
 - **Never commit secrets.** `.env` is git-ignored; use `.env.example` for shape.
@@ -260,10 +260,10 @@ gh pr create --base main   # or via GitHub UI
 |---|---|---|
 | **CI `python`** | PR open / new commits / reopen | ruff, mypy, pytest (mock providers) |
 | **CI `frontend`** | same | eslint, tsc, vitest, prisma generate |
-| **LLM diff review** | same | Claude Haiku reviews the diff, posts a comment on the PR |
 | **CI `evals`** | same, only if PR has label `run-evals` | promptfoo evals (~$0.10, real Anthropic API) |
 
-New commits on the PR re-trigger CI (previous runs are cancelled). LLM review runs only on PR open/reopen, not on every push.
+New commits on the PR re-trigger CI (previous runs are cancelled). There is no automated
+diff review — see [ADR 0007](docs/adr/0007-remove-automated-llm-diff-review.md).
 
 ### Merge requirements
 
@@ -277,16 +277,7 @@ Configured in **GitHub → Settings → Branches → main** (cannot be stored in
 | Require branch up to date | ✅ |
 | Allow force pushes | ❌ |
 
-`evals` and LLM review do **not** block merge. LLM review is a fast first pass, not a substitute for human review.
-
-### LLM review behavior
-
-- Runs on PR **open/reopen** only (not every push). Backend paths only (`ai_worker/`, `api_gateway/`, `maps_bridge/`, `shared/`); test files excluded from diff.
-- Reviews **diff only** (not full files), using `.github/prompts/llm-review-prompt.txt`.
-- Skips lockfiles, migrations, snapshots, generated code.
-- Posts a comment with verdict: `APPROVE | NEEDS CHANGES | BLOCKING ISSUE`.
-- If verdict is `BLOCKING ISSUE` or findings look real: fix before merge, don't ignore.
-- If backend diff >400 lines: review is skipped with a comment — split the PR.
+`evals` does **not** block merge — it's opt-in per PR (see below).
 
 ### Optional: run evals on a PR
 
@@ -302,7 +293,7 @@ Add label `run-evals` **before** opening the PR, or push a new commit after addi
 - ❌ Adding a new ORM. Prisma + SQLAlchemy already split the load.
 - ❌ Calling blocking/sync code (e.g. DSPy calls) directly inside a coroutine instead of `await asyncio.to_thread(...)`. See `context/code-standards.md` § Async / Concurrency.
 - ❌ Re-explaining style rules here. The linter is the source of truth.
-- ❌ Pushing directly to `main` or opening a 1000-line PR. CI will pass (maybe), but LLM review won't run and human review becomes painful.
+- ❌ Pushing directly to `main` or opening a 1000-line PR. CI will pass (maybe), but human review becomes painful and slow — there's no automated first pass to lean on.
 - ❌ Duplicating instructions between this file and `CLAUDE.md`, `GEMINI.md`, etc. This file is the only place project-wide rules live; tool-specific files import it (`@AGENTS.md`) and add nothing else, so there is exactly one place to keep in sync.
 - ❌ Referencing the `superpowers` plugin or `superpowers:*` skills anywhere in this repo. It is not installed here; use `mattpocock-skills` (§6).
 - ❌ Calling `workflow.execute_activity(some_activity, args=[...])` with fewer positional args than `some_activity`'s full signature (e.g. omitting trailing params that have defaults). Temporal's Python SDK only applies the activity's type hints when the payload count exactly matches the declared parameter count (`temporalio/worker/_activity.py`); on a mismatch it silently decodes every arg as an untyped dict/primitive instead of the annotated Pydantic model, and the mismatch is invisible until the activity body actually calls a model-specific method (`.model_dump_json()`, etc). Always pass every declared param positionally, even ones using their default value.
@@ -320,7 +311,7 @@ Add label `run-evals` **before** opening the PR, or push a new commit after addi
 - Eval results → `evals/results/`
 - How to add a new tool to the MCP bridge → `maps_bridge/README.md`
 - Frontend-specific rules → `frontend/AGENTS.md` (imported by `frontend/CLAUDE.md`)
-- What the LLM reviewer checks → `.github/prompts/llm-review-prompt.txt`
+- Why there's no automated PR review → [ADR 0007](docs/adr/0007-remove-automated-llm-diff-review.md)
 - Past specs and plans → `docs/specs/`, `docs/plans/`
 
 If those don't answer it, ask me before guessing. Don't invent a function, library, or env var.
