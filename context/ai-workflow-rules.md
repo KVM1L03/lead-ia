@@ -2,17 +2,22 @@
 
 ## Approach
 
-This project uses a spec-driven workflow built on the Superpowers Claude
-Code plugin. For any change touching more than one file:
+This project uses a spec-driven workflow built on the `mattpocock-skills`
+plugin (https://github.com/mattpocock/skills) — see root `AGENTS.md` §6 for
+the full cycle. The `superpowers` plugin is not installed here; don't invoke
+`superpowers:*` skills or reference them in new docs. For any change
+touching more than one file:
 
+0. Create the ticket's branch first — before any of the below.
 1. Read `project-overview.md` → `architecture.md` → `ui-context.md`
    (frontend changes only) → `code-standards.md`, in that order.
-2. Invoke the `superpowers:brainstorming` skill — it explores intent,
-   requirements, and 2-3 candidate approaches through dialogue, then writes
-   a design doc to `docs/superpowers/specs/YYYY-MM-DD-<topic>-design.md`.
-3. Once the spec is approved, invoke `superpowers:writing-plans` to produce
-   an implementation plan in `docs/superpowers/plans/YYYY-MM-DD-<topic>.md`.
-4. Execute the plan.
+2. Use `mattpocock-skills:domain-modeling` (and `mattpocock-skills:prototype`
+   or `mattpocock-skills:grilling` where useful) to settle the approach — it
+   writes/updates a design doc at
+   `docs/specs/YYYY-MM-DD-<topic>-design.md`.
+3. Once the approach is settled, write the implementation plan at
+   `docs/plans/YYYY-MM-DD-<topic>.md`.
+4. Execute the plan with `mattpocock-skills:tdd`.
 
 Do not infer or invent behavior from scratch — always ground implementation
 in these context files, `docs/roadmap.md`, and `docs/model-choices.md`.
@@ -21,7 +26,7 @@ in these context files, `docs/roadmap.md`, and `docs/model-choices.md`.
 
 - Work on one feature unit at a time
 - Prefer small, verifiable increments — PR target ≤200–400 LOC (root
-  `CLAUDE.md` §5 "Workflow rules"); hard limit: backend diffs >400 lines
+  `AGENTS.md` §9 "Git workflow"); hard limit: backend diffs >400 lines
   skip the automated LLM review entirely
 - Do not combine unrelated system boundaries (e.g. `maps_bridge` +
   `frontend`) in a single implementation step
@@ -73,4 +78,4 @@ Update the relevant context file whenever implementation changes:
 2. No invariant defined in root `AGENTS.md` was violated
 3. `progress-tracker.md` reflects the completed work (or points at the new
    plan file that documents it)
-4. `make lint && make test` passes (root `CLAUDE.md` §3 "Commands")
+4. `make lint && make test` passes (root `AGENTS.md` §7 "Commands")
