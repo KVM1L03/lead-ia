@@ -4,11 +4,22 @@ Decisions are backed by `evals/` — run `make eval` to reproduce numbers.
 
 ---
 
-## Lead Qualification — `claude-haiku-4-5-20251001`
+## Lead Qualification — decision: TypeSafe Jev `jev-1.13.0`, reasoning: `claude-haiku-4-5-20251001`
 
-**Task:** `QualifyLead` DSPy signature: given an outreach goal and a serialized
-`PlaceDetails`, return `is_qualified` (bool), `score` (0–1), `reasoning` (str),
-`icp_fit` (dict of bool criteria).
+> **Update (issue #105):** the yes/no decision below is no longer Haiku's. A gold-set
+> spike (#103/#104) found TypeSafe Jev `jev-1.13.0` beats the DSPy-path Haiku qualifier
+> on this repo's 100-example gold set — 88.5% F1 / 310 ms vs 82.9% F1 / 1936 ms — and
+> rejects all 30 hard negatives. `qualify_lead()` now asks Jev first (`score_noul`,
+> pinned model, not `jev-latest`) and only calls Haiku, for the one-sentence `reasoning`,
+> on leads that pass; `icp_fit` is always `{}` now (decomposition is #99). See
+> [`docs/adr/0006-jev-for-qualification-decision.md`](adr/0006-jev-for-qualification-decision.md).
+> The eval history below (Haiku vs Gemini vs nano) still describes the **reasoning**
+> model choice, not the decision — Jev was not a candidate in that eval.
+
+**Task (historical — describes the pre-#105 decision path):** `QualifyLead` DSPy
+signature: given an outreach goal and a serialized `PlaceDetails`, return
+`is_qualified` (bool), `score` (0–1), `reasoning` (str), `icp_fit` (dict of bool
+criteria).
 
 **Candidates evaluated** on `evals/datasets/qualifier_gold.jsonl`
 (100 hand-labeled examples, five outreach goals). Eval uses the plain-text prompt

@@ -1,8 +1,9 @@
-"""Decision logic for the Jev qualifier spike (issue #103).
+"""Gold-set scoring logic for the Jev qualifier eval (issue #103 / #105).
 
-Production qualification stays on DSPy ``qualify_lead``. This module only
-turns a gold-set example into a TypeSafe state plus one noul, and scores
-the probability against the hand label.
+The question, state shape, and cutoff are the production ones — imported from
+``ai_worker.jev_qualifier`` — so this eval can never silently drift from what
+``qualify_lead()`` actually asks Jev. This module adds only what the eval
+needs on top: gold-set slicing and confusion-matrix scoring.
 """
 
 from __future__ import annotations
@@ -12,48 +13,34 @@ from collections.abc import Mapping, MutableMapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
-from typesafe_sdk import Noul, NoulCriteria
+from ai_worker.jev_qualifier import (
+    DEFAULT_THRESHOLD,
+    QUESTION_NAME,
+    qualification_question,
+    qualification_state,
+    qualifies,
+)
 
-from shared.schemas import PlaceDetails
+__all__ = [
+    "DEFAULT_THRESHOLD",
+    "QUESTION_NAME",
+    "SWEEP_THRESHOLDS",
+    "Confusion",
+    "api_key_from",
+    "apply_env_file",
+    "format_rate",
+    "outcome",
+    "percentile_95",
+    "qualification_question",
+    "qualification_state",
+    "qualifies",
+    "score_rows",
+    "slice_name",
+    "threshold_sweep",
+]
 
-QUESTION_NAME = "qualified"
-DEFAULT_THRESHOLD = 0.5
 SWEEP_THRESHOLDS: tuple[float, ...] = (0.5, 0.6, 0.7, 0.8, 0.9)
 _SLICES = frozenset({"positive", "hard", "ambiguous"})
-
-
-def qualification_question() -> Noul:
-    """One yes/no: does this business match the outreach goal in the state?"""
-    return Noul(
-        instructions="This business is a qualified lead for the outreach goal.",
-        criteria=NoulCriteria(
-            true="The business clearly matches the goal's role, size, and independence.",
-            false=(
-                "Wrong role, wrong size, a chain or franchise, or only a surface "
-                "keyword match such as a supplier in the same industry."
-            ),
-        ),
-    )
-
-
-def qualification_state(outreach_goal: str, business: PlaceDetails) -> dict[str, object]:
-    """Facts Jev judges. The question itself stays on the noul, not in here."""
-    return {
-        "outreach_goal": outreach_goal,
-        "business": business.model_dump(mode="json"),
-    }
-
-
-def qualifies(noul: float, *, threshold: float = DEFAULT_THRESHOLD) -> bool:
-    """True when the yes-probability is at least the threshold.
-
-    0.5 is Jev's documented coin-flip: the answer is whichever side it leans.
-    """
-    if not 0.0 <= threshold <= 1.0:
-        raise ValueError(f"threshold must be between 0 and 1, got {threshold}")
-    if not 0.0 <= noul <= 1.0:
-        raise ValueError(f"noul must be between 0 and 1, got {noul}")
-    return noul >= threshold
 
 
 def slice_name(description: str) -> str:

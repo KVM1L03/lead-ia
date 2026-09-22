@@ -48,13 +48,13 @@ A shared `orchestrate(steps, executor)` adapter was considered and **rejected** 
 </details>
 
 <details>
-<summary><b>⚖️ Two-model split: Haiku qualifies, Sonnet writes</b></summary>
+<summary><b>⚖️ Three-way split: Jev decides, Haiku explains, Sonnet writes</b></summary>
 
-Qualification runs on every scraped place. Email generation runs only on qualified leads (~40–70% of results). The [eval results](#evaluation) drove the split.
+Qualification runs on every scraped place; email generation runs only on qualified leads (~40–70% of results). As of [#105](https://github.com/KVM1L03/lead-ia/issues/105), the qualify step itself is two-stage: TypeSafe Jev (`jev-1.13.0`) makes the `is_qualified` yes/no call, and Haiku 4.5 is only invoked — on leads Jev passes — to write the one-sentence `reasoning` that the email draft and CSV export read. See [ADR 0006](adr/0006-jev-for-qualification-decision.md).
 
-**Traded away:** simplicity (one model everywhere) and cost predictability.
+**Traded away:** simplicity (one model everywhere), cost predictability, and a single vendor for the qualify step (Jev is a second API key, `TYPESAFE_API_KEY`).
 
-**Why:** Haiku costs ~$0.095 / 100 calls vs ~$0.032 for Gemini Flash, but Sonnet produces noticeably better cold-email copy — and it only runs on the qualified subset. Two models keep per-search cost manageable while putting the quality budget where it's visible. GPT-4.1-nano stays as a last-resort circuit breaker only (2% recall makes it useless for qualification in practice).
+**Why:** Jev beat the production DSPy-path Haiku qualifier on the gold set — 88.5% F1 at 310 ms vs 82.9% F1 at 1936 ms — and rejected all 30 hard negatives, so it now owns the decision. Haiku stays for reasoning quality; Sonnet still writes email copy, and only runs on the qualified subset. GPT-4.1-nano stays as a last-resort circuit breaker only (2% recall makes it useless for qualification in practice).
 
 </details>
 

@@ -35,12 +35,12 @@ _PLACE = PlaceDetails(
     photos=[],
 )
 
-_QUALIFY_GOOD = {
-    "is_qualified": "True",
-    "score": "0.85",
-    "reasoning": "Dental clinic with website — fits outreach goal.",
-    "icp_fit": '{"is_b2b": true, "has_website": true, "size_match": false}',
-}
+_REASONING_GOOD = {"reasoning": "Dental clinic with website — fits outreach goal."}
+
+
+def _noul_qualified(_outreach_goal: str, _place: PlaceDetails) -> float:
+    return 0.85
+
 
 _EMAIL_GOOD = {
     "subject": "Quick question about recalls at Klinika Centrum",
@@ -73,14 +73,15 @@ async def test_qualify_node_and_activity_return_same_verdict(
 ) -> None:
     """qualify_lead_activity and qualify_node produce identical verdicts for same input."""
     # Node path
-    lm1 = DummyLM(answers=[_QUALIFY_GOOD])
-    node_patch = qualify_node(_base_state(), lm=lm1)
+    lm1 = DummyLM(answers=[_REASONING_GOOD])
+    node_patch = qualify_node(_base_state(), lm=lm1, noul_for=_noul_qualified)
     node_verdict = node_patch.get("verdict")
     assert node_verdict is not None, "qualify_node should return a verdict"
 
     # Activity path — fresh LM so DummyLM cursor resets
-    lm2 = DummyLM(answers=[_QUALIFY_GOOD])
+    lm2 = DummyLM(answers=[_REASONING_GOOD])
     monkeypatch.setattr("ai_worker.activities.get_lm", lambda _role: lm2)
+    monkeypatch.setattr("ai_worker.activities.score_noul", _noul_qualified)
     env = ActivityEnvironment()
     activity_verdict = await env.run(qualify_lead_activity, "B2B dental software", _PLACE)
 

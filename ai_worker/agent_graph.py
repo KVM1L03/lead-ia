@@ -8,8 +8,8 @@ entry point (activity / process_one_lead) so importing this module makes no
 API calls.
 """
 
-from collections.abc import Mapping
-from typing import Any
+from collections.abc import Callable, Mapping
+from typing import Any, cast
 
 import dspy
 from langchain_core.runnables import RunnableConfig
@@ -19,6 +19,8 @@ from typing_extensions import TypedDict
 
 from ai_worker.dspy_engine import generate_email, qualify_lead
 from shared.schemas import GeneratedEmail, Lead, PlaceDetails, QualifierVerdict
+
+_NoulFor = Callable[[str, PlaceDetails], float]
 
 # END is Any (langgraph has no stubs); alias to str so _route stays typed.
 _END: str = END
@@ -63,18 +65,31 @@ def _lm_from_config(config: RunnableConfig, key: str) -> dspy.BaseLM:
     return lm
 
 
+def _noul_for_from_config(config: RunnableConfig) -> _NoulFor:
+    configurable = config.get("configurable")
+    if not isinstance(configurable, Mapping):
+        raise RuntimeError("graph config missing configurable.noul_for")
+    noul_for = configurable.get("noul_for")
+    if not callable(noul_for):
+        raise RuntimeError("graph config missing noul_for")
+    return cast(_NoulFor, noul_for)
+
+
 # ---------------------------------------------------------------------------
 # Nodes (public — called directly by Temporal activities)
 # ---------------------------------------------------------------------------
 
 
-def qualify_node(state: LeadProcessingState, *, lm: dspy.BaseLM) -> dict[str, Any]:
+def qualify_node(
+    state: LeadProcessingState, *, lm: dspy.BaseLM, noul_for: _NoulFor
+) -> dict[str, Any]:
     """Qualify the lead; catches LLM/network errors, lets ValidationError propagate."""
     try:
         verdict = qualify_lead(
             state["outreach_goal"],
             state["place"],
             lm=lm,
+            noul_for=noul_for,
         )
         return {"verdict": verdict}
     except ValidationError:
@@ -108,7 +123,11 @@ def email_node(state: LeadProcessingState, *, lm: dspy.BaseLM) -> dict[str, Any]
 
 
 def _qualify_graph_node(state: LeadProcessingState, config: RunnableConfig) -> dict[str, Any]:
-    return qualify_node(state, lm=_lm_from_config(config, "qualifier_lm"))
+    return qualify_node(
+        state,
+        lm=_lm_from_config(config, "qualifier_lm"),
+        noul_for=_noul_for_from_config(config),
+    )
 
 
 def _email_graph_node(state: LeadProcessingState, config: RunnableConfig) -> dict[str, Any]:
@@ -160,15 +179,23 @@ def process_one_lead(
     *,
     qualifier_lm: dspy.BaseLM,
     email_lm: dspy.BaseLM,
+    noul_for: _NoulFor,
 ) -> Lead:
     """Run the full qualify → (email | skip) pipeline for one lead.
 
     Returns a Lead with verdict + email populated if qualified, or error set
-    if the qualify step failed.
+    if the qualify step failed. Callers pass ``score_noul`` for the real Jev
+    call in production; tests inject a stub so no network call is made.
     """
     result: LeadProcessingState = process_lead_graph.invoke(
         state,
-        {"configurable": {"qualifier_lm": qualifier_lm, "email_lm": email_lm}},
+        {
+            "configurable": {
+                "qualifier_lm": qualifier_lm,
+                "email_lm": email_lm,
+                "noul_for": noul_for,
+            }
+        },
     )
     return Lead(
         place=result["place"],

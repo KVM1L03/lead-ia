@@ -1,15 +1,21 @@
-"""Jev qualifier spike — score jev-latest on the hand-labeled gold set.
+"""Jev qualifier eval — score the pinned production Jev model on the gold set.
 
 Does not call production ``qualify_lead``. One noul per example; the headline
 decision is noul >= 0.5. A threshold sweep is written beside the result and
 is not used to choose the headline.
 
+Defaults to the pinned production model (``ai_worker.jev_qualifier.JEV_MODEL``)
+so `make eval-jev` reproduces the gold-set numbers cited in issue #105. Pass
+``--model jev-latest`` to check for drift against an unpinned build.
+
 Usage:
     make eval-jev
     PYTHONPATH=. uv run python evals/jev_eval.py --limit 5
+    PYTHONPATH=. uv run python evals/jev_eval.py --model jev-latest
 
 Requires TYPESAFE_API_KEY in the environment or in .env.
-Issue: https://github.com/KVM1L03/lead-ia/issues/103
+Issues: https://github.com/KVM1L03/lead-ia/issues/103
+        https://github.com/KVM1L03/lead-ia/issues/105
 """
 
 from __future__ import annotations
@@ -45,11 +51,12 @@ from jev_qualify import (  # noqa: E402
 )
 from typesafe_sdk import TypeSafeClient  # noqa: E402
 
+from ai_worker.jev_qualifier import JEV_MODEL  # noqa: E402
 from shared.schemas import PlaceDetails  # noqa: E402
 
 GOLD_PATH = REPO_ROOT / "evals" / "datasets" / "qualifier_gold.jsonl"
 RESULTS_DIR = REPO_ROOT / "evals" / "results"
-_DEFAULT_MODEL = "jev-latest"
+_DEFAULT_MODEL = JEV_MODEL
 
 
 @dataclass(frozen=True)

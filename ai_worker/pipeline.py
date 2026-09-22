@@ -24,6 +24,7 @@ from mcp.client.stdio import StdioServerParameters, stdio_client
 from mcp.types import CallToolResult, TextContent
 
 from ai_worker.agent_graph import build_lead_state, process_one_lead
+from ai_worker.jev_qualifier import score_noul
 from ai_worker.llm_router import get_lm
 from shared.schemas import Lead, PlaceDetails, PlaceSearchResult
 
@@ -309,6 +310,7 @@ async def _run_pipeline_with_maps(
                     state,
                     qualifier_lm=qualifier_lm,
                     email_lm=email_lm,
+                    noul_for=score_noul,
                 )
             except Exception as exc:
                 root = exc.__cause__ if exc.__cause__ is not None else exc

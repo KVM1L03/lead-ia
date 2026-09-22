@@ -5,15 +5,17 @@ that dspy.configure(lm=...) would cause under parallel Temporal activities
 (CLAUDE.md §11 anti-pattern #1).
 """
 
+from collections.abc import Callable
 from typing import Literal
 
 import dspy
 
+from ai_worker.jev_qualifier import qualifies
 from shared.schemas import ExpansionDecision, GeneratedEmail, PlaceDetails, QualifierVerdict
 
 
-class QualifyLead(dspy.Signature):  # type: ignore[misc]
-    """Determine if a business is a qualified lead for a given outreach goal."""
+class ExplainQualification(dspy.Signature):  # type: ignore[misc]
+    """Explain why a business that already passed qualification matches the outreach goal."""
 
     outreach_goal: str = dspy.InputField(
         desc="What kind of leads the user wants, "
@@ -21,14 +23,8 @@ class QualifyLead(dspy.Signature):  # type: ignore[misc]
     )
     business: str = dspy.InputField(desc="JSON-serialized PlaceDetails")
 
-    is_qualified: bool = dspy.OutputField(
-        desc="True only if the business clearly matches the outreach goal"
-    )
-    score: float = dspy.OutputField(desc="Confidence 0.0-1.0")
-    reasoning: str = dspy.OutputField(desc="One sentence explaining the verdict")
-    icp_fit: dict[str, bool] = dspy.OutputField(
-        desc="Dict mapping ICP criteria names to bool, "
-        "e.g. {'is_b2b': True, 'has_website': True, 'size_match': False}"
+    reasoning: str = dspy.OutputField(
+        desc="One sentence explaining why this business matches the outreach goal"
     )
 
 
@@ -87,7 +83,7 @@ class ExpandSearchQuery(dspy.Signature):  # type: ignore[misc]
 
 
 # Module-level predictors — stateless; LM is resolved from context at call time.
-_qualify_predictor = dspy.Predict(QualifyLead)
+_explain_predictor = dspy.Predict(ExplainQualification)
 _email_predictor = dspy.Predict(GenerateEmail)
 _expand_search_query_predictor = dspy.Predict(ExpandSearchQuery)
 
@@ -97,22 +93,32 @@ def qualify_lead(
     place: PlaceDetails,
     *,
     lm: dspy.BaseLM,
+    noul_for: Callable[[str, PlaceDetails], float],
 ) -> QualifierVerdict:
-    """Qualify a lead against an outreach goal using DSPy.
+    """Decide with a Jev noul; ask Haiku for one sentence only when the lead passes.
 
+    ``score`` is the noul. ``noul_for`` is injected so tests never call TypeSafe.
     ``lm`` is applied via dspy.context per-call so parallel Temporal activities
     running this function concurrently never share a global LM setting.
     """
+    score = float(noul_for(outreach_goal, place))
+    if not qualifies(score):
+        return QualifierVerdict(
+            is_qualified=False,
+            score=score,
+            reasoning="",
+            icp_fit={},
+        )
     with dspy.context(lm=lm):
-        prediction = _qualify_predictor(
+        prediction = _explain_predictor(
             outreach_goal=outreach_goal,
             business=place.model_dump_json(exclude_none=True),
         )
     return QualifierVerdict(
-        is_qualified=prediction.is_qualified,
-        score=float(prediction.score),
+        is_qualified=True,
+        score=score,
         reasoning=str(prediction.reasoning),
-        icp_fit=dict(prediction.icp_fit),
+        icp_fit={},
     )
 
 
