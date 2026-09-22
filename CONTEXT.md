@@ -1,4 +1,4 @@
-# LeadForge
+# LeadIA
 
 Prompt → Google Places (via SerpAPI) → cheap-model qualifier → email draft → human approval. Local-first, BYOK, single-user demo.
 

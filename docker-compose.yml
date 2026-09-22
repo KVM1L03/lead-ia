@@ -66,7 +66,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
-      - lead-forge
+      - lead-ia
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U temporal"]
       interval: 5s
@@ -83,7 +83,7 @@ services:
     entrypoint: ["sh", "-c", "createdb -h postgres -U temporal langfuse || true"]
     restart: "no"
     networks:
-      - lead-forge
+      - lead-ia
 
   temporal:
     image: temporalio/auto-setup:1.24.2
@@ -99,7 +99,7 @@ services:
     ports:
       - "7233:7233"
     networks:
-      - lead-forge
+      - lead-ia
 
   temporal-ui:
     image: temporalio/ui:2.30.3
@@ -111,7 +111,7 @@ services:
     ports:
       - "8085:8080"
     networks:
-      - lead-forge
+      - lead-ia
 
   temporal-admin-setup:
     image: temporalio/admin-tools:1.24.2-tctl-1.18.1-cli-1.0.0
@@ -127,7 +127,7 @@ services:
       ]
     restart: "no"
     networks:
-      - lead-forge
+      - lead-ia
 
   clickhouse:
     image: clickhouse/clickhouse-server:24.8
@@ -141,7 +141,7 @@ services:
       - langfuse_clickhouse_data:/var/lib/clickhouse
       - langfuse_clickhouse_logs:/var/log/clickhouse-server
     networks:
-      - lead-forge
+      - lead-ia
     healthcheck:
       test: ["CMD-SHELL", "wget -q -O- http://localhost:8123/ping || exit 1"]
       interval: 5s
@@ -159,7 +159,7 @@ services:
     volumes:
       - langfuse_redis_data:/data
     networks:
-      - lead-forge
+      - lead-ia
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
 
@@ -175,7 +175,7 @@ services:
     volumes:
       - langfuse_minio_data:/data
     networks:
-      - lead-forge
+      - lead-ia
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://127.0.0.1:9000/minio/health/live || exit 1"]
       interval: 5s
@@ -194,7 +194,7 @@ services:
     command: ["mb", "-p", "local/langfuse"]
     restart: "no"
     networks:
-      - lead-forge
+      - lead-ia
 
   langfuse-worker:
     image: langfuse/langfuse-worker:3
@@ -213,7 +213,7 @@ services:
     environment:
       <<: *langfuse-env
     networks:
-      - lead-forge
+      - lead-ia
 
   langfuse:
     image: langfuse/langfuse:3
@@ -235,7 +235,7 @@ services:
       <<: *langfuse-env
       NEXTAUTH_SECRET: ${LANGFUSE_NEXTAUTH_SECRET}
     networks:
-      - lead-forge
+      - lead-ia
 
   api-gateway:
     build:
@@ -257,7 +257,7 @@ services:
       retries: 10
       start_period: 10s
     networks:
-      - lead-forge
+      - lead-ia
 
   ai-worker:
     build:
@@ -272,14 +272,14 @@ services:
     environment:
       <<: *backend-env
     networks:
-      - lead-forge
+      - lead-ia
 
   maps-bridge:
     build:
       context: .
       dockerfile: maps_bridge/Dockerfile
     networks:
-      - lead-forge
+      - lead-ia
 
 volumes:
   postgres_data:
@@ -289,5 +289,5 @@ volumes:
   langfuse_minio_data:
 
 networks:
-  lead-forge:
+  lead-ia:
     driver: bridge

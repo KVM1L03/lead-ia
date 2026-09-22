@@ -87,7 +87,7 @@ make logs       # tail compose logs
 make down       # stop, volumes preserved
 ```
 
-Every change lands through a pull request. CI runs lint and tests on each PR, and a human reviews before merge (see [ADR 0007](docs/adr/0007-remove-automated-llm-diff-review.md) for why there's no automated diff review). **LeadForge** is the internal codename you'll see in `context/` and the compose service names.
+Every change lands through a pull request. CI runs lint and tests on each PR, and a human reviews before merge (see [ADR 0007](docs/adr/0007-remove-automated-llm-diff-review.md) for why there's no automated diff review).
 
 ## License
 

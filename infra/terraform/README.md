@@ -1,6 +1,6 @@
-# LeadForge — Terraform (GCP)
+# LeadIA — Terraform (GCP)
 
-This directory manages the GCP infrastructure for LeadForge using Terraform.
+This directory manages the GCP infrastructure for LeadIA using Terraform.
 
 > **Scope of this config:** VPC, subnet, Serverless VPC connector, Artifact Registry, and API enablement.
 > Cloud Run, Cloud SQL, and Redis are in separate tickets — not here yet.
@@ -108,9 +108,9 @@ Terraform prints the plan again and asks for confirmation. Type `yes` to proceed
 Takes a few minutes on first apply (API enablement can take up to 60 seconds each).
 
 After apply, you can verify in the GCP Console:
-- **VPC Networks** → `lead-forge-vpc`
-- **Artifact Registry** → `lead-forge` repository in `europe-central2`
-- **VPC Access connectors** → `lead-forge-connector`
+- **VPC Networks** → `lead-ia-vpc`
+- **Artifact Registry** → `lead-ia` repository in `europe-central2`
+- **VPC Access connectors** → `lead-ia-connector`
 - **APIs & Services** → all 8 APIs enabled
 
 ### 5. Destroy — remove everything (use this to clean up)
@@ -173,12 +173,12 @@ docker build -f api_gateway/Dockerfile -t lead-api .
 docker build -f ai_worker/Dockerfile  -t lead-worker .
 
 # Tag
-docker tag lead-api   europe-central2-docker.pkg.dev/${PROJECT_ID}/lead-forge/lead-api:${TAG}
-docker tag lead-worker europe-central2-docker.pkg.dev/${PROJECT_ID}/lead-forge/lead-worker:${TAG}
+docker tag lead-api   europe-central2-docker.pkg.dev/${PROJECT_ID}/lead-ia/lead-api:${TAG}
+docker tag lead-worker europe-central2-docker.pkg.dev/${PROJECT_ID}/lead-ia/lead-worker:${TAG}
 
 # Push
-docker push europe-central2-docker.pkg.dev/${PROJECT_ID}/lead-forge/lead-api:${TAG}
-docker push europe-central2-docker.pkg.dev/${PROJECT_ID}/lead-forge/lead-worker:${TAG}
+docker push europe-central2-docker.pkg.dev/${PROJECT_ID}/lead-ia/lead-api:${TAG}
+docker push europe-central2-docker.pkg.dev/${PROJECT_ID}/lead-ia/lead-worker:${TAG}
 ```
 
 ---

@@ -6,6 +6,6 @@
 #   # edit terraform.tfvars
 #   terraform plan
 
-project_id  = "YOUR_GCP_PROJECT_ID"   # e.g. "lead-forge-123456"
+project_id  = "YOUR_GCP_PROJECT_ID"   # e.g. "lead-ia-123456"
 region      = "europe-central2"        # Warsaw; change if you prefer another region
 environment = "demo"                   # used as a label on all GCP resources

@@ -1,4 +1,4 @@
-# Enable all GCP APIs required by LeadForge services.
+# Enable all GCP APIs required by LeadIA services.
 #
 # Using for_each over a set means each API is a separate Terraform resource —
 # you can add/remove individual APIs without touching the others.

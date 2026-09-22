@@ -1,7 +1,7 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
-/* ── LeadForge design tokens (Tailwind v4 CSS-first) ───────────────────────
+/* ── LeadIA design tokens (Tailwind v4 CSS-first) ───────────────────────────
    Fonts: CSS vars are injected on <html> by next/font; Tailwind reads them
    here so `font-serif`, `font-sans`, `font-mono` utilities resolve correctly.
 ─────────────────────────────────────────────────────────────────────────── */
@@ -23,12 +23,12 @@
   --color-surface: #fcfcfa;
   --color-skeleton: #efede6;
 
-  /* Glass surfaces (LeadForge design refresh) */
+  /* Glass surfaces (LeadIA design refresh) */
   --color-glass: rgba(255, 255, 255, 0.86);
   --color-glass-strong: rgba(255, 255, 255, 0.72);
   --color-glass-edge: rgba(10, 10, 10, 0.06);
 
-  /* Status accents (LeadForge design refresh) */
+  /* Status accents (LeadIA design refresh) */
   --color-success: #2cb67d;
   --color-success-fg: #1f9d66;
   --color-success-soft: rgba(44, 182, 125, 0.12);
