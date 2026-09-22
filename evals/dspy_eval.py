@@ -4,6 +4,11 @@ Loads the same 100-example gold set used by the plain-text promptfoo eval
 and runs each example through qualify_lead() — the real production function —
 using the chosen model at temperature=0 for reproducibility.
 
+Since issue #105, the yes/no decision comes from TypeSafe Jev (score_noul),
+not from --model. --model only selects the LM that writes the one-sentence
+reasoning on leads Jev passes. Requires TYPESAFE_API_KEY. For a pure
+decision-quality eval against the gold set, use `make eval-jev` instead.
+
 Usage:
     make eval-dspy                                      # Haiku (default)
     make eval-dspy ARGS="--model gemini/gemini-2.5-flash"
@@ -135,6 +140,7 @@ def main() -> None:
     # Import production code — must be on PYTHONPATH (repo root).
     try:
         from ai_worker.dspy_engine import qualify_lead
+        from ai_worker.jev_qualifier import score_noul
         from shared.schemas import PlaceDetails
     except ImportError as exc:
         sys.exit(
@@ -164,7 +170,9 @@ def main() -> None:
         t0 = time.perf_counter()
         predicted: bool | None
         try:
-            verdict = qualify_lead(outreach_goal=outreach_goal, place=place, lm=lm)
+            verdict = qualify_lead(
+                outreach_goal=outreach_goal, place=place, lm=lm, noul_for=score_noul
+            )
             predicted = verdict.is_qualified
         except Exception as exc:
             print(f"  [{i:3d}] ERROR: {exc}", file=sys.stderr)

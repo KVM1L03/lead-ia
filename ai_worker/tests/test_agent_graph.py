@@ -42,19 +42,16 @@ _PLACE = PlaceDetails(
     photos=[],
 )
 
-_QUALIFY_GOOD = {
-    "is_qualified": "True",
-    "score": "0.85",
-    "reasoning": "Dental clinic with website — fits outreach goal.",
-    "icp_fit": '{"is_b2b": true, "has_website": true, "size_match": false}',
-}
+_REASONING_GOOD = {"reasoning": "Dental clinic with website — fits outreach goal."}
 
-_QUALIFY_BAD = {
-    "is_qualified": "False",
-    "score": "0.15",
-    "reasoning": "Coffee shop — not a dental target.",
-    "icp_fit": '{"is_b2b": false, "has_website": false, "size_match": false}',
-}
+
+def _noul_qualified(_outreach_goal: str, _place: PlaceDetails) -> float:
+    return 0.85
+
+
+def _noul_not_qualified(_outreach_goal: str, _place: PlaceDetails) -> float:
+    return 0.15
+
 
 _EMAIL_GOOD = {
     "subject": "Quick question about recalls at Klinika Centrum",
@@ -120,9 +117,9 @@ def test_build_lead_state_preserves_verdict_email_and_error() -> None:
 
 
 def test_qualify_node_sets_verdict_on_success() -> None:
-    lm = DummyLM(answers=[_QUALIFY_GOOD])
+    lm = DummyLM(answers=[_REASONING_GOOD])
 
-    result = qualify_node(_base_state(), lm=lm)
+    result = qualify_node(_base_state(), lm=lm, noul_for=_noul_qualified)
 
     assert "verdict" in result
     assert result["verdict"].is_qualified is True
@@ -136,7 +133,7 @@ def test_qualify_node_sets_error_on_exception(monkeypatch: pytest.MonkeyPatch) -
 
     monkeypatch.setattr(ag, "qualify_lead", _bad_qualify)
 
-    result = qualify_node(_base_state(), lm=DummyLM(answers=[]))
+    result = qualify_node(_base_state(), lm=DummyLM(answers=[]), noul_for=_noul_qualified)
 
     assert result.get("verdict") is None
     assert "LLM rate limit" in result["error"]
@@ -262,10 +259,12 @@ def test_email_node_sets_error_on_exception(monkeypatch: pytest.MonkeyPatch) -> 
 
 
 def test_integration_qualified_lead_returns_lead_with_verdict_and_email() -> None:
-    qualifier_lm = DummyLM(answers=[_QUALIFY_GOOD])
+    qualifier_lm = DummyLM(answers=[_REASONING_GOOD])
     email_lm = DummyLM(answers=[_EMAIL_GOOD])
 
-    lead = process_one_lead(_base_state(), qualifier_lm=qualifier_lm, email_lm=email_lm)
+    lead = process_one_lead(
+        _base_state(), qualifier_lm=qualifier_lm, email_lm=email_lm, noul_for=_noul_qualified
+    )
 
     assert isinstance(lead, Lead)
     assert lead.verdict is not None
@@ -279,8 +278,9 @@ def test_integration_qualified_lead_returns_lead_with_verdict_and_email() -> Non
 def test_integration_not_qualified_returns_lead_without_email() -> None:
     lead = process_one_lead(
         _base_state(),
-        qualifier_lm=DummyLM(answers=[_QUALIFY_BAD]),
+        qualifier_lm=DummyLM(answers=[]),
         email_lm=DummyLM(answers=[_EMAIL_GOOD]),
+        noul_for=_noul_not_qualified,
     )
 
     assert lead.verdict is not None
@@ -301,6 +301,7 @@ def test_integration_qualify_error_returns_lead_with_error_field(
         _base_state(),
         qualifier_lm=DummyLM(answers=[]),
         email_lm=DummyLM(answers=[]),
+        noul_for=_noul_qualified,
     )
 
     assert lead.verdict is None

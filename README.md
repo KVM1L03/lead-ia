@@ -48,7 +48,7 @@ Next.js does not read the root `.env` — create `frontend/.env.local` with `PRI
 ```
 "dental practices in Warsaw with no online booking"
   → search Google Maps       25 places found
-  → qualify against the ICP  14 fits, each scored and reasoned (Haiku 4.5)
+  → qualify against the ICP  14 fits, decided by Jev and reasoned by Haiku 4.5
   → draft cold emails        14 personalized drafts (Sonnet 4.6)
   → human review             you approve 9 → CSV export
 ```

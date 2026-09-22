@@ -12,6 +12,11 @@ file is the release history, and version-to-version compare links land with the 
 ## [Unreleased]
 
 ### Changed
+- The qualifier's yes/no decision now comes from TypeSafe Jev (`jev-1.13.0`), not Haiku;
+  Haiku 4.5 is only called, on leads Jev passes, to write the one-sentence reasoning shown
+  in the email draft and CSV export. `icp_fit` is always empty (decomposition is #99). See
+  [ADR 0006](docs/adr/0006-jev-for-qualification-decision.md)
+  ([#106](https://github.com/KVM1L03/lead-ia/pull/106)).
 - Approve-and-export and Export CSV both serialize through `POST /api/leads/export`; the
   duplicated client-side CSV builder is gone ([#87](https://github.com/KVM1L03/lead-ia/pull/87)).
 - New LeadIA logo and favicon; README restructured into a short overview with a banner, with engineering

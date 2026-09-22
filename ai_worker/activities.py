@@ -18,6 +18,7 @@ from ai_worker.agent_graph import (
     qualify_node,
 )
 from ai_worker.dspy_engine import expand_search_query
+from ai_worker.jev_qualifier import score_noul
 from ai_worker.llm_router import get_lm
 from ai_worker.observability import activity_span
 from ai_worker.pipeline import (
@@ -105,7 +106,7 @@ async def qualify_lead_activity(outreach_goal: str, place: PlaceDetails) -> Qual
         state = build_lead_state(outreach_goal=outreach_goal, place=place)
 
         def _qualify() -> dict[str, Any]:
-            return qualify_node(state, lm=get_lm("qualifier"))
+            return qualify_node(state, lm=get_lm("qualifier"), noul_for=score_noul)
 
         patch = await asyncio.to_thread(_qualify)
         if patch.get("error") is not None:

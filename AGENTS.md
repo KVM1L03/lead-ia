@@ -57,7 +57,7 @@ template checklist.
 
 1. **Microservices only.** `api_gateway/`, `maps_bridge/`, `ai_worker/`, `frontend/` are separate processes. Never collapse them.
 2. **Durable execution.** All business logic lives in Temporal workflows + activities. Workflows are 100% deterministic — no `datetime.now()`, no raw HTTP, no random.
-3. **No raw prompt strings for extraction/qualification.** Use DSPy signatures. Email generation may use templated prompts but must be traced in Langfuse.
+3. **No raw prompt strings for extraction, or for anything an LLM decides.** Use DSPy signatures. Email generation may use templated prompts but must be traced in Langfuse. Exception: the qualifier's `is_qualified` yes/no call is a TypeSafe Jev noul (`ai_worker/jev_qualifier.py`, pinned `jev-1.13.0`), not a DSPy signature — see [ADR 0006](docs/adr/0006-jev-for-qualification-decision.md). DSPy still owns the qualifier's `reasoning` text and every other LLM task.
 4. **Strict typing.** Pydantic v2 strict mode on Python. `strict: true` on TypeScript. Zero `Any`, zero `as unknown as X`.
 5. **Zero trust.** MCP bridge is the only thing that talks to SerpAPI. The agent calls MCP tools, never the network directly.
 6. **Schemas live in `shared/`.** Both backend and frontend (via codegen or hand-mirror) consume the same Pydantic contracts.
@@ -78,7 +78,7 @@ Copy `.env.example` → `.env` on first clone (`make bootstrap` does this). Neve
 | `MAPS_PROVIDER` | Maps adapter | `mock` | `mock` (set in CI) |
 | `QUALIFIER_MODEL` | Override qualifier LM (optional) | unset → uses `llm_router` default | — |
 | `EMAIL_MODEL` | Override email LM (optional) | unset → uses `llm_router` default | — |
-| `TYPESAFE_API_KEY` | Jev qualifier spike (`make eval-jev`, issue #103) | empty | not used |
+| `TYPESAFE_API_KEY` | Jev qualifier decision (`score_noul`, pinned `jev-1.13.0`) + `make eval-jev` | required for `qualify_lead()` | not used (unit LLM calls mocked) |
 
 Use `MAPS_PROVIDER=mock` locally to skip SerpAPI calls (fixtures from
 `maps_bridge` mock adapter). LLM mock is test-level via
