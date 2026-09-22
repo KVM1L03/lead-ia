@@ -1,0 +1,2 @@
+timestamp,requested_model,resolved_model,threshold,n,accuracy,precision,recall,f1,latency_avg_ms,latency_p95_ms,input_tokens,output_tokens,errors
+2026-09-22T08:03:59Z,jev-latest,jev-1.13.0,0.50,100,0.8700,0.9259,0.8475,0.8850,310.3,385.8,51916,2000,0
