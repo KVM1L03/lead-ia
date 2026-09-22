@@ -6,9 +6,9 @@
 
 <!-- Describe the change in one sentence. -->
 
-## Which CLAUDE.md invariants did you check?
+## Which AGENTS.md invariants did you check?
 
-<!-- List the relevant invariants from CLAUDE.md you verified are not violated. -->
+<!-- List the relevant invariants from AGENTS.md you verified are not violated. -->
 
 - [ ]
 - [ ]

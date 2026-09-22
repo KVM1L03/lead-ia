@@ -61,7 +61,7 @@ jobs:
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: '🤖 **LLM review skipped** — backend diff is ${{ steps.diff.outputs.diff_lines }} lines (>400). Split this PR into smaller chunks per CLAUDE.md §5.'
+              body: '🤖 **LLM review skipped** — backend diff is ${{ steps.diff.outputs.diff_lines }} lines (>400). Split this PR into smaller chunks per AGENTS.md §9.'
             })
 
       - name: Call Claude (Haiku) for review

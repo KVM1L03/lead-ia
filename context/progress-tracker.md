@@ -1,7 +1,7 @@
 # Progress Tracker
 
 Update this file after every meaningful implementation change. This is a
-rolling index into `docs/superpowers/plans/`, not a full duplicate log —
+rolling index into `docs/plans/`, not a full duplicate log —
 when a new plan lands, add one row to Completed; don't re-narrate its
 contents here.
 
@@ -15,12 +15,12 @@ DSPy-path qualifier eval).
 
 Site Profile, Contact Ledger and Preflight — closing the four product gaps
 that stop a run from being actionable and a second run from being safe. See
-`docs/superpowers/specs/2026-09-16-site-profile-ledger-preflight-design.md`
+`docs/specs/2026-09-16-site-profile-ledger-preflight-design.md`
 and ADRs 0003–0005; twelve tickets tracked on GitHub.
 
 ## Completed
 
-Full dated history lives in `docs/superpowers/plans/`. Most recent:
+Full dated history lives in `docs/plans/`. Most recent:
 
 | Date | Plan | Summary |
 |---|---|---|
@@ -68,13 +68,19 @@ Full dated history lives in `docs/superpowers/plans/`. Most recent:
 
 ## Session Notes
 
-- The `superpowers` Claude Code plugin referenced by root `CLAUDE.md` §2 (the
-  `brainstorming` / `writing-plans` skills, `docs/superpowers/specs/` and
-  `docs/superpowers/plans/`) is not installed in this environment — only
-  `mattpocock-skills` is present under `~/.claude/plugins`. Backfill 1/4
+- 2026-09-22: Resolved the `superpowers` vs. `mattpocock-skills` mismatch
+  flagged below — root `AGENTS.md` §6 now documents the `mattpocock-skills`
+  workflow (the plugin actually installed in this environment) instead of
+  `superpowers`, `docs/superpowers/{specs,plans}/` were renamed to
+  `docs/specs/` and `docs/plans/`, and `CLAUDE.md` was slimmed to a one-line
+  `@AGENTS.md` pointer so there is one canonical instruction file. See PR for
+  `chore/consolidate-agent-instructions`.
+- (Historical, now resolved above) The `superpowers` Claude Code plugin
+  referenced by the old root `CLAUDE.md` §2 (the `brainstorming` /
+  `writing-plans` skills, `docs/superpowers/specs/` and
+  `docs/superpowers/plans/`) was never installed in this environment — only
+  `mattpocock-skills` was present under `~/.claude/plugins`. Backfill 1/4
   (issue #73) also shipped with no spec/plan doc under `docs/superpowers/`,
-  confirming that step was skipped in practice, not just this session.
+  confirming that step was skipped in practice, not just one session.
   Backfill 2/4 (issue #74) proceeded straight from the ticket file + ADRs to
-  implementation on a feature branch, following that precedent. Flag this to
-  the user if a properly-installed `superpowers` plugin is expected — the
-  root `CLAUDE.md` workflow section may need updating to match reality.
+  implementation on a feature branch, following that precedent.
