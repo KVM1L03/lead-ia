@@ -14,7 +14,8 @@ file is the release history, and version-to-version compare links land with the 
 ### Removed
 - The automated LLM diff review CI workflow (`llm-review.yml`) — low signal relative to the
   review time it cost, and occasionally misjudged a diff. PRs now rely on `python`/`frontend`
-  CI plus human review only. See [ADR 0007](docs/adr/0007-remove-automated-llm-diff-review.md).
+  CI plus human review only. See [ADR 0007](docs/adr/0007-remove-automated-llm-diff-review.md)
+  ([#110](https://github.com/KVM1L03/lead-ia/pull/110)).
 
 ### Changed
 - The qualifier's yes/no decision now comes from TypeSafe Jev (`jev-1.13.0`), not Haiku;
