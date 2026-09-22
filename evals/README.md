@@ -52,7 +52,11 @@ This:
 
 **Estimated cost:** ~$0.05 per full run (100 examples × 3 providers at Haiku/Flash/nano pricing).
 
-## Results (2025-07-03 run on gold set v1)
+## Jev spike
+
+`make eval-jev` scores the same gold set with TypeSafe Jev (one noul per example, headline cutoff `noul >= 0.5`). It does not call production `qualify_lead`. Requires `TYPESAFE_API_KEY` in `.env`. Writes `evals/results/jev-gold-latest.md`. Tracked as issue #103.
+
+## Results (2026-07-03 run on gold set v1)
 
 Providers evaluated at temperature=0. Latency is wall-clock per-request (network + model).
 Positive class = `is_qualified: true`.

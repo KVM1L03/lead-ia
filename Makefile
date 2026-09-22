@@ -1,6 +1,6 @@
 export PATH := $(HOME)/.n/bin:$(PATH)
 
-.PHONY: bootstrap install dev dev-api dev-frontend lint format typecheck test eval eval-dspy db-push frontend up-build up down logs logs-temporal logs-langfuse clean
+.PHONY: bootstrap install dev dev-api dev-frontend lint format typecheck test eval eval-dspy eval-jev db-push frontend up-build up down logs logs-temporal logs-langfuse clean
 
 bootstrap: install
 	@[ -f .env ] || cp .env.example .env
@@ -50,6 +50,11 @@ eval-dspy:
 	@mkdir -p evals/results
 	@test -f .env || (echo "Missing .env — copy from .env.example" && exit 1)
 	PYTHONPATH=$(CURDIR) uv run python evals/dspy_eval.py $(ARGS)
+
+eval-jev:
+	@mkdir -p evals/results
+	@test -f .env || (echo "Missing .env — copy from .env.example" && exit 1)
+	PYTHONPATH=$(CURDIR) uv run python evals/jev_eval.py $(ARGS)
 
 db-push:
 	cd frontend && npx prisma db push --accept-data-loss

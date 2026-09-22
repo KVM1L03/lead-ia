@@ -78,6 +78,7 @@ Copy `.env.example` → `.env` on first clone (`make bootstrap` does this). Neve
 | `MAPS_PROVIDER` | Maps adapter | `mock` | `mock` (set in CI) |
 | `QUALIFIER_MODEL` | Override qualifier LM (optional) | unset → uses `llm_router` default | — |
 | `EMAIL_MODEL` | Override email LM (optional) | unset → uses `llm_router` default | — |
+| `TYPESAFE_API_KEY` | Jev qualifier spike (`make eval-jev`, issue #103) | empty | not used |
 
 Use `MAPS_PROVIDER=mock` locally to skip SerpAPI calls (fixtures from
 `maps_bridge` mock adapter). LLM mock is test-level via

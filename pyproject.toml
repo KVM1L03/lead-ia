@@ -28,6 +28,7 @@ dev = [
     "pytest-asyncio",
     "vcrpy",
     "fakeredis>=2.26",
+    "typesafe-sdk>=0.7.1",
 ]
 
 [tool.uv]
