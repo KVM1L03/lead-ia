@@ -225,7 +225,7 @@ def render_html(providers: dict[str, ProviderMetrics], run_ts: str) -> str:
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>LeadForge Qualifier Eval — {run_ts}</title>
+<title>LeadIA Qualifier Eval — {run_ts}</title>
 <style>
   body {{ font-family: system-ui, sans-serif; max-width: 960px; margin: 40px auto; color: #1a1a1a; }}
   h1 {{ font-size: 1.4rem; }}
@@ -237,7 +237,7 @@ def render_html(providers: dict[str, ProviderMetrics], run_ts: str) -> str:
 </style>
 </head>
 <body>
-<h1>LeadForge Qualifier Eval Results</h1>
+<h1>LeadIA Qualifier Eval Results</h1>
 <p>Run: {run_ts} UTC &nbsp;|&nbsp; Dataset: <code>evals/datasets/qualifier_gold.jsonl</code> (100 hand-labeled examples)</p>
 <table>
   <tr>

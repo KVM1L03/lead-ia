@@ -4,7 +4,7 @@
 
 resource "google_compute_network" "vpc" {
   project                 = var.project_id
-  name                    = "lead-forge-vpc"
+  name                    = "lead-ia-vpc"
   auto_create_subnetworks = false
 
   labels = {
@@ -21,7 +21,7 @@ resource "google_compute_network" "vpc" {
 
 resource "google_compute_subnetwork" "subnet" {
   project       = var.project_id
-  name          = "lead-forge-subnet"
+  name          = "lead-ia-subnet"
   region        = var.region
   network       = google_compute_network.vpc.id
   ip_cidr_range = "10.0.0.0/24"
@@ -45,7 +45,7 @@ resource "google_compute_subnetwork" "subnet" {
 
 resource "google_vpc_access_connector" "connector" {
   project       = var.project_id
-  name          = "lead-forge-connector"
+  name          = "lead-ia-connector"
   region        = var.region
   network       = google_compute_network.vpc.id
   ip_cidr_range = "10.8.0.0/28"

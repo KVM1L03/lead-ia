@@ -1597,7 +1597,7 @@ wheels = [
 ]
 
 [[package]]
-name = "lead-forge"
+name = "lead-ia"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [

@@ -1,4 +1,4 @@
-# LeadForge Glass Restyle Implementation Plan
+# LeadIA Glass Restyle Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking. Per established user preference, execute tasks inline (no per-task subagent review loop) — see `execution-style-lean` memory.
 
@@ -57,12 +57,12 @@ Only existing files are modified — no creates besides the plan doc itself (alr
 In `frontend/app/globals.css`, inside the existing `@theme { ... }` block (currently lines 12-30), after the `--color-skeleton: #efede6;` line, add:
 
 ```css
-  /* Glass surfaces (LeadForge design refresh) */
+  /* Glass surfaces (LeadIA design refresh) */
   --color-glass: rgba(255, 255, 255, 0.86);
   --color-glass-strong: rgba(255, 255, 255, 0.72);
   --color-glass-edge: rgba(10, 10, 10, 0.06);
 
-  /* Status accents (LeadForge design refresh) */
+  /* Status accents (LeadIA design refresh) */
   --color-success: #2cb67d;
   --color-success-fg: #1f9d66;
   --color-success-soft: rgba(44, 182, 125, 0.12);
@@ -863,7 +863,7 @@ Run: `grep -rn "rounded-\[3px\]\|rounded-\[4px\]" frontend/components frontend/a
 
 ```bash
 git add context/ui-context.md
-git commit -m "docs: update ui-context.md for the LeadForge glass restyle"
+git commit -m "docs: update ui-context.md for the LeadIA glass restyle"
 ```
 
 ---
@@ -880,11 +880,11 @@ Expected: all green (ruff, mypy, pytest untouched/unaffected; eslint, tsc, vites
 - [ ] **Step 2: Push and open PR**
 
 ```bash
-git push -u origin feat/leadforge-glass-restyle
+git push -u origin feat/leadia-glass-restyle
 gh pr create --base main
 ```
 
-Fill the PR template per `.github/pull_request_template.md`: one-sentence summary ("Restyle existing frontend screens to match the imported LeadForge Claude Design mockup — glass surfaces, larger radii, status color tokens"), note in the invariants checklist that this is a pure frontend styling change (no schema/API/Temporal/DSPy touched), and describe the manual smoke test from Task 8 in the verification checklist.
+Fill the PR template per `.github/pull_request_template.md`: one-sentence summary ("Restyle existing frontend screens to match the imported LeadIA Claude Design mockup — glass surfaces, larger radii, status color tokens"), note in the invariants checklist that this is a pure frontend styling change (no schema/API/Temporal/DSPy touched), and describe the manual smoke test from Task 8 in the verification checklist.
 
 - [ ] **Step 3: Report the PR URL back to the user and stop — do not merge.**
 

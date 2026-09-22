@@ -1,4 +1,4 @@
-# LeadIA (LeadForge) — Project Overview
+# LeadIA — Project Overview
 
 ## Overview
 

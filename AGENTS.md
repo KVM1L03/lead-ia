@@ -1,4 +1,4 @@
-# LeadIA (LeadForge) — Agent Rules
+# LeadIA — Agent Rules
 
 > Production-grade, AI-powered lead generation pipeline.
 > Prompt → Google Places (via SerpAPI) → cheap-model qualifier → email draft → human approval.
@@ -89,7 +89,7 @@ Copy `.env.example` → `.env` on first clone (`make bootstrap` does this). Neve
 | `SERPAPI_API_KEY` | Google Places via maps_bridge | required for live maps | not used (mock) |
 | `LANGFUSE_*` | Tracing | optional locally | not used |
 | `TEMPORAL_ADDRESS` | Worker connection | `localhost:7233` | not used in unit CI |
-| `DATABASE_URL` | App + cache DB | `sqlite:///./lead-forge.db` | not used in unit CI |
+| `DATABASE_URL` | App + cache DB | `sqlite:///./lead-ia.db` | not used in unit CI |
 | `MAPS_PROVIDER` | Maps adapter | `mock` | `mock` (set in CI) |
 | `QUALIFIER_MODEL` | Override qualifier LM (optional) | unset → uses `llm_router` default | — |
 | `EMAIL_MODEL` | Override email LM (optional) | unset → uses `llm_router` default | — |

@@ -1,4 +1,4 @@
-# LeadForge Qualifier Eval Suite
+# LeadIA Qualifier Eval Suite
 
 Evaluates three LLMs on a 100-example hand-labeled dataset that mirrors the
 `QualifyLead` DSPy signature used in production. The gold set covers five

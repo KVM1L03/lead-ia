@@ -18,6 +18,10 @@ file is the release history, and version-to-version compare links land with the 
   ([#110](https://github.com/KVM1L03/lead-ia/pull/110)).
 
 ### Changed
+- Dropped the `LeadForge` internal codename in favor of `LeadIA` everywhere — docs, the
+  Python project name (`pyproject.toml`), the local Docker network, and the GCP Terraform
+  resource names (VPC, subnet, connector, Artifact Registry repo) in `infra/terraform/`
+  ([#111](https://github.com/KVM1L03/lead-ia/pull/111)).
 - The qualifier's yes/no decision now comes from TypeSafe Jev (`jev-1.13.0`), not Haiku;
   Haiku 4.5 is only called, on leads Jev passes, to write the one-sentence reasoning shown
   in the email draft and CSV export. `icp_fit` is always empty (decomposition is #99). See
@@ -68,7 +72,7 @@ the requested limit, an LLM decides which axis to widen and the search re-runs.
 ## [0.7.0] — 2026-07-29
 
 ### Added
-- Glass-morphism restyle of the LeadForge design system across the app shell and review UI
+- Glass-morphism restyle of the LeadIA design system across the app shell and review UI
   ([#70](https://github.com/KVM1L03/lead-ia/pull/70)).
 - Demo prompt examples that are known to hit recorded fixtures — no more guessing what to type
   ([#71](https://github.com/KVM1L03/lead-ia/pull/71)).
@@ -155,7 +159,7 @@ The human-in-the-loop surface: everything a reviewer needs to approve, edit, or 
 
 ### Added
 - Prisma 7 data layer — schema, client singleton, read path ([#24](https://github.com/KVM1L03/lead-ia/pull/24)).
-- LeadForge design system + app shell ([#25](https://github.com/KVM1L03/lead-ia/pull/25)).
+- LeadIA design system + app shell ([#25](https://github.com/KVM1L03/lead-ia/pull/25)).
 - Run progress view — three pipeline stages with a live tail ([#28](https://github.com/KVM1L03/lead-ia/pull/28)).
 - `LeadCohortTable` + `EmailDrawer` for review ([#29](https://github.com/KVM1L03/lead-ia/pull/29)).
 - Run history page with delete and approval stats ([#30](https://github.com/KVM1L03/lead-ia/pull/30)).
