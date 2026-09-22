@@ -26,8 +26,7 @@ in these context files, `docs/roadmap.md`, and `docs/model-choices.md`.
 
 - Work on one feature unit at a time
 - Prefer small, verifiable increments — PR target ≤200–400 LOC (root
-  `AGENTS.md` §9 "Git workflow"); hard limit: backend diffs >400 lines
-  skip the automated LLM review entirely
+  `AGENTS.md` §9 "Git workflow") — keeps human review fast
 - Do not combine unrelated system boundaries (e.g. `maps_bridge` +
   `frontend`) in a single implementation step
 
@@ -60,7 +59,6 @@ Do not modify unless explicitly instructed:
 - `frontend/app/generated/prisma/*` — gitignored, rebuilt by
   `prisma generate`
 - Database migrations already applied
-- `.github/prompts/llm-review-prompt.txt` — governs the automated PR review
 
 ## Keeping Docs in Sync
 
