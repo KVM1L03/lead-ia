@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import csv
 import io
+import re
 from datetime import date
 from typing import Annotated
 
@@ -23,6 +24,12 @@ from shared.schemas import Lead
 router = APIRouter(prefix="/api/leads")
 
 _leads_ta: TypeAdapter[list[Lead]] = TypeAdapter(list[Lead])
+
+DANGEROUS = ("=", "+", "-", "@", "\t", "\r")
+
+# A plain phone number (e.g. "+48 42 123 456") starts with "+" but cannot carry a formula.
+_PHONE_RE = re.compile(r"[+\d][\d\s()\-]*")
+
 
 COLUMNS: list[str] = [
     "business_name",
@@ -40,6 +47,20 @@ COLUMNS: list[str] = [
 ]
 
 
+def _safe_cell(value: str) -> str:
+    """Escape dangerous characters in a cell value."""
+    if value.startswith(DANGEROUS):
+        return "'" + value
+    return value
+
+
+def _safe_phone(value: str) -> str:
+    """Leave well-formed phone numbers untouched; escape anything else."""
+    if _PHONE_RE.fullmatch(value):
+        return value
+    return _safe_cell(value)
+
+
 def leads_to_csv(leads: list[Lead]) -> str:
     """Serialize approved leads to CSV string.
 
@@ -53,25 +74,26 @@ def leads_to_csv(leads: list[Lead]) -> str:
     for lead in leads:
         if lead.decision != "approved":
             continue
+        cells = {
+            "business_name": lead.place.name,
+            "address": lead.place.address,
+            "website": lead.place.website or "",
+            "phone": lead.place.phone or "",
+            "category": lead.place.category,
+            "rating": f"{lead.place.rating:g}" if lead.place.rating is not None else "",
+            "review_count": str(lead.place.review_count)
+            if lead.place.review_count is not None
+            else "",
+            "qualifier_score": f"{lead.verdict.score:g}" if lead.verdict else "",
+            "qualifier_reasoning": lead.verdict.reasoning if lead.verdict else "",
+            "email_subject": lead.email.subject if lead.email else "",
+            "email_body": lead.email.body if lead.email else "",
+            "personalization_hooks": "; ".join(lead.email.personalization_hooks)
+            if lead.email
+            else "",
+        }
         writer.writerow(
-            {
-                "business_name": lead.place.name,
-                "address": lead.place.address,
-                "website": lead.place.website or "",
-                "phone": lead.place.phone or "",
-                "category": lead.place.category,
-                "rating": f"{lead.place.rating:g}" if lead.place.rating is not None else "",
-                "review_count": str(lead.place.review_count)
-                if lead.place.review_count is not None
-                else "",
-                "qualifier_score": f"{lead.verdict.score:g}" if lead.verdict else "",
-                "qualifier_reasoning": lead.verdict.reasoning if lead.verdict else "",
-                "email_subject": lead.email.subject if lead.email else "",
-                "email_body": lead.email.body if lead.email else "",
-                "personalization_hooks": "; ".join(lead.email.personalization_hooks)
-                if lead.email
-                else "",
-            }
+            {k: _safe_phone(v) if k == "phone" else _safe_cell(v) for k, v in cells.items()}
         )
     return buf.getvalue()
 

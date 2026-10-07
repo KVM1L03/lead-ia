@@ -153,6 +153,27 @@ def test_leads_to_csv_null_rating_and_review_count_writes_empty_cells() -> None:
     assert rows[0]["review_count"] == ""
 
 
+def test_formula_in_business_name_is_neutralized() -> None:
+    lead = _make_approved_lead().model_copy(
+        update={"place": _make_place(name='=HYPERLINK("http://zly.pl","Kliknij")')}
+    )
+    rows = list(csv.DictReader(io.StringIO(leads_to_csv([lead]))))
+    assert len(rows) == 1
+    assert rows[0]["business_name"] == '\'=HYPERLINK("http://zly.pl","Kliknij")'
+    assert rows[0]["phone"] == "+48 42 123 456"
+    assert rows[0]["address"] == "ul. Piotrkowska 1, Łódź"
+
+
+def test_malicious_phone_is_neutralized() -> None:
+    lead = _make_approved_lead().model_copy(
+        update={
+            "place": _make_place().model_copy(update={"phone": "+cmd|' /C calc'!A0"}),
+        }
+    )
+    rows = list(csv.DictReader(io.StringIO(leads_to_csv([lead]))))
+    assert rows[0]["phone"] == "'+cmd|' /C calc'!A0"
+
+
 # ── HTTP-level tests ──────────────────────────────────────────────────────────
 
 
