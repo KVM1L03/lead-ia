@@ -13,7 +13,7 @@ Every decided lead gets a decided_at timestamp for auditing.
 from __future__ import annotations
 
 import json
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -75,7 +75,7 @@ async def approve_leads(
 
     leads = _leads_ta.validate_json(row.leads_json)
     target_ids = set(body.lead_ids)
-    now = datetime.utcnow()
+    now = datetime.now(UTC)
     updated = 0
 
     for i, lead in enumerate(leads):

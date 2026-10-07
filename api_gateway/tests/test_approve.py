@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import json
 from collections.abc import AsyncGenerator
+from datetime import timedelta
 from unittest.mock import AsyncMock
 
 import pytest
@@ -238,4 +239,25 @@ async def test_bulk_reject_leads() -> None:
     assert len(rejected) == 5
     assert len(pending) == 5
 
+    app.dependency_overrides.clear()
+
+
+@pytest.mark.asyncio
+async def test_decided_at_ma_strefe_utc() -> None:
+    leads = _make_leads(1)
+    row = _make_row(leads)
+    session = AsyncMock(spec=AsyncSession)
+    session.get = AsyncMock(return_value=row)
+    session.commit = AsyncMock()
+
+    async with _make_http(session) as client:
+        await client.post(
+            "/api/leads/approve",
+            json={"run_id": _RUN_ID, "lead_ids": ["place-000"], "action": "approved"},
+        )
+
+    assert row.leads_json
+    saved = _leads_ta.validate_json(row.leads_json)
+    assert saved[0].decided_at is not None
+    assert saved[0].decided_at.utcoffset() == timedelta(0)
     app.dependency_overrides.clear()
