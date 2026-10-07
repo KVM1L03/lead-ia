@@ -79,13 +79,19 @@ def _get_is_qualified(output: str) -> bool | None:
     """Parse LLM output and extract is_qualified. Returns None on parse failure."""
     try:
         obj = json.loads(_strip_markdown_fences(output))
-        val = obj.get("is_qualified")
-        if isinstance(val, bool):
-            return val
-        if isinstance(val, str):
-            return val.lower() == "true"
-    except (json.JSONDecodeError, AttributeError):
-        pass
+    except json.JSONDecodeError:
+        return None
+    if not isinstance(obj, dict):
+        return None
+    val = obj.get("is_qualified")
+    if isinstance(val, bool):
+        return val
+    if isinstance(val, str):
+        normalized = val.strip().lower()
+        if normalized == "true":
+            return True
+        if normalized == "false":
+            return False
     return None
 
 

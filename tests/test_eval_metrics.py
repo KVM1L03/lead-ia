@@ -42,3 +42,18 @@ def test_non_gemini_zero_cost_stays_zero() -> None:
 
     assert estimated is False
     assert cost == 0.0
+
+
+@pytest.mark.parametrize(
+    ("output", "expected"),
+    [
+        ('{"is_qualified": true}', True),
+        ('{"is_qualified": "maybe"}', None),
+        ('{"is_qualified": "yes"}', None),
+        ('{"is_qualified": " TRUE "}', True),
+        ('{"is_qualified": 1}', None),
+        ("to nie JSON", None),
+    ],
+)
+def test_get_is_qualified(output: str, expected: bool | None) -> None:
+    assert metrics._get_is_qualified(output) is expected
