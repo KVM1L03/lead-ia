@@ -194,12 +194,28 @@ def _client_ip(request: Request) -> str:
     """Return the real client IP, reading X-Forwarded-For before socket peer.
 
     Cloud Run's load balancer overwrites the socket peer with its own address.
-    The real client IP is the first value in X-Forwarded-For.
+    The real client IP is the entry TRUSTED_XFF_POSITION from the right of
+    X-Forwarded-For — leftmost entries are client-controlled and spoofable.
     """
-    forwarded_for = request.headers.get("X-Forwarded-For")
-    if forwarded_for:
-        return forwarded_for.split(",")[0].strip()
-    return request.client.host if request.client else "unknown"
+    peer = request.client.host if request.client else "unknown"
+    return client_ip_from_headers(
+        request.headers.get("X-Forwarded-For"), peer, settings.TRUSTED_XFF_POSITION
+    )
+
+
+def client_ip_from_headers(x_forwarded_for: str | None, peer: str, position: int) -> str:
+    """Return the client IP from the X-Forwarded-For header.
+
+    The client IP is the IP address of the last trusted proxy in the X-Forwarded-For header.
+    If the X-Forwarded-For header is not present or the position is 0, return the peer IP.
+    If the position is greater than the number of addresses in the X-Forwarded-For header, return the peer IP.
+    """
+    if not x_forwarded_for or position == 0:
+        return peer
+    addresses = [a.strip() for a in x_forwarded_for.split(",") if a.strip()]
+    if len(addresses) < position:
+        return peer
+    return addresses[-position]
 
 
 # ── Middleware — Layer 2 wiring ────────────────────────────────────────────────
