@@ -82,8 +82,8 @@ class _LocalResult(BaseModel):
     title: str = ""
     address: str = ""
     type: str | list[str] = ""
-    rating: float = 0.0
-    reviews: int = 0
+    rating: float | None = None
+    reviews: int | None = None
     gps_coordinates: _Coords = Field(default_factory=_Coords)
 
 
@@ -95,8 +95,8 @@ class _PlaceResult(BaseModel):
     title: str = ""
     address: str = ""
     type: str | list[str] = ""
-    rating: float = 0.0
-    reviews: int = 0
+    rating: float | None = None
+    reviews: int | None = None
     gps_coordinates: _Coords = Field(default_factory=_Coords)
     website: str | None = None
     phone: str | None = None
