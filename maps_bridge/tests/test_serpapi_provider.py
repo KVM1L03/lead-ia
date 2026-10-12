@@ -123,6 +123,41 @@ async def test_search_maps_fields_correctly() -> None:
     assert abs(first.lat - 52.2297) < 0.001
 
 
+async def test_missing_rating_and_reviews_keys_map_to_none() -> None:
+    body = {"local_results": [{"place_id": "ChIJnew", "title": "Nowa"}]}
+    transport = _CassetteTransport(content=json.dumps(body).encode())
+    results = await _provider(transport).search_places("dentysta", 5)
+    dumped = results[0].model_dump()
+    assert "rating" in dumped
+    assert dumped["rating"] is None
+    assert "review_count" in dumped
+    assert dumped["review_count"] is None
+
+
+async def test_explicit_null_rating_and_reviews_map_to_none() -> None:
+    item = {"place_id": "ChIJn", "title": "Null", "rating": None, "reviews": None}
+    transport = _CassetteTransport(content=json.dumps({"local_results": [item]}).encode())
+    results = await _provider(transport).search_places("x", 5)
+    assert results[0].rating is None
+    assert results[0].review_count is None
+
+
+async def test_details_missing_rating_and_reviews_map_to_none() -> None:
+    body = {"place_results": {"title": "Nowa", "address": "ul. Test 1"}}
+    transport = _CassetteTransport(content=json.dumps(body).encode())
+    details = await _provider(transport).get_place_details("ChIJnew")
+    assert details.rating is None
+    assert details.review_count is None
+
+
+async def test_present_zero_rating_and_reviews_are_preserved() -> None:
+    body = {"local_results": [{"place_id": "ChIJz", "title": "Zero", "rating": 0, "reviews": 0}]}
+    transport = _CassetteTransport(content=json.dumps(body).encode())
+    results = await _provider(transport).search_places("x", 5)
+    assert results[0].rating == 0.0
+    assert results[0].review_count == 0
+
+
 # ---------------------------------------------------------------------------
 # SerpAPIMapsProvider — place details
 # ---------------------------------------------------------------------------
