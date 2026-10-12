@@ -350,3 +350,17 @@ async def test_request_limit_429_retry_after(fake_redis: Redis) -> None:
     assert resp.status_code == 429
     assert resp.headers.get("Retry-After") == "60"
     assert "Too many requests" in resp.json()["detail"]
+
+
+@pytest.mark.parametrize(
+    ("xff", "position", "expected"),
+    [
+        ("6.6.6.6, 203.0.113.7, 34.1.1.1", 2, "203.0.113.7"),
+        ("6.6.6.6, 203.0.113.7", 1, "203.0.113.7"),
+        (None, 1, "10.0.0.1"),
+        ("1.2.3.4", 2, "10.0.0.1"),
+        ("6.6.6.6", 0, "10.0.0.1"),
+    ],
+)
+def test_client_ip_from_headers(xff: str | None, position: int, expected: str) -> None:
+    assert rate_limit.client_ip_from_headers(xff, "10.0.0.1", position) == expected

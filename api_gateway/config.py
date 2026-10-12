@@ -38,5 +38,10 @@ class Settings(BaseSettings):
     # sync     — run pipeline inline, return results in one HTTP response (demo)
     EXECUTION_MODE: Literal["temporal", "sync"] = "temporal"
 
+    # How many trusted proxies append to X-Forwarded-For; the client IP is read
+    # that many entries from the RIGHT (1 = last entry, 2 = second to last...).
+    # 0 = ignore X-Forwarded-For and use the socket peer.
+    TRUSTED_XFF_POSITION: int = 1
+
 
 settings = Settings()
