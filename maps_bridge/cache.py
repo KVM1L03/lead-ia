@@ -31,7 +31,8 @@ class SQLiteCache:
             )
 
     def _search_key(self, query: str, limit: int) -> str:
-        return hashlib.sha256(f"{self._prefix}:{query}:{limit}".encode()).hexdigest()
+        normalized = " ".join(query.casefold().split())
+        return hashlib.sha256(f"{self._prefix}:{normalized}:{limit}".encode()).hexdigest()
 
     def _details_key(self, place_id: str) -> str:
         return f"{self._prefix}:{place_id}"
