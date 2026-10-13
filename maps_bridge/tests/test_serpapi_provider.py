@@ -297,6 +297,45 @@ async def test_cache_details_hit_skips_http(tmp_path: Path) -> None:
     assert d1.name == d2.name
 
 
+async def test_cache_details_hit_normalized_same_query(tmp_path: Path) -> None:
+    transport = _cassette("search_dentist_warsaw.json")
+    inner = _provider(transport)
+    cache = SQLiteCache(str(tmp_path / "cache.db"))
+    provider = CachingMapsProvider(inner, cache)
+
+    results1 = await provider.search_places("Dentist Warsaw", 5)
+    assert transport.call_count == 1
+
+    results2 = await provider.search_places("dentist warsaw", 5)
+    assert transport.call_count == 1
+    assert len(results1) == len(results2)
+    assert results1[0].id == results2[0].id
+
+
+async def test_cache_details_hit_normalized_different_query(tmp_path: Path) -> None:
+    transport = _cassette("search_dentist_warsaw.json")
+    inner = _provider(transport)
+    cache = SQLiteCache(str(tmp_path / "cache.db"))
+    provider = CachingMapsProvider(inner, cache)
+
+    await provider.search_places("dentist krakow", 5)
+    assert transport.call_count == 1
+
+    await provider.search_places("dentist warsaw", 5)
+    assert transport.call_count == 2
+
+
+async def test_cache_miss_when_spaces_removed(tmp_path: Path) -> None:
+    transport = _cassette("search_dentist_warsaw.json")
+    inner = _provider(transport)
+    cache = SQLiteCache(str(tmp_path / "cache.db"))
+    provider = CachingMapsProvider(inner, cache)
+
+    await provider.search_places("dentist warsaw", 5)
+    await provider.search_places("dentistwarsaw", 5)
+    assert transport.call_count == 2
+
+
 # ---------------------------------------------------------------------------
 # SQLiteCache — TTL
 # ---------------------------------------------------------------------------
